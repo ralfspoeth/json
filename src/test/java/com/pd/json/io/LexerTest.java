@@ -1,0 +1,110 @@
+package com.pd.json.io;
+
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.io.StringReader;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class LexerTest {
+
+    @Test
+    public void testNullLiteral() throws Exception {
+        String source = "null";
+        try (var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.NULL, lexer.next().type());
+            assertFalse(lexer.hasNext());
+        }
+    }
+
+    @Test
+    public void testTrueLiteral() throws Exception {
+        String source = "true";
+        try (var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.TRUE, lexer.next().type());
+            assertFalse(lexer.hasNext());
+        }
+    }
+
+    @Test
+    public void testFalseLiteral() throws Exception {
+        String source = "false";
+        try (var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.FALSE, lexer.next().type());
+            assertFalse(lexer.hasNext());
+        }
+    }
+
+    @Test
+    public void testNullFalseTrueLiterals() throws Exception {
+        // note that this is not legal json syntax
+        String source = "true false null";
+        try(var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.TRUE, lexer.next().type());
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.FALSE, lexer.next().type());
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.NULL, lexer.next().type());
+            assertFalse(lexer.hasNext());
+        }
+    }
+
+    @Test
+    public void testNullFalseTrueLiteralsWithMoreWS() throws Exception {
+        // note that this is not legal json syntax
+        String source = """
+            true    false 
+            
+            
+            null""";
+        try(var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.TRUE, lexer.next().type());
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.FALSE, lexer.next().type());
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.NULL, lexer.next().type());
+            assertFalse(lexer.hasNext());
+        }
+    }
+
+    @Test
+    public void testEmptyObject() throws Exception{
+        var source = "{}";
+        try(var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.OPENING_BRACE, lexer.next().type());
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.CLOSING_BRACE, lexer.next().type());
+            assertFalse(lexer.hasNext());
+        }
+    }
+    @Test
+    public void testEmptyObjectWithWS() throws Exception{
+        var source = """
+                   {
+                  , 
+                  :
+                 }
+                """;
+        try(var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.OPENING_BRACE, lexer.next().type());
+            assertTrue(lexer.hasNext());
+            lexer.next(); // comma
+            assertTrue(lexer.hasNext());
+            lexer.next(); // colon
+            assertTrue(lexer.hasNext());
+            assertEquals(Lexer.TokenType.CLOSING_BRACE, lexer.next().type());
+            assertFalse(lexer.hasNext());
+        }
+    }
+
+}

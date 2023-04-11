@@ -8,10 +8,11 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class LexerTest {
+class LexerTest {
 
     @Test
     public void testNullLiteral() throws Exception {
@@ -112,7 +113,7 @@ public class LexerTest {
     @Test
     public void testParseLarge() throws Exception {
         try(var src = new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream("/large-file.json"),
+                Objects.requireNonNull(getClass().getResourceAsStream("/large-file.json")),
                 StandardCharsets.UTF_8
         )); var lxr = new Lexer(src))
         {

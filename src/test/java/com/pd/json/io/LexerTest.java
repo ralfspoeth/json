@@ -1,14 +1,13 @@
 package com.pd.json.io;
 
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -63,7 +62,7 @@ public class LexerTest {
     public void testNullFalseTrueLiteralsWithMoreWS() throws Exception {
         // note that this is not legal json syntax
         String source = """
-            true    false 
+            true    false
             
             
             null""";
@@ -93,7 +92,7 @@ public class LexerTest {
     public void testEmptyObjectWithWS() throws Exception{
         var source = """
                    {
-                  , 
+                  ,
                   :
                  }
                 """;
@@ -110,20 +109,20 @@ public class LexerTest {
         }
     }
 
-    public void testEscaped() {
-        String source = "'a\'bcd'";
-    }
-
     @Test
     public void testParseLarge() throws Exception {
         try(var src = new BufferedReader(new InputStreamReader(
                 getClass().getResourceAsStream("/large-file.json"),
-                Charset.forName("utf-8")
+                StandardCharsets.UTF_8
         )); var lxr = new Lexer(src))
         {
+            var tmp = new ArrayList<Lexer.Token>();
             while(lxr.hasNext()) {
-                System.out.println(lxr.next());
+                tmp.add(lxr.next());
             }
+            assertAll(
+                    () -> assertFalse(tmp.contains(null))
+            );
         }
     }
 }

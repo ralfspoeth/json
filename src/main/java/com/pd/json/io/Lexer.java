@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
 
-public class Lexer implements AutoCloseable {
+class Lexer implements AutoCloseable {
 
     public enum TokenType {
         NULL, TRUE, FALSE, STRING, NUMBER,
@@ -24,19 +24,17 @@ public class Lexer implements AutoCloseable {
     }
 
     private enum State {
-        S0, SQUOTE, DQUOTE, LIT, EOF
+        INITIAL, SQUOTE, DQUOTE, LIT, EOF
     }
 
     private Token nextToken;
-    private State state = State.S0;
+    private State state = State.INITIAL;
     private final StringBuilder buffer = new StringBuilder();
 
     public boolean hasNext() throws IOException {
         readNextToken();
         return nextToken != null;
     }
-
-    private int row = 1, column = 1;
 
     public Token next() {
         if (nextToken == null) {
@@ -85,7 +83,7 @@ public class Lexer implements AutoCloseable {
                 } else switch (c) {
                     case '\'' -> {
                         if (state == State.SQUOTE) {
-                            state = State.S0;
+                            state = State.INITIAL;
                             nextToken = new Token(TokenType.STRING, buffer.toString());
                             buffer.setLength(0);
                         } else if (state == State.DQUOTE) {
@@ -96,7 +94,7 @@ public class Lexer implements AutoCloseable {
                     }
                     case '\"' -> {
                         if (state == State.DQUOTE) {
-                            state = State.S0;
+                            state = State.INITIAL;
                             nextToken = new Token(TokenType.STRING, buffer.toString());
                             buffer.setLength(0);
                         } else if (state == State.SQUOTE) {
@@ -114,17 +112,15 @@ public class Lexer implements AutoCloseable {
                     }
                     case ',', ':', '[', '{', ']', '}' -> {
                         switch (state) {
-                            case S0 -> {
-                                nextToken = switch (c) {
-                                    case ',' -> new Token(TokenType.COMMA, ",");
-                                    case ':' -> new Token(TokenType.COLON, ":");
-                                    case '{' -> new Token(TokenType.OPENING_BRACE, "{");
-                                    case '}' -> new Token(TokenType.CLOSING_BRACE, "}");
-                                    case '[' -> new Token(TokenType.OPENING_BRACKET, "[");
-                                    case ']' -> new Token(TokenType.CLOSING_BRACKET, "]");
-                                    default -> throw new AssertionError("cannot happen");
-                                };
-                            }
+                            case INITIAL -> nextToken = switch (c) {
+                                case ',' -> new Token(TokenType.COMMA, ",");
+                                case ':' -> new Token(TokenType.COLON, ":");
+                                case '{' -> new Token(TokenType.OPENING_BRACE, "{");
+                                case '}' -> new Token(TokenType.CLOSING_BRACE, "}");
+                                case '[' -> new Token(TokenType.OPENING_BRACKET, "[");
+                                case ']' -> new Token(TokenType.CLOSING_BRACKET, "]");
+                                default -> throw new AssertionError("cannot happen");
+                            };
                             case LIT -> {
                                 literal();
                                 source.unread(c);
@@ -136,7 +132,7 @@ public class Lexer implements AutoCloseable {
                     default -> {
                         switch (state) {
                             case SQUOTE, DQUOTE -> buffer.append(c);
-                            case S0 -> {
+                            case INITIAL -> {
                                 if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
                                     buffer.append(c);
                                     state = State.LIT;
@@ -147,16 +143,14 @@ public class Lexer implements AutoCloseable {
                             case LIT -> {
                                 if (Character.isWhitespace(c)) {
                                     literal();
-                                    state = State.S0;
+                                    state = State.INITIAL;
                                 } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
                                     buffer.append(c);
                                 } else {
                                     ioex("Unexpected character " + c);
                                 }
                             }
-                            default -> {
-                                ioex("Unexpected character " + c);
-                            }
+                            default -> ioex("Unexpected character " + c);
                         }
                     }
                 }
@@ -172,19 +166,23 @@ public class Lexer implements AutoCloseable {
             case "true" -> new Token(TokenType.TRUE, text);
             case "false" -> new Token(TokenType.FALSE, text);
             default -> {
-                var d = Double.parseDouble(text);
+                double ignored = Double.parseDouble(text);
                 yield new Token(TokenType.NUMBER, text);
             }
         };
-        state = State.S0;
+        state = State.INITIAL;
     }
 
     private void ioex(String message) throws IOException {
         throw new IOException("%s at row: %d, col: %d".formatted(message, row, column));
     }
 
-    public int[] coordinates() {
-        return new int[]{row, column};
+    private int row = 1, column = 1;
+
+    record Coordinates(int row, int column) {}
+
+    public Coordinates coordinates() {
+        return new Coordinates(row, column);
     }
 
     @Override

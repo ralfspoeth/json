@@ -7,20 +7,19 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ReaderTest {
+public class JsonReaderTest {
 
     @Test
     public void testEmptyObject() throws IOException {
         var source = "{}";
         try (var rdr = new StringReader(source);
-             var lxr = new Lexer(rdr);
-             var parser = new Reader(lxr)) {
+             var parser = new JsonReader(rdr)) {
             var result = parser.readElement();
             assertAll(
                     () -> assertNotNull(result),
@@ -33,8 +32,7 @@ public class ReaderTest {
     public void testEmptyArray() throws IOException {
         var source = "[]";
         try (var rdr = new StringReader(source);
-             var lxr = new Lexer(rdr);
-             var parser = new Reader(lxr)) {
+             var parser = new JsonReader(rdr)) {
             var result = parser.readElement();
             assertAll(
                     () -> assertNotNull(result),
@@ -47,7 +45,7 @@ public class ReaderTest {
     public void testSingleElems() {
         var sources = List.of("1", "true", "null", "false", "'str'");
         sources.forEach(source -> {
-            try (var parser = new Reader(new Lexer(new StringReader(source)))) {
+            try (var parser = new JsonReader(new StringReader(source))) {
                 var v = parser.readElement();
                 assertAll(() -> assertTrue(v instanceof JsonValue));
             } catch (IOException ioex) {
@@ -61,8 +59,7 @@ public class ReaderTest {
         var sources = List.of("[1]", "[null]", "[false]", "[true]", "['str']");
         sources.forEach(source -> {
             try (var rdr = new StringReader(source);
-                 var lxr = new Lexer(rdr);
-                 var parser = new Reader(lxr)) {
+                 var parser = new JsonReader(rdr)) {
                 var result = parser.readElement();
                 assertAll(
                         () -> assertNotNull(result),
@@ -77,7 +74,7 @@ public class ReaderTest {
     @Test
     public void testSingleMemberObject() throws IOException {
         var source = "{'n':5}";
-        try (var r = new Reader(new Lexer(new StringReader(source)))) {
+        try (var r = new JsonReader(new StringReader(source))) {
             var o = r.readElement();
             assertAll(() -> assertTrue(o instanceof JsonObject),
                     () -> assertEquals(1, ((JsonObject) o).members().size()),
@@ -87,13 +84,21 @@ public class ReaderTest {
     }
 
     @Test
+    public void testDualMemberObject() throws Exception {
+        var source = "{'n':5, 'm': 7}";
+        try(var r = new JsonReader(new StringReader(source))) {
+            r.readElement();
+        }
+    }
+
+    @Test
     public void testArrayOfValues() throws IOException {
         String source = "[5, 6, 7, false, null, true, 'str']";// "[{'n':5}, {'m':6}]";
-        try (var p = new Reader(new Lexer(new StringReader(source)))) {
+        try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
                     () -> assertTrue(a instanceof JsonArray),
-                    () -> assertTrue(((JsonArray) a).elements().size() == 7),
+                    () -> assertEquals(7, ((JsonArray) a).elements().size()),
                     () -> assertTrue(((JsonArray) a).elements().contains(new JsonString("str")))
             );
         }
@@ -102,11 +107,11 @@ public class ReaderTest {
     @Test
     public void testArrayOfObject() throws IOException {
         String source = "[{'n':55}]";
-        try (var p = new Reader(new Lexer(new StringReader(source)))) {
+        try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
                     () -> assertTrue(a instanceof JsonArray),
-                    () -> assertTrue(((JsonArray) a).elements().size() == 1),
+                    () -> assertEquals(1, ((JsonArray) a).elements().size()),
                     () -> assertTrue(((JsonArray) a).elements().contains(
                             new JsonObject(Map.of("n", new JsonNumber(55)))
                     ))
@@ -115,7 +120,7 @@ public class ReaderTest {
     }   @Test
     public void testArrayOfTwoObjects() throws IOException {
         String source = "[{'n':55}, {'m':7}]";
-        try (var p = new Reader(new Lexer(new StringReader(source)))) {
+        try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
                     () -> assertTrue(a instanceof JsonArray),
@@ -130,7 +135,7 @@ public class ReaderTest {
     @Test
     public void testNestedObjectDepth1() throws IOException {
         String source = "{'a':{'b':[]}}";
-        try(var p = new Reader(new Lexer(new StringReader(source)))) {
+        try(var p = new JsonReader(new StringReader(source))) {
             var e = p.readElement();
             if(e instanceof JsonObject o0) {
                 assertAll(
@@ -158,8 +163,8 @@ public class ReaderTest {
     public void testParseLarge() throws Exception {
         try(var src = new BufferedReader(new InputStreamReader(
                 getClass().getResourceAsStream("/large-file.json"),
-                Charset.forName("utf-8")
-        )); var lxr = new Lexer(src); var rdr = new Reader(lxr))
+                StandardCharsets.UTF_8
+        )); var rdr = new JsonReader(src))
         {
             try {
                 var result = rdr.readElement();

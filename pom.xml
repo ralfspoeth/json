@@ -12,6 +12,9 @@
         <maven.compiler.release>19</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+    <scm>
+        <developerConnection>scm:git:https://github.com/ralfspoeth/json.git</developerConnection>
+    </scm>
     <build>
         <plugins>
             <plugin>
@@ -29,6 +32,11 @@
                 <configuration>
                     <argLine>--enable-preview</argLine>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.0.0-M6</version>
             </plugin>
         </plugins>
     </build>

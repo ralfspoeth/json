@@ -19,7 +19,8 @@ public class Lexer implements AutoCloseable {
     private final PushbackReader source;
 
     public Lexer(Reader source) {
-        this.source = new PushbackReader(source);
+        this.source = source instanceof PushbackReader pr ? pr :
+                new PushbackReader(source);
     }
 
     private enum State {
@@ -35,6 +36,8 @@ public class Lexer implements AutoCloseable {
         return nextToken != null;
     }
 
+    private int row = 1, column = 1;
+
     public Token next() {
         if (nextToken == null) {
             throw new IllegalStateException("Lexer has no next token");
@@ -46,26 +49,48 @@ public class Lexer implements AutoCloseable {
     }
 
     private void readNextToken() throws IOException {
+        boolean escaped = false;
         while (state != State.EOF && nextToken == null) {
             int r = source.read();
             if (r == -1) { // EOF
                 switch (state) {
                     case LIT -> literal();
-                    case SQUOTE, DQUOTE -> throw new IOException("unexpected end of file");
+                    case SQUOTE, DQUOTE -> ioex("unexpected end of file");
                 }
                 state = State.EOF;
             } else {
                 char c = (char) r;
-                switch (c) {
+                if(c=='\n') {
+                    row++;
+                    column = 1;
+                }
+                else {
+                    column ++;
+                }
+                if (escaped) {
+                    var nc = switch (c) {
+                        case 'n' -> '\n';
+                        case 'r' -> '\r';
+                        case 't' -> '\t';
+                        case 'b' -> '\b';
+                        case 'f' -> '\f';
+                        default -> c;
+                    };
+                    escaped = false;
+                    if (state == State.DQUOTE || state == State.SQUOTE) {
+                        buffer.append(nc);
+                    } else {
+                        ioex("Illegal character sequence \\" + c);
+                    }
+                } else switch (c) {
                     case '\'' -> {
                         if (state == State.SQUOTE) {
                             state = State.S0;
                             nextToken = new Token(TokenType.STRING, buffer.toString());
-                            buffer.delete(0, buffer.capacity());
-                        } else if(state == State.DQUOTE) {
+                            buffer.setLength(0);
+                        } else if (state == State.DQUOTE) {
                             buffer.append(c);
-                        }
-                        else {
+                        } else {
                             state = State.SQUOTE;
                         }
                     }
@@ -73,16 +98,22 @@ public class Lexer implements AutoCloseable {
                         if (state == State.DQUOTE) {
                             state = State.S0;
                             nextToken = new Token(TokenType.STRING, buffer.toString());
-                            buffer.delete(0, buffer.capacity());
-                        } else if(state == State.SQUOTE) {
+                            buffer.setLength(0);
+                        } else if (state == State.SQUOTE) {
                             buffer.append(c);
+                        } else {
+                            state = State.DQUOTE;
                         }
-                        else {
-                            state = State.SQUOTE;
+                    }
+                    case '\\' -> {
+                        if (state == State.DQUOTE || state == State.SQUOTE) { // within string
+                            escaped = true;
+                        } else {
+                            ioex("unexpected character \\");
                         }
                     }
                     case ',', ':', '[', '{', ']', '}' -> {
-                        switch(state) {
+                        switch (state) {
                             case S0 -> {
                                 nextToken = switch (c) {
                                     case ',' -> new Token(TokenType.COMMA, ",");
@@ -99,34 +130,32 @@ public class Lexer implements AutoCloseable {
                                 source.unread(c);
                             }
                             case SQUOTE, DQUOTE -> buffer.append(c);
-                            default -> throw new IOException("unexpected " + c + " after " + buffer);
+                            default -> ioex("unexpected " + c + " after " + buffer);
                         }
                     }
                     default -> {
                         switch (state) {
                             case SQUOTE, DQUOTE -> buffer.append(c);
                             case S0 -> {
-                                if(Character.isLetterOrDigit(c) || c=='-' || c=='.') {
+                                if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
                                     buffer.append(c);
                                     state = State.LIT;
-                                } else if(!Character.isWhitespace(c)) {
-                                    throw new IOException("Unexpected character " + c);
+                                } else if (!Character.isWhitespace(c)) {
+                                    ioex("Unexpected character " + c);
                                 }
                             }
                             case LIT -> {
-                                if(Character.isWhitespace(c)) {
+                                if (Character.isWhitespace(c)) {
                                     literal();
                                     state = State.S0;
-                                }
-                                else if(Character.isLetterOrDigit(c) || c=='-' || c=='.') {
+                                } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
                                     buffer.append(c);
-                                }
-                                else {
-                                    throw new IOException("Unexpected character " + c);
+                                } else {
+                                    ioex("Unexpected character " + c);
                                 }
                             }
                             default -> {
-                                throw new IOException("Unexpected character " + c);
+                                ioex("Unexpected character " + c);
                             }
                         }
                     }
@@ -148,6 +177,14 @@ public class Lexer implements AutoCloseable {
             }
         };
         state = State.S0;
+    }
+
+    private void ioex(String message) throws IOException {
+        throw new IOException("%s at row: %d, col: %d".formatted(message, row, column));
+    }
+
+    public int[] coordinates() {
+        return new int[]{row, column};
     }
 
     @Override

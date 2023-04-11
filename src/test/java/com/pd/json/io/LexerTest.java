@@ -4,8 +4,11 @@ package com.pd.json.io;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -107,4 +110,20 @@ public class LexerTest {
         }
     }
 
+    public void testEscaped() {
+        String source = "'a\'bcd'";
+    }
+
+    @Test
+    public void testParseLarge() throws Exception {
+        try(var src = new BufferedReader(new InputStreamReader(
+                getClass().getResourceAsStream("/large-file.json"),
+                Charset.forName("utf-8")
+        )); var lxr = new Lexer(src))
+        {
+            while(lxr.hasNext()) {
+                System.out.println(lxr.next());
+            }
+        }
+    }
 }

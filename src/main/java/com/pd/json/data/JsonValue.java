@@ -32,8 +32,8 @@ public sealed interface JsonValue extends JsonElement permits JsonString, JsonTr
     static JsonValue of(Object o) {
         return switch(o) {
             case null -> ofNull();
-            case Boolean b -> ofBoolean(b.booleanValue());
-            case Double d -> ofDouble(d.doubleValue());
+            case Boolean b -> ofBoolean(b);
+            case Double d -> ofDouble(d);
             default -> ofString(o.toString());
         };
     }

@@ -7,7 +7,7 @@
     <version>1.0.1-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.release>19</maven.compiler.release>
+        <maven.compiler.release>20</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <scm>

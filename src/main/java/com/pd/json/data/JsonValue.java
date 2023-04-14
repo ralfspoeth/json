@@ -1,7 +1,7 @@
 package com.pd.json.data;
 
 public sealed interface JsonValue extends JsonElement permits JsonString, JsonTrue, JsonFalse, JsonNull, JsonNumber {
-    static JsonValue of(String input) {
+    static JsonValue from(String input) {
         return switch (input) {
             case "null" -> JsonNull.INSTANCE;
             case "true" -> JsonTrue.INSTANCE;
@@ -27,5 +27,29 @@ public sealed interface JsonValue extends JsonElement permits JsonString, JsonTr
                 }
             }
         };
+    }
+
+    static JsonValue of(Object o) {
+        return switch(o) {
+            case null -> ofNull();
+            case Boolean b -> ofBoolean(b.booleanValue());
+            case Double d -> ofDouble(d.doubleValue());
+            default -> ofString(o.toString());
+        };
+    }
+    private static JsonValue ofBoolean(boolean b) {
+        return b?JsonTrue.INSTANCE:JsonFalse.INSTANCE;
+    }
+
+    private static JsonNumber ofDouble(double d) {
+        return new JsonNumber(d);
+    }
+
+    private static JsonNull ofNull() {
+        return JsonNull.INSTANCE;
+    }
+
+    private static JsonString ofString(String s) {
+        return new JsonString(s);
     }
 }

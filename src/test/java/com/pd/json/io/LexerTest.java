@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class LexerTest {
 
     @Test
-    public void testNullLiteral() throws Exception {
+    void testNullLiteral() throws Exception {
         String source = "null";
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
@@ -25,7 +25,7 @@ class LexerTest {
     }
 
     @Test
-    public void testTrueLiteral() throws Exception {
+    void testTrueLiteral() throws Exception {
         String source = "true";
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
@@ -35,7 +35,7 @@ class LexerTest {
     }
 
     @Test
-    public void testFalseLiteral() throws Exception {
+    void testFalseLiteral() throws Exception {
         String source = "false";
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
@@ -45,7 +45,7 @@ class LexerTest {
     }
 
     @Test
-    public void testNullFalseTrueLiterals() throws Exception {
+    void testNullFalseTrueLiterals() throws Exception {
         // note that this is not legal json syntax
         String source = "true false null";
         try(var lexer = new Lexer(new StringReader(source))) {
@@ -60,7 +60,7 @@ class LexerTest {
     }
 
     @Test
-    public void testNullFalseTrueLiteralsWithMoreWS() throws Exception {
+    void testNullFalseTrueLiteralsWithMoreWS() throws Exception {
         // note that this is not legal json syntax
         String source = """
             true    false
@@ -79,7 +79,7 @@ class LexerTest {
     }
 
     @Test
-    public void testEmptyObject() throws Exception{
+    void testEmptyObject() throws Exception{
         var source = "{}";
         try(var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
@@ -90,7 +90,7 @@ class LexerTest {
         }
     }
     @Test
-    public void testEmptyObjectWithWS() throws Exception{
+    void testEmptyObjectWithWS() throws Exception{
         var source = """
                    {
                   ,
@@ -111,7 +111,7 @@ class LexerTest {
     }
 
     @Test
-    public void testParseLarge() throws Exception {
+    void testParseLarge() throws Exception {
         try(var src = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(getClass().getResourceAsStream("/large-file.json")),
                 StandardCharsets.UTF_8

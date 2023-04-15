@@ -1,18 +1,17 @@
 package com.pd.json.builder;
 
-import com.pd.json.data.JsonArray;
-import com.pd.json.data.JsonString;
 import org.junit.jupiter.api.Test;
 
 import static com.pd.json.builder.JsonBuilder.arrayBuilder;
 import static com.pd.json.builder.JsonBuilder.objectBuilder;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class JsonBuilderTest {
 
     @Test
-    public void test1() {
-        var obj = JsonBuilder.objectBuilder()
+    void test1() {
+        var obj = objectBuilder()
                 .named("name", "Ralf")
                 .named("income", 5)
                 .named("sex", true)
@@ -25,7 +24,7 @@ class JsonBuilderTest {
                 .build();
         assertAll(
                 () -> assertEquals(4, obj.members().size()),
-                () -> assertEquals(4, ((JsonArray)obj.members().get("adr")).elements().size())
+                () -> assertEquals(4, obj.getArray("adr").elements().size())
         );
     }
 

@@ -1,22 +1,22 @@
 package com.pd.json.io;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonToken;
 import com.pd.json.data.*;
 import org.junit.jupiter.api.Test;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JsonReaderTest {
+class JsonReaderTest {
 
     @Test
-    public void testEmptyObject() throws IOException {
+    void testEmptyObject() throws IOException {
         var source = "{}";
         try (var rdr = new StringReader(source);
              var parser = new JsonReader(rdr)) {
@@ -29,7 +29,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testEmptyArray() throws IOException {
+    void testEmptyArray() throws IOException {
         var source = "[]";
         try (var rdr = new StringReader(source);
              var parser = new JsonReader(rdr)) {
@@ -42,7 +42,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testSingleElems() {
+    void testSingleElems() {
         var sources = List.of("1", "true", "null", "false", "'str'");
         sources.forEach(source -> {
             try (var parser = new JsonReader(new StringReader(source))) {
@@ -55,7 +55,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testSingleElemArray() {
+    void testSingleElemArray() {
         var sources = List.of("[1]", "[null]", "[false]", "[true]", "['str']");
         sources.forEach(source -> {
             try (var rdr = new StringReader(source);
@@ -72,7 +72,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testSingleMemberObject() throws IOException {
+    void testSingleMemberObject() throws IOException {
         var source = "{'n':5}";
         try (var r = new JsonReader(new StringReader(source))) {
             var o = r.readElement();
@@ -84,7 +84,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testDualMemberObject() throws Exception {
+    void testDualMemberObject() throws Exception {
         var source = "{'n':5, 'm': 7}";
         try(var r = new JsonReader(new StringReader(source))) {
             r.readElement();
@@ -92,7 +92,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testArrayOfValues() throws IOException {
+    void testArrayOfValues() throws IOException {
         String source = "[5, 6, 7, false, null, true, 'str']";// "[{'n':5}, {'m':6}]";
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
@@ -105,7 +105,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testArrayOfObject() throws IOException {
+    void testArrayOfObject() throws IOException {
         String source = "[{'n':55}]";
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
@@ -117,8 +117,10 @@ public class JsonReaderTest {
                     ))
             );
         }
-    }   @Test
-    public void testArrayOfTwoObjects() throws IOException {
+    }
+
+    @Test
+    void testArrayOfTwoObjects() throws IOException {
         String source = "[{'n':55}, {'m':7}]";
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
@@ -133,7 +135,7 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testNestedObjectDepth1() throws IOException {
+    void testNestedObjectDepth1() throws IOException {
         String source = "{'a':{'b':[]}}";
         try(var p = new JsonReader(new StringReader(source))) {
             var e = p.readElement();
@@ -160,12 +162,8 @@ public class JsonReaderTest {
     }
 
     @Test
-    public void testParseLarge() throws Exception {
-        try(var src = new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream("/large-file.json"),
-                StandardCharsets.UTF_8
-        )); var rdr = new JsonReader(src))
-        {
+    void testParseLarge() throws Exception {
+        try(var src = largeFile(); var rdr = new JsonReader(src)) {
             try {
                 var result = rdr.readElement();
                 assertNotNull(result);
@@ -174,5 +172,25 @@ public class JsonReaderTest {
                 e.printStackTrace();
             }
         }
+    }
+
+    private Reader largeFile() {
+        return new BufferedReader(new InputStreamReader(
+                getClass().getResourceAsStream("/large-file.json"),
+                StandardCharsets.UTF_8
+        ));
+    }
+
+    @Test
+    void testJacksonLarge() throws Exception {
+        var r = JsonFactory.builder().build();
+        var p = r.createParser(largeFile());
+        var t = p.nextToken();
+        var l = new ArrayList<Object>();
+        while(t!=null) {
+            l.add(t.asString());
+            t = p.nextToken();
+        }
+        assertTrue(l.size()>0);
     }
 }

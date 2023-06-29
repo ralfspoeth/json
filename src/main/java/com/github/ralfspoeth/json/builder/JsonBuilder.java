@@ -1,6 +1,6 @@
-package com.pd.json.builder;
+package com.github.ralfspoeth.json.builder;
 
-import com.pd.json.data.*;
+import com.github.ralfspoeth.json.data.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,6 +78,10 @@ public abstract sealed class JsonBuilder<T extends JsonElement> {
         public JsonArrayBuilder item(Object o) {
             data.add(JsonValue.of(o));
             return this;
+        }
+
+        public JsonArrayBuilder nullItem() {
+            return item(JsonNull.INSTANCE);
         }
     }
 

@@ -1,4 +1,4 @@
-module com.pd.json {
-    exports com.pd.json.data;
-    exports com.pd.json.io;
+module com.github.ralfspoeth.json {
+    exports com.github.ralfspoeth.json.data;
+    exports com.github.ralfspoeth.json.io;
 }

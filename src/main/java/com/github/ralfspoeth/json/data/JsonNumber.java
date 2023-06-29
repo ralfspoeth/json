@@ -1,4 +1,4 @@
-package com.pd.json.data;
+package com.github.ralfspoeth.json.data;
 
 public record JsonNumber(double value) implements JsonValue {
     public static final JsonNumber ZERO = new JsonNumber(0d);

@@ -1,4 +1,4 @@
-package com.pd.json.data;
+package com.github.ralfspoeth.json.data;
 
 public sealed interface JsonValue extends JsonElement permits JsonString, JsonTrue, JsonFalse, JsonNull, JsonNumber {
     static JsonValue from(String input) {

@@ -1,4 +1,4 @@
-package com.pd.json;
+package com.github.ralfspoeth.json;
 
 public class Main {
     public static void main(String[] args) {

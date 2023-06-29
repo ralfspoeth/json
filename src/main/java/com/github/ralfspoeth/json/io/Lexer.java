@@ -1,4 +1,4 @@
-package com.pd.json.io;
+package com.github.ralfspoeth.json.io;
 
 import java.io.IOException;
 import java.io.PushbackReader;

@@ -1,6 +1,6 @@
-package com.pd.json.io;
+package com.github.ralfspoeth.json.io;
 
-import com.pd.json.data.*;
+import com.github.ralfspoeth.json.data.*;
 
 import java.io.IOException;
 import java.io.Writer;

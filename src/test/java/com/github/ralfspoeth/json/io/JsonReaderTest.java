@@ -1,7 +1,8 @@
-package com.pd.json.io;
+package com.github.ralfspoeth.json.io;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.pd.json.data.*;
+import com.github.ralfspoeth.json.data.*;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -77,7 +78,7 @@ class JsonReaderTest {
             var o = r.readElement();
             assertAll(() -> assertTrue(o instanceof JsonObject),
                     () -> assertEquals(1, ((JsonObject) o).members().size()),
-                    () -> assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
+                    () -> Assertions.assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
             );
         }
     }

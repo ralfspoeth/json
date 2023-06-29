@@ -1,6 +1,6 @@
-package com.pd.json.data;
+package com.github.ralfspoeth.json.data;
 
-import com.pd.json.io.JsonWriter;
+import com.github.ralfspoeth.json.io.JsonWriter;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

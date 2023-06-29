@@ -1,4 +1,4 @@
-package com.pd.json.data;
+package com.github.ralfspoeth.json.data;
 
 import java.util.Map;
 

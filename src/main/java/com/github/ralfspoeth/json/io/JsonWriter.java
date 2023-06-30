@@ -15,8 +15,7 @@ public class JsonWriter {
                 switch (v) {
                     case JsonString s -> sb.append('"').append(s.value()).append('"');
                     case JsonNull ignored -> sb.append("null");
-                    case JsonTrue ignored -> sb.append("true");
-                    case JsonFalse ignored -> sb.append("false");
+                    case JsonBoolean b -> sb.append(b.value());
                     case JsonNumber n -> sb.append(n.value());
                 }
             }

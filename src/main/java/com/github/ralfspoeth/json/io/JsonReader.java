@@ -168,9 +168,9 @@ public class JsonReader implements AutoCloseable {
 
     private static JsonValue token2Value(Lexer.Token tkn) {
         return switch (tkn.type()) {
-            case NULL -> new JsonNull();
-            case TRUE -> new JsonTrue();
-            case FALSE -> new JsonFalse();
+            case NULL -> JsonNull.INSTANCE;
+            case TRUE -> JsonBoolean.TRUE;
+            case FALSE -> JsonBoolean.FALSE;
             case STRING -> new JsonString(tkn.value());
             case NUMBER -> new JsonNumber(Double.parseDouble(tkn.value()));
             default -> throw new AssertionError();

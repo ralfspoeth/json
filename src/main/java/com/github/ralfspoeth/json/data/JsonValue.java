@@ -1,11 +1,12 @@
 package com.github.ralfspoeth.json.data;
 
-public sealed interface JsonValue extends JsonElement permits JsonString, JsonTrue, JsonFalse, JsonNull, JsonNumber {
+public sealed interface JsonValue extends JsonElement permits JsonBoolean, JsonNull, JsonNumber, JsonString {
+
     static JsonValue from(String input) {
         return switch (input) {
             case "null" -> JsonNull.INSTANCE;
-            case "true" -> JsonTrue.INSTANCE;
-            case "false" -> JsonFalse.INSTANCE;
+            case "true" -> JsonBoolean.TRUE;
+            case "false" -> JsonBoolean.FALSE;
             default -> {
                 if (input.matches("\".*\"")) {
                     var s = input.replaceAll("\\\"", "");
@@ -38,7 +39,7 @@ public sealed interface JsonValue extends JsonElement permits JsonString, JsonTr
         };
     }
     private static JsonValue ofBoolean(boolean b) {
-        return b?JsonTrue.INSTANCE:JsonFalse.INSTANCE;
+        return b?JsonBoolean.TRUE:JsonBoolean.FALSE;
     }
 
     private static JsonNumber ofDouble(double d) {

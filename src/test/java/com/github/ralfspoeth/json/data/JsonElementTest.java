@@ -14,7 +14,7 @@ public class JsonElementTest {
     public void testElem(){
         JsonElement element = new JsonObject(Map.of(
                 "name", new JsonString("Hallo"),
-                "value", new JsonArray(List.of(new JsonNull(), new JsonTrue(), new JsonFalse(), new JsonNumber(5)))
+                "value", new JsonArray(List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, JsonBoolean.FALSE, new JsonNumber(5)))
         ));
         System.out.println(new JsonWriter().toJson(element));
     }
@@ -24,9 +24,9 @@ public class JsonElementTest {
     public void testMutability() {
         var je = new JsonArray(
                 List.of(
-                        JsonNull.INSTANCE, JsonFalse.INSTANCE, JsonTrue.INSTANCE,
+                        JsonNull.INSTANCE, JsonBoolean.FALSE, JsonBoolean.TRUE,
                         new JsonNumber(5), new JsonString("five"),
-                        new JsonObject(Map.of("a", JsonTrue.INSTANCE, "b", new JsonObject(Map.of())))
+                        new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", new JsonObject(Map.of())))
                 )
         );
         var obj = je.elements().stream()
@@ -38,7 +38,7 @@ public class JsonElementTest {
         assertAll(
                 () -> assertThrows(UnsupportedOperationException.class, () -> je.elements().add(JsonNull.INSTANCE)),
                 () -> assertThrows(UnsupportedOperationException.class, () -> je.elements().remove(0)),
-                () -> assertThrows(UnsupportedOperationException.class, () -> obj.members().put("c", JsonTrue.INSTANCE))
+                () -> assertThrows(UnsupportedOperationException.class, () -> obj.members().put("c", JsonBoolean.TRUE))
 
         );
 

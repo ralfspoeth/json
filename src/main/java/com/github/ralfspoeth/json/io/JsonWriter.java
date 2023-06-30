@@ -1,6 +1,6 @@
 package com.github.ralfspoeth.json.io;
 
-import com.github.ralfspoeth.json.data.*;
+import com.github.ralfspoeth.json.*;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -14,7 +14,7 @@ public class JsonWriter {
             case JsonValue v -> {
                 switch (v) {
                     case JsonString s -> sb.append('"').append(s.value()).append('"');
-                    case JsonNull ignored -> sb.append("null");
+                    case JsonNull n -> sb.append(n);
                     case JsonBoolean b -> sb.append(b.value());
                     case JsonNumber n -> sb.append(n.value());
                 }
@@ -40,5 +40,4 @@ public class JsonWriter {
     public void write(JsonElement elem, Writer out) throws IOException {
         out.write(toJson(elem));
     }
-
 }

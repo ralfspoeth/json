@@ -1,6 +1,6 @@
 package com.github.ralfspoeth.json.io;
 
-import com.github.ralfspoeth.json.data.*;
+import com.github.ralfspoeth.json.*;
 
 import java.io.IOException;
 import java.io.Reader;

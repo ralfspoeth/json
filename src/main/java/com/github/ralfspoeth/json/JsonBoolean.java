@@ -1,4 +1,4 @@
-package com.github.ralfspoeth.json.data;
+package com.github.ralfspoeth.json;
 
 public enum JsonBoolean implements JsonValue {
     TRUE{

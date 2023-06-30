@@ -1,4 +1,4 @@
-package com.github.ralfspoeth.json.data;
+package com.github.ralfspoeth.json;
 
 import java.util.List;
 

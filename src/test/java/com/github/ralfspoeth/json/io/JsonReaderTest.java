@@ -1,7 +1,7 @@
 package com.github.ralfspoeth.json.io;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.github.ralfspoeth.json.data.*;
+import com.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

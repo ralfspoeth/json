@@ -1,4 +1,4 @@
-package com.github.ralfspoeth.json.data;
+package com.github.ralfspoeth.json;
 
 public sealed interface JsonValue extends JsonElement permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 

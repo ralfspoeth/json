@@ -5,12 +5,11 @@ import com.github.ralfspoeth.json.*;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
+import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 
 public class JsonReader implements AutoCloseable {
-    record NameValuePair(String name, JsonElement value) {
-    }
 
     private final Lexer lexer;
 
@@ -18,34 +17,23 @@ public class JsonReader implements AutoCloseable {
         this.lexer = new Lexer(src);
     }
 
-    private final Stack<Object> stack = new Stack<>();
-/*
-    public JsonElement read() throws IOException {
-        JsonElement tmp = null;
-        var stack = new Stack<JsonElement.Builder>();
-        record Property(String name, JsonElement elem) {
+    private sealed interface StackElem {
+        record BuilderElem(JsonElement.Builder builder) implements StackElem {
         }
 
-        Property current = null;
-
-        while (lexer.hasNext()) {
-            var token = lexer.next();
-            switch (token.type()) {
-                case OPENING_BRACE -> stack.push(JsonElement.objectBuilder());
-                case CLOSING_BRACE -> tmp = stack.pop().build();
-                case OPENING_BRACKET -> stack.push(JsonElement.arrayBuilder());
-                case CLOSING_BRACKET -> tmp = stack.pop().build();
-                switch (stack.top()) {
-                    case JsonElement.JsonArrayBuilder ab -> {
-                        ab.
-                    }
-                }
-
+        record NameValuePair(String name, JsonElement elem) implements StackElem {
+            NameValuePair withElem(JsonElement e) {
+                return new NameValuePair(this.name, e);
             }
         }
-        return tmp;
+
+        enum Char implements StackElem {colon, comma}
+
+        record Root(JsonElement elem) implements StackElem {
+        }
     }
-*/
+
+    private final Stack<StackElem> stack = new Stack<>();
 
     public JsonElement readElement() throws IOException {
         while (lexer.hasNext()) {
@@ -54,107 +42,115 @@ public class JsonReader implements AutoCloseable {
                 case STRING -> {
                     var str = token2Value(tkn);
                     if (stack.isEmpty()) {
-                        stack.push(str);
-                    } else if (stack.top() instanceof Map<?, ?>) {
-                        stack.push(new NameValuePair(tkn.value(), null));
-                    } else if (stack.top() instanceof List<?> l) {
-                        ((List<Object>)l).add(str);
-                    } else if (stack.top() instanceof String s && s.equals(":")) {
+                        stack.push(new StackElem.Root(str));
+                    } else if (stack.top() instanceof StackElem.BuilderElem be) {
+                        if (be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                            stack.push(new StackElem.NameValuePair(tkn.value(), null));
+                        } else if (be.builder instanceof JsonElement.JsonArrayBuilder jab) {
+                            jab.item(str);
+                        }
+                    } else if (stack.top().equals(StackElem.Char.colon)) {
                         stack.pop(); // pop colon
-                        var nvp = (NameValuePair) stack.pop();
-                        stack.push(new NameValuePair(nvp.name, new JsonString(tkn.value())));
-                    } else if (stack.top() instanceof String s && s.equals(",")) {
+                        stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(str));
+                    } else if (stack.top().equals(StackElem.Char.comma)) {
                         stack.pop(); // pop comma
-                        if (stack.top() instanceof List<?> l) {
-                            ((List<Object>)l).add(str);
-                        } else if (stack.top() instanceof Map<?, ?>) {
-                            stack.push(new NameValuePair(tkn.value(), null));
-                        } else {
-                            throw new AssertionError();
+                        if (stack.top() instanceof StackElem.BuilderElem be) {
+                            if (be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                                stack.push(new StackElem.NameValuePair(tkn.value(), null));
+                            } else if (be.builder instanceof JsonElement.JsonArrayBuilder jab) {
+                                jab.item(str);
+                            } else {
+                                throw new AssertionError();
+                            }
                         }
                     } else {
                         ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
                 case COLON -> {
-                    if (stack.top() instanceof NameValuePair nvp && nvp.value == null) {
-                        stack.push(":");
+                    if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem == null) {
+                        stack.push(StackElem.Char.colon);
                     } else {
                         ioex("unexpected token :", lexer.coordinates());
                     }
                 }
                 case COMMA -> {
-                    if (stack.top() instanceof List<?> l && !l.isEmpty()) {
-                        stack.push(",");
-                    } else if (stack.top() instanceof NameValuePair nvp && nvp.value != null) {
+                    if (stack.top() instanceof StackElem.BuilderElem be
+                            && be.builder instanceof JsonElement.JsonArrayBuilder jab
+                            && jab.size() > 0
+                    ) {
+                        stack.push(StackElem.Char.comma);
+                    } else if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem != null) {
                         stack.pop();
-                        var m = (Map<String, Object>) stack.top();
-                        m.put(nvp.name, nvp.value);
-                        stack.push(",");
+                        if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                            job.named(nvp.name, nvp.elem);
+                            stack.push(StackElem.Char.comma);
+                        }
                     } else {
                         ioex("unexpected token ,", lexer.coordinates());
                     }
                 }
                 case NULL, FALSE, TRUE, NUMBER -> {
                     var v = token2Value(tkn);
-                    if (stack.top() instanceof String s && s.equals(":")) {
-                        stack.pop(); // pop colon
-                        var nvp = (NameValuePair) stack.pop(); // must be an NVP
-                        stack.push(new NameValuePair(nvp.name, v));
-                    } else if (stack.top() instanceof String s && s.equals(",")) {
-                        stack.pop(); // pop comma
-                        if (stack.top() instanceof List<?> l) { // must be a list
-                            ((List<Object>)l).add(v);
-                        } else {
-                            throw new AssertionError();
-                        }
-                    } else if (stack.isEmpty()) {
-                        stack.push(v);
-                    } else if (stack.top() instanceof List<?> l && l.isEmpty()) {
-                        ((List<Object>)l).add(v);
+                    if (stack.isEmpty()) {
+                        stack.push(new StackElem.Root(v));
                     } else {
-                        ioex("unexpected token " + tkn.value(), lexer.coordinates());
+                        if (stack.top().equals(StackElem.Char.colon)) {
+                            stack.pop(); // pop colon
+                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(v));
+                        } else if (stack.top().equals(StackElem.Char.comma)) {
+                            stack.pop(); // pop comma
+                            if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
+                                jab.item(v);
+                            } else {
+                                ioex("unexpected token " + tkn.value(), lexer.coordinates());
+                            }
+                        } else if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
+                            jab.item(v);
+                        } else {
+                            ioex("unexpected token " + tkn.value(), lexer.coordinates());
+                        }
                     }
                 }
                 case OPENING_BRACE -> {
-                    if (stack.isEmpty() || stack.top() instanceof List<?> l && l.isEmpty()) {
-                        stack.push(new HashMap<String, Object>());
-                    } else if (Set.of(":", ",").contains(stack.top())) {
+                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size()==0) {
+                        stack.push(new StackElem.BuilderElem(JsonElement.objectBuilder()));
+                    } else if (EnumSet.allOf(StackElem.Char.class).contains(stack.top())) {
                         stack.pop(); // pop comma or colon
-                        stack.push(new HashMap<String, Object>());
+                        stack.push(new StackElem.BuilderElem(JsonElement.objectBuilder()));
                     } else {
                         ioex("unexpected token {", lexer.coordinates());
                     }
                 }
                 case OPENING_BRACKET -> {
-                    if (stack.isEmpty() || stack.top() instanceof List<?> l && l.isEmpty()) {
-                        stack.push(new ArrayList<>());
-                    } else if (Set.of(":", ",").contains(stack.top())) {
+                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size()==0) {
+                        stack.push(new StackElem.BuilderElem(JsonElement.arrayBuilder()));
+                    } else if (EnumSet.allOf(StackElem.Char.class).contains(stack.top())) {
                         stack.pop(); // ignore colon or comma
-                        stack.push(new ArrayList<>());
+                        stack.push(new StackElem.BuilderElem(JsonElement.arrayBuilder()));
                     } else {
                         ioex("unexpected token [", lexer.coordinates());
                     }
                 }
                 case CLOSING_BRACE -> {
                     var top = stack.pop();
-                    if (top instanceof NameValuePair nvp && nvp.value instanceof JsonElement je) {
-                        if (stack.top() instanceof Map<?, ?>) {
-                            top = stack.pop();
-                            ((Map<String, Object>) top).put(nvp.name, je);
+                    if (top instanceof StackElem.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
+                        if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                            stack.pop();
+                            job.named(nvp.name, je);
                         } else {
                             throw new AssertionError();
                         }
                     }
-                    if (top instanceof Map<?, ?> m) {
-                        var o = map2Object(m);
-                        if (stack.top() instanceof List<?> l) {
-                            ((List<Object>)l).add(o);
-                        } else if (stack.top() instanceof NameValuePair nvp && nvp.value == null) {
-                            stack.pop();
-                            stack.push(new NameValuePair(nvp.name, o));
+                    if (top instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                        stack.pop();
+                        var o = job.build();
+                        if (stack.top() instanceof StackElem.BuilderElem abe && abe.builder instanceof JsonElement.JsonArrayBuilder jab) {
+                            jab.item(o);
+                        } else if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem == null) {
+                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(o));
                         } else if (stack.isEmpty()) {
-                            stack.push(o);
+                            stack.push(new StackElem.Root(o));
                         } else {
                             throw new AssertionError();
                         }
@@ -164,13 +160,12 @@ public class JsonReader implements AutoCloseable {
                 }
                 case CLOSING_BRACKET -> {
                     var top = stack.pop();
-                    if (top instanceof List<?> l) {
-                        var ll = new JsonArray(l.stream().map(JsonElement.class::cast).toList());
-                        if (stack.top() instanceof NameValuePair nvp && nvp.value == null) {
-                            stack.pop();
-                            stack.push(new NameValuePair(nvp.name, ll));
+                    if (top instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) {
+                        var ll = jab.build();
+                        if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem == null) {
+                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(ll));
                         } else {
-                            stack.push(ll);
+                            stack.push(new StackElem.Root(ll));
                         }
                     } else {
                         throw new AssertionError();
@@ -180,17 +175,11 @@ public class JsonReader implements AutoCloseable {
         }
 
         var top = stack.pop();
-        if (stack.isEmpty() && top instanceof JsonElement je) {
-            return je;
+        if (stack.isEmpty() && top instanceof StackElem.Root r) {
+            return r.elem;
         } else {
             throw new IOException("stack not empty or top-most element not a JsonElement");
         }
-    }
-
-    private static JsonObject map2Object(Map<?, ?> m) {
-        return new JsonObject(m.entrySet().stream().collect(
-                toMap(e -> (String) e.getKey(), e -> (JsonElement) e.getValue()))
-        );
     }
 
     private static JsonValue token2Value(Lexer.Token tkn) {

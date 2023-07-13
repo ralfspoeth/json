@@ -62,6 +62,10 @@ public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
     final class JsonArrayBuilder implements Builder<JsonArray> {
         private JsonArrayBuilder(){}
 
+        public int size() {
+            return data.size();
+        }
+
         @Override
         public JsonArray build() {
             return new JsonArray(

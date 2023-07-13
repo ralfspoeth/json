@@ -210,6 +210,6 @@ public class JsonReader implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        this.lexer.close();
+        lexer.close();
     }
 }

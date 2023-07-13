@@ -7,91 +7,100 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
-    static JsonBuilder.JsonObjectBuilder objectBuilder() {
-        return new JsonBuilder.JsonObjectBuilder();
+    static JsonObjectBuilder objectBuilder() {
+        return new JsonObjectBuilder();
     }
 
-    static JsonBuilder.JsonArrayBuilder arrayBuilder() {
-        return new JsonBuilder.JsonArrayBuilder();
+    static JsonArrayBuilder arrayBuilder() {
+        return new JsonArrayBuilder();
     }
 
-    abstract sealed class JsonBuilder<T extends JsonElement> {
+    sealed interface Builder<T extends JsonElement> {
 
-        public static final class JsonObjectBuilder extends JsonBuilder<JsonObject> {
+        T build();
+    }
 
-            private JsonObjectBuilder(){}
+    final class JsonObjectBuilder implements Builder<JsonObject> {
 
-            private final Map<String, Object> data = new HashMap<>();
-            public JsonObjectBuilder named(String name, JsonElement el) {
-                data.put(name, el);
-                return this;
-            }
+        private JsonObjectBuilder(){}
 
-            public JsonObjectBuilder named(String name, JsonBuilder<?> b) {
-                data.put(name, b);
-                return this;
-            }
-
-            public JsonObjectBuilder named(String name, Object o) {
-                data.put(name, JsonValue.of(o));
-                return this;
-            }
-
-            public JsonObjectBuilder namedNull(String name) {
-                data.put(name, JsonNull.INSTANCE);
-                return this;
-            }
-
-            @Override
-            public JsonObject build() {
-                var tmp = data.entrySet().stream().collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e-> switch (e.getValue()) {
-                            case JsonElement je -> je;
-                            case JsonBuilder<?> ob -> ob.build();
-                            default -> throw new AssertionError(e.getValue().getClass());
-                        }
-                ));
-                return new JsonObject(tmp);
-            }
+        private final Map<String, Object> data = new HashMap<>();
+        public JsonElement.JsonObjectBuilder named(String name, JsonElement el) {
+            data.put(name, el);
+            return this;
         }
 
-        public static final class JsonArrayBuilder extends JsonBuilder<JsonArray> {
-            private JsonArrayBuilder(){}
-
-            @Override
-            public JsonArray build() {
-                return new JsonArray(
-                        data.stream().map(item -> switch (item) {
-                            case JsonElement je -> je;
-                            case JsonBuilder<?> jb -> jb.build();
-                            default -> throw new AssertionError();
-                        }).toList()
-                );
-            }
-
-            private final List<Object> data = new ArrayList<>();
-
-            public JsonArrayBuilder item(JsonElement elem) {
-                data.add(elem);
-                return this;
-            }
-
-            public JsonArrayBuilder item(JsonBuilder<?> jb) {
-                data.add(jb);
-                return this;
-            }
-
-            public JsonArrayBuilder item(Object o) {
-                data.add(JsonValue.of(o));
-                return this;
-            }
-
-            public JsonArrayBuilder nullItem() {
-                return item(JsonNull.INSTANCE);
-            }
+        public JsonElement.JsonObjectBuilder named(String name, Builder<?> b) {
+            data.put(name, b);
+            return this;
         }
 
-        public abstract T build();
+        public JsonElement.JsonObjectBuilder named(String name, Object o) {
+            data.put(name, JsonValue.of(o));
+            return this;
+        }
+
+        public JsonElement.JsonObjectBuilder namedNull(String name) {
+            data.put(name, JsonNull.INSTANCE);
+            return this;
+        }
+
+        @Override
+        public JsonObject build() {
+            var tmp = data.entrySet().stream().collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    e-> switch (e.getValue()) {
+                        case JsonElement je -> je;
+                        case Builder<?> ob -> ob.build();
+                        default -> throw new AssertionError(e.getValue().getClass());
+                    }
+            ));
+            return new JsonObject(tmp);
+        }
+    }
+
+    final class JsonArrayBuilder implements Builder<JsonArray> {
+        private JsonArrayBuilder(){}
+
+        @Override
+        public JsonArray build() {
+            return new JsonArray(
+                    data.stream().map(item -> switch (item) {
+                        case JsonElement je -> je;
+                        case Builder<?> jb -> jb.build();
+                        default -> throw new AssertionError();
+                    }).toList()
+            );
+        }
+
+        private final List<Object> data = new ArrayList<>();
+
+        public JsonElement.JsonArrayBuilder item(JsonElement elem) {
+            data.add(elem);
+            return this;
+        }
+
+        public JsonElement.JsonArrayBuilder item(Builder<?> jb) {
+            data.add(jb);
+            return this;
+        }
+
+        public JsonElement.JsonArrayBuilder item(Object o) {
+            data.add(JsonValue.of(o));
+            return this;
+        }
+
+        public JsonElement.JsonArrayBuilder nullItem() {
+            return item(JsonNull.INSTANCE);
+        }
+    }
+
+    final class JsonStringBuilder implements Builder<JsonString> {
+        private final StringBuilder bldr = new StringBuilder();
+
+        @Override
+        public JsonString build() {
+            return new JsonString(bldr.toString());
+        }
     }
 }

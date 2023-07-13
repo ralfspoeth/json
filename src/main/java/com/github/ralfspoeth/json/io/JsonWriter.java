@@ -19,20 +19,15 @@ public class JsonWriter {
                     case JsonNumber n -> sb.append(n.value());
                 }
             }
-            case JsonObject o -> sb.append('{')
-                    .append(o.members().entrySet().stream().map(e ->
-                            "%s: %s".formatted(
-                                    e.getKey(),
-                                    toJson(e.getValue())
-                            )
-                    ).collect(Collectors.joining(", ")))
-                    .append('}');
-            case JsonArray a -> sb.append('[')
-                    .append(a.elements()
-                            .stream()
-                            .map(this::toJson)
-                            .collect(Collectors.joining(", ")))
-                    .append(']');
+            case JsonObject o -> sb.append(o.members()
+                    .entrySet()
+                    .stream()
+                    .map(e -> "%s: %s".formatted(e.getKey(), toJson(e.getValue())))
+                    .collect(Collectors.joining(", ", "{", "}")));
+            case JsonArray a -> sb.append(a.elements()
+                    .stream()
+                    .map(this::toJson)
+                    .collect(Collectors.joining(", ", "[", "]")));
         }
         return sb.toString();
     }

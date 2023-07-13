@@ -32,7 +32,8 @@ class JsonReaderTest {
     void testEmptyArray() throws IOException {
         var source = "[]";
         try (var rdr = new StringReader(source);
-             var parser = new JsonReader(rdr)) {
+             var parser = new JsonReader(rdr))
+        {
             var result = parser.readElement();
             assertAll(
                     () -> assertNotNull(result),
@@ -43,7 +44,7 @@ class JsonReaderTest {
 
     @Test
     void testSingleElems() {
-        var sources = List.of("1", "true", "null", "false", "'str'");
+        var sources = List.of("1", "true", "null", "false", "\"str\"");
         sources.forEach(source -> {
             try (var parser = new JsonReader(new StringReader(source))) {
                 var v = parser.readElement();
@@ -56,7 +57,7 @@ class JsonReaderTest {
 
     @Test
     void testSingleElemArray() {
-        var sources = List.of("[1]", "[null]", "[false]", "[true]", "['str']");
+        var sources = List.of("[1]", "[null]", "[false]", "[true]", "[\"str\"]");
         sources.forEach(source -> {
             try (var rdr = new StringReader(source);
                  var parser = new JsonReader(rdr)) {
@@ -73,7 +74,7 @@ class JsonReaderTest {
 
     @Test
     void testSingleMemberObject() throws IOException {
-        var source = "{'n':5}";
+        var source = "{\"n\":5}";
         try (var r = new JsonReader(new StringReader(source))) {
             var o = r.readElement();
             assertAll(() -> assertTrue(o instanceof JsonObject),
@@ -85,7 +86,7 @@ class JsonReaderTest {
 
     @Test
     void testDualMemberObject() throws Exception {
-        var source = "{'n':5, 'm': 7}";
+        var source = "{\"n\":5, \"m\": 7}";
         try(var r = new JsonReader(new StringReader(source))) {
             r.readElement();
         }
@@ -93,7 +94,7 @@ class JsonReaderTest {
 
     @Test
     void testArrayOfValues() throws IOException {
-        String source = "[5, 6, 7, false, null, true, 'str']";// "[{'n':5}, {'m':6}]";
+        String source = "[5, 6, 7, false, null, true, \"str\"]";// "[{\"n\":5}, {\"m\":6}]";
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
@@ -106,7 +107,7 @@ class JsonReaderTest {
 
     @Test
     void testArrayOfObject() throws IOException {
-        String source = "[{'n':55}]";
+        String source = "[{\"n\":55}]";
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
@@ -121,7 +122,7 @@ class JsonReaderTest {
 
     @Test
     void testArrayOfTwoObjects() throws IOException {
-        String source = "[{'n':55}, {'m':7}]";
+        String source = "[{\"n\":55}, {\"m\":7}]";
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
@@ -136,7 +137,7 @@ class JsonReaderTest {
 
     @Test
     void testNestedObjectDepth1() throws IOException {
-        String source = "{'a':{'b':[]}}";
+        String source = "{\"a\":{\"b\":[]}}";
         try(var p = new JsonReader(new StringReader(source))) {
             var e = p.readElement();
             if(e instanceof JsonObject o0) {

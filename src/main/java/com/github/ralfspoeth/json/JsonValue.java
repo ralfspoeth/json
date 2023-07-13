@@ -33,15 +33,11 @@ public sealed interface JsonValue extends JsonElement permits JsonBoolean, JsonN
     static JsonValue of(Object o) {
         return switch(o) {
             case null -> ofNull();
-            case Boolean b -> ofBoolean(b);
+            case Boolean b -> JsonBoolean.of(b);
             case Double d -> ofDouble(d);
             default -> ofString(o.toString());
         };
     }
-    private static JsonValue ofBoolean(boolean b) {
-        return b?JsonBoolean.TRUE:JsonBoolean.FALSE;
-    }
-
     private static JsonNumber ofDouble(double d) {
         return new JsonNumber(d);
     }

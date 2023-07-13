@@ -13,4 +13,8 @@ public enum JsonBoolean implements JsonValue {
         }
     };
     public abstract String value();
+
+    public static JsonBoolean of(boolean b) {
+        return b?TRUE:FALSE;
+    }
 }

@@ -1,6 +1,5 @@
 package com.github.ralfspoeth.json;
 
-public final class JsonNull implements JsonValue {
-    private JsonNull(){}
-    public static final JsonNull INSTANCE = new JsonNull();
+public enum JsonNull implements JsonValue {
+    INSTANCE;
 }

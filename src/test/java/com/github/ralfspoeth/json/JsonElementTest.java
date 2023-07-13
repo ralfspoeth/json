@@ -9,10 +9,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JsonElementTest {
+class JsonElementTest {
 
     @Test
-    public void testElem(){
+    void testElem(){
         JsonElement element = new JsonObject(Map.of(
                 "name", new JsonString("Hallo"),
                 "value", new JsonArray(List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, JsonBoolean.FALSE, new JsonNumber(5)))
@@ -22,7 +22,7 @@ public class JsonElementTest {
 
 
     @Test
-    public void testMutability() {
+    void testMutability() {
         var je = new JsonArray(
                 List.of(
                         JsonNull.INSTANCE, JsonBoolean.FALSE, JsonBoolean.TRUE,
@@ -42,7 +42,5 @@ public class JsonElementTest {
                 () -> assertThrows(UnsupportedOperationException.class, () -> obj.members().put("c", JsonBoolean.TRUE))
 
         );
-
-
     }
 }

@@ -18,7 +18,34 @@ public class JsonReader implements AutoCloseable {
         this.lexer = new Lexer(src);
     }
 
-    private final Deque<Object> stack = new LinkedList<>();
+    private final Stack<Object> stack = new Stack<>();
+/*
+    public JsonElement read() throws IOException {
+        JsonElement tmp = null;
+        var stack = new Stack<JsonElement.Builder>();
+        record Property(String name, JsonElement elem) {
+        }
+
+        Property current = null;
+
+        while (lexer.hasNext()) {
+            var token = lexer.next();
+            switch (token.type()) {
+                case OPENING_BRACE -> stack.push(JsonElement.objectBuilder());
+                case CLOSING_BRACE -> tmp = stack.pop().build();
+                case OPENING_BRACKET -> stack.push(JsonElement.arrayBuilder());
+                case CLOSING_BRACKET -> tmp = stack.pop().build();
+                switch (stack.top()) {
+                    case JsonElement.JsonArrayBuilder ab -> {
+                        ab.
+                    }
+                }
+
+            }
+        }
+        return tmp;
+    }
+*/
 
     public JsonElement readElement() throws IOException {
         while (lexer.hasNext()) {
@@ -28,19 +55,19 @@ public class JsonReader implements AutoCloseable {
                     var str = token2Value(tkn);
                     if (stack.isEmpty()) {
                         stack.push(str);
-                    } else if (stack.peek() instanceof Map<?, ?>) {
+                    } else if (stack.top() instanceof Map<?, ?>) {
                         stack.push(new NameValuePair(tkn.value(), null));
-                    } else if (stack.peek() instanceof List<?> l) {
+                    } else if (stack.top() instanceof List<?> l) {
                         ((List<Object>)l).add(str);
-                    } else if (stack.peek() instanceof String s && s.equals(":")) {
+                    } else if (stack.top() instanceof String s && s.equals(":")) {
                         stack.pop(); // pop colon
                         var nvp = (NameValuePair) stack.pop();
                         stack.push(new NameValuePair(nvp.name, new JsonString(tkn.value())));
-                    } else if (stack.peek() instanceof String s && s.equals(",")) {
+                    } else if (stack.top() instanceof String s && s.equals(",")) {
                         stack.pop(); // pop comma
-                        if (stack.peek() instanceof List<?> l) {
+                        if (stack.top() instanceof List<?> l) {
                             ((List<Object>)l).add(str);
-                        } else if (stack.peek() instanceof Map<?, ?>) {
+                        } else if (stack.top() instanceof Map<?, ?>) {
                             stack.push(new NameValuePair(tkn.value(), null));
                         } else {
                             throw new AssertionError();
@@ -50,18 +77,18 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case COLON -> {
-                    if (stack.peek() instanceof NameValuePair nvp && nvp.value == null) {
+                    if (stack.top() instanceof NameValuePair nvp && nvp.value == null) {
                         stack.push(":");
                     } else {
                         ioex("unexpected token :", lexer.coordinates());
                     }
                 }
                 case COMMA -> {
-                    if (stack.peek() instanceof List<?> l && !l.isEmpty()) {
+                    if (stack.top() instanceof List<?> l && !l.isEmpty()) {
                         stack.push(",");
-                    } else if (stack.peek() instanceof NameValuePair nvp && nvp.value != null) {
+                    } else if (stack.top() instanceof NameValuePair nvp && nvp.value != null) {
                         stack.pop();
-                        var m = (Map<String, Object>) stack.peek();
+                        var m = (Map<String, Object>) stack.top();
                         m.put(nvp.name, nvp.value);
                         stack.push(",");
                     } else {
@@ -70,29 +97,29 @@ public class JsonReader implements AutoCloseable {
                 }
                 case NULL, FALSE, TRUE, NUMBER -> {
                     var v = token2Value(tkn);
-                    if (stack.peek() instanceof String s && s.equals(":")) {
+                    if (stack.top() instanceof String s && s.equals(":")) {
                         stack.pop(); // pop colon
                         var nvp = (NameValuePair) stack.pop(); // must be an NVP
                         stack.push(new NameValuePair(nvp.name, v));
-                    } else if (stack.peek() instanceof String s && s.equals(",")) {
+                    } else if (stack.top() instanceof String s && s.equals(",")) {
                         stack.pop(); // pop comma
-                        if (stack.peek() instanceof List<?> l) { // must be a list
+                        if (stack.top() instanceof List<?> l) { // must be a list
                             ((List<Object>)l).add(v);
                         } else {
                             throw new AssertionError();
                         }
                     } else if (stack.isEmpty()) {
                         stack.push(v);
-                    } else if (stack.peek() instanceof List<?> l && l.isEmpty()) {
+                    } else if (stack.top() instanceof List<?> l && l.isEmpty()) {
                         ((List<Object>)l).add(v);
                     } else {
                         ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
                 case OPENING_BRACE -> {
-                    if (stack.isEmpty() || stack.peek() instanceof List<?> l && l.isEmpty()) {
+                    if (stack.isEmpty() || stack.top() instanceof List<?> l && l.isEmpty()) {
                         stack.push(new HashMap<String, Object>());
-                    } else if (Set.of(":", ",").contains(stack.peek())) {
+                    } else if (Set.of(":", ",").contains(stack.top())) {
                         stack.pop(); // pop comma or colon
                         stack.push(new HashMap<String, Object>());
                     } else {
@@ -100,9 +127,9 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case OPENING_BRACKET -> {
-                    if (stack.isEmpty() || stack.peek() instanceof List<?> l && l.isEmpty()) {
+                    if (stack.isEmpty() || stack.top() instanceof List<?> l && l.isEmpty()) {
                         stack.push(new ArrayList<>());
-                    } else if (Set.of(":", ",").contains(stack.peek())) {
+                    } else if (Set.of(":", ",").contains(stack.top())) {
                         stack.pop(); // ignore colon or comma
                         stack.push(new ArrayList<>());
                     } else {
@@ -112,7 +139,7 @@ public class JsonReader implements AutoCloseable {
                 case CLOSING_BRACE -> {
                     var top = stack.pop();
                     if (top instanceof NameValuePair nvp && nvp.value instanceof JsonElement je) {
-                        if (stack.peek() instanceof Map<?, ?>) {
+                        if (stack.top() instanceof Map<?, ?>) {
                             top = stack.pop();
                             ((Map<String, Object>) top).put(nvp.name, je);
                         } else {
@@ -121,9 +148,9 @@ public class JsonReader implements AutoCloseable {
                     }
                     if (top instanceof Map<?, ?> m) {
                         var o = map2Object(m);
-                        if (stack.peek() instanceof List<?> l) {
+                        if (stack.top() instanceof List<?> l) {
                             ((List<Object>)l).add(o);
-                        } else if (stack.peek() instanceof NameValuePair nvp && nvp.value == null) {
+                        } else if (stack.top() instanceof NameValuePair nvp && nvp.value == null) {
                             stack.pop();
                             stack.push(new NameValuePair(nvp.name, o));
                         } else if (stack.isEmpty()) {
@@ -139,7 +166,7 @@ public class JsonReader implements AutoCloseable {
                     var top = stack.pop();
                     if (top instanceof List<?> l) {
                         var ll = new JsonArray(l.stream().map(JsonElement.class::cast).toList());
-                        if (stack.peek() instanceof NameValuePair nvp && nvp.value == null) {
+                        if (stack.top() instanceof NameValuePair nvp && nvp.value == null) {
                             stack.pop();
                             stack.push(new NameValuePair(nvp.name, ll));
                         } else {

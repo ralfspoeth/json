@@ -6,7 +6,7 @@ import static com.github.ralfspoeth.json.JsonElement.arrayBuilder;
 import static com.github.ralfspoeth.json.JsonElement.objectBuilder;
 import static org.junit.jupiter.api.Assertions.*;
 
-class JsonBuilderTest {
+class BuilderTest {
 
     @Test
     void testObjectBuilder() {
@@ -27,6 +27,14 @@ class JsonBuilderTest {
                 () -> assertEquals(5, obj.members().size()),
                 () -> assertEquals(5, obj.getArray("adr").elements().size())
         );
+    }
+
+    @Test
+    void testDuplicateName() {
+        var aIsFalse = objectBuilder().named("a", JsonValue.of(true))
+                .named("a", JsonValue.of(false))
+                .build();
+        assertEquals(JsonBoolean.FALSE, aIsFalse.getValue("a"));
     }
 
     @Test

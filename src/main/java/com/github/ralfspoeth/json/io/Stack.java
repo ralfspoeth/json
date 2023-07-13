@@ -1,29 +1,43 @@
 package com.github.ralfspoeth.json.io;
 
+import java.util.function.UnaryOperator;
+
 import static java.util.Objects.requireNonNull;
 
 class Stack<T> {
 
-    private record Node<T>(T item, Node<T> next) {}
+    private record Elem<T>(T item, Elem<T> next) {}
 
-    private Node<T> top = null;
+    private Elem<T> top = null;
 
-    boolean isEmpty() {
+    public boolean isEmpty() {
         return top == null;
     }
 
-    T pop() {
+    public T pop() {
         var tmp = requireNonNull(top).item;
         top = top.next;
         return tmp;
     }
 
-    T top() {
+    public T top() {
         return top==null?null:top.item;
     }
 
-    Stack<T> push(T elem) {
-        top = new Node<>(requireNonNull(elem), top);
+    public Stack<T> push(T elem) {
+        top = new Elem<>(requireNonNull(elem), top);
         return this;
+    }
+
+    /**
+     * Swap topmost element by calling the {@code replacement}
+     * function on that element and push the result on top
+     * of the stack.
+     *
+     * @param replacement a function
+     * @return {@code this}
+     */
+    public Stack<T> swap(UnaryOperator<T> replacement) {
+        return push(replacement.apply(pop()));
     }
 }

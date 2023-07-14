@@ -113,9 +113,10 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case OPENING_BRACE -> {
-                    if (stack.isEmpty() || stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
+                    var top = stack.top();
+                    if (stack.isEmpty() || top instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
                         stack.push(new V.BuilderElem(JsonElement.objectBuilder()));
-                    } else if (EnumSet.allOf(V.Char.class).contains(stack.top())) {
+                    } else if (EnumSet.allOf(V.Char.class).contains(top)) {
                         stack.pop(); // pop comma or colon
                         stack.push(new V.BuilderElem(JsonElement.objectBuilder()));
                     } else {
@@ -133,7 +134,7 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case CLOSING_BRACE -> {
-                    var top = stack.top();
+                    var top = stack.pop();
                     if (top instanceof V.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
                         stack.pop();
                         if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {

@@ -17,7 +17,10 @@ public class JsonReader implements AutoCloseable {
     }
 
     sealed interface V {
-        record BuilderElem(JsonElement.Builder builder) implements V {
+        record ObjBuilderElem(JsonElement.JsonObjectBuilder builder) implements V {
+        }
+
+        record ArrBuilderElem(JsonElement.JsonArrayBuilder builder) implements V {
         }
 
         record NameValuePair(String name, JsonElement elem) implements V {
@@ -42,28 +45,25 @@ public class JsonReader implements AutoCloseable {
                     var str = token2Value(tkn);
                     if (stack.isEmpty()) {
                         stack.push(new V.Root(str));
-                    } else if (stack.top() instanceof V.BuilderElem be) {
-                        if (be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                            stack.push(new V.NameValuePair(tkn.value(), null));
-                        } else if (be.builder instanceof JsonElement.JsonArrayBuilder jab) {
-                            jab.item(str);
-                        }
-                    } else if (stack.top().equals(V.Char.colon)) {
-                        stack.pop(); // pop colon
-                        stack.swap(se -> V.NameValuePair.class.cast(se).withElem(str));
-                    } else if (stack.top().equals(V.Char.comma)) {
-                        stack.pop(); // pop comma
-                        if (stack.top() instanceof V.BuilderElem be) {
-                            if (be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                                stack.push(new V.NameValuePair(tkn.value(), null));
-                            } else if (be.builder instanceof JsonElement.JsonArrayBuilder jab) {
-                                jab.item(str);
-                            } else {
-                                throw new AssertionError();
+                    } else switch (stack.top()) {
+                        case V.ObjBuilderElem obe -> stack.push(new V.NameValuePair(tkn.value(), null));
+                        case V.ArrBuilderElem abe -> abe.builder.item(str);
+                        case V.Char nc -> {
+                            stack.pop();
+                            switch (nc) {
+                                case colon -> stack.swap(se -> V.NameValuePair.class.cast(se).withElem(str));
+                                case comma -> {
+                                    stack.top();
+                                    switch (stack.top()) {
+                                        case V.ObjBuilderElem ignored ->
+                                                stack.push(new V.NameValuePair(tkn.value(), null));
+                                        case V.ArrBuilderElem(var abe) -> abe.item(str);
+                                        default -> throw new IllegalStateException("Unexpected value: " + stack.top());
+                                    }
+                                }
                             }
                         }
-                    } else {
-                        ioex("unexpected token " + tkn.value(), lexer.coordinates());
+                        default -> throw new IllegalStateException("Unexpected value: " + stack.top());
                     }
                 }
                 case COLON -> {
@@ -74,16 +74,17 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case COMMA -> {
-                    var top = stack.top();
-                    if (top instanceof V.BuilderElem be && be.builder.size() > 0) {
-                        stack.push(V.Char.comma);
-                    } else if (top instanceof V.NameValuePair nvp && nvp.elem != null) {
+                    switch (stack.top()) {
+                        case V.ArrBuilderElem abe -> stack.push(V.Char.comma);
+                        case V.ObjBuilderElem obe -> stack.push(V.Char.comma);
+                        case V.NameValuePair nvp
+                    }
+                    if (top instanceof V.NameValuePair nvp && nvp.elem != null) {
                         stack.pop();
                         if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
                             job.named(nvp.name, nvp.elem);
                             stack.push(V.Char.comma);
-                        }
-                        else {
+                        } else {
                             throw new AssertionError();
                         }
                     } else {

@@ -113,7 +113,7 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case OPENING_BRACE -> {
-                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size()==0) {
+                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
                         stack.push(new StackElem.BuilderElem(JsonElement.objectBuilder()));
                     } else if (EnumSet.allOf(StackElem.Char.class).contains(stack.top())) {
                         stack.pop(); // pop comma or colon
@@ -123,7 +123,7 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case OPENING_BRACKET -> {
-                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size()==0) {
+                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
                         stack.push(new StackElem.BuilderElem(JsonElement.arrayBuilder()));
                     } else if (EnumSet.allOf(StackElem.Char.class).contains(stack.top())) {
                         stack.pop(); // ignore colon or comma
@@ -136,13 +136,11 @@ public class JsonReader implements AutoCloseable {
                     var top = stack.pop();
                     if (top instanceof StackElem.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
                         if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                            stack.pop();
                             job.named(nvp.name, je);
                         } else {
                             throw new AssertionError();
                         }
-                    }
-                    if (top instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                    } else if (top instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
                         stack.pop();
                         var o = job.build();
                         if (stack.top() instanceof StackElem.BuilderElem abe && abe.builder instanceof JsonElement.JsonArrayBuilder jab) {
@@ -161,11 +159,11 @@ public class JsonReader implements AutoCloseable {
                 case CLOSING_BRACKET -> {
                     var top = stack.pop();
                     if (top instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) {
-                        var ll = jab.build();
+                        var jsonArray = jab.build();
                         if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem == null) {
-                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(ll));
+                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(jsonArray));
                         } else {
-                            stack.push(new StackElem.Root(ll));
+                            stack.push(new StackElem.Root(jsonArray));
                         }
                     } else {
                         throw new AssertionError();
@@ -175,8 +173,14 @@ public class JsonReader implements AutoCloseable {
         }
 
         var top = stack.pop();
-        if (stack.isEmpty() && top instanceof StackElem.Root r) {
-            return r.elem;
+        if (stack.isEmpty()) {
+            if (top instanceof StackElem.Root r) {
+                return r.elem;
+            } else if (top instanceof StackElem.BuilderElem be) {
+                return be.builder.build();
+            } else {
+                throw new AssertionError();
+            }
         } else {
             throw new IOException("stack not empty or top-most element not a JsonElement");
         }

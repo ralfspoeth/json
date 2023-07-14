@@ -133,14 +133,14 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case CLOSING_BRACE -> {
-                    var top = stack.pop();
-                    if (top instanceof StackElem.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
+                    if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
+                        stack.pop();
                         if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
                             job.named(nvp.name, je);
                         } else {
                             throw new AssertionError();
                         }
-                    } else if (top instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                    } else if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
                         stack.pop();
                         var o = job.build();
                         if (stack.top() instanceof StackElem.BuilderElem abe && abe.builder instanceof JsonElement.JsonArrayBuilder jab) {

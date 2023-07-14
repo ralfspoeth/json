@@ -5,7 +5,6 @@ import com.github.ralfspoeth.json.*;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -17,23 +16,23 @@ public class JsonReader implements AutoCloseable {
         this.lexer = new Lexer(src);
     }
 
-    private sealed interface StackElem {
-        record BuilderElem(JsonElement.Builder builder) implements StackElem {
+    sealed interface V {
+        record BuilderElem(JsonElement.Builder builder) implements V {
         }
 
-        record NameValuePair(String name, JsonElement elem) implements StackElem {
+        record NameValuePair(String name, JsonElement elem) implements V {
             NameValuePair withElem(JsonElement e) {
                 return new NameValuePair(this.name, e);
             }
         }
 
-        enum Char implements StackElem {colon, comma}
+        enum Char implements V {colon, comma}
 
-        record Root(JsonElement elem) implements StackElem {
+        record Root(JsonElement elem) implements V {
         }
     }
 
-    private final Stack<StackElem> stack = new Stack<>();
+    private final Stack<V> stack = new Stack<>();
 
     public JsonElement readElement() throws IOException {
         while (lexer.hasNext()) {
@@ -42,21 +41,21 @@ public class JsonReader implements AutoCloseable {
                 case STRING -> {
                     var str = token2Value(tkn);
                     if (stack.isEmpty()) {
-                        stack.push(new StackElem.Root(str));
-                    } else if (stack.top() instanceof StackElem.BuilderElem be) {
+                        stack.push(new V.Root(str));
+                    } else if (stack.top() instanceof V.BuilderElem be) {
                         if (be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                            stack.push(new StackElem.NameValuePair(tkn.value(), null));
+                            stack.push(new V.NameValuePair(tkn.value(), null));
                         } else if (be.builder instanceof JsonElement.JsonArrayBuilder jab) {
                             jab.item(str);
                         }
-                    } else if (stack.top().equals(StackElem.Char.colon)) {
+                    } else if (stack.top().equals(V.Char.colon)) {
                         stack.pop(); // pop colon
-                        stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(str));
-                    } else if (stack.top().equals(StackElem.Char.comma)) {
+                        stack.swap(se -> V.NameValuePair.class.cast(se).withElem(str));
+                    } else if (stack.top().equals(V.Char.comma)) {
                         stack.pop(); // pop comma
-                        if (stack.top() instanceof StackElem.BuilderElem be) {
+                        if (stack.top() instanceof V.BuilderElem be) {
                             if (be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                                stack.push(new StackElem.NameValuePair(tkn.value(), null));
+                                stack.push(new V.NameValuePair(tkn.value(), null));
                             } else if (be.builder instanceof JsonElement.JsonArrayBuilder jab) {
                                 jab.item(str);
                             } else {
@@ -68,23 +67,24 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case COLON -> {
-                    if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem == null) {
-                        stack.push(StackElem.Char.colon);
+                    if (stack.top() instanceof V.NameValuePair nvp && nvp.elem == null) {
+                        stack.push(V.Char.colon);
                     } else {
                         ioex("unexpected token :", lexer.coordinates());
                     }
                 }
                 case COMMA -> {
-                    if (stack.top() instanceof StackElem.BuilderElem be
-                            && be.builder instanceof JsonElement.JsonArrayBuilder jab
-                            && jab.size() > 0
-                    ) {
-                        stack.push(StackElem.Char.comma);
-                    } else if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem != null) {
+                    var top = stack.top();
+                    if (top instanceof V.BuilderElem be && be.builder.size() > 0) {
+                        stack.push(V.Char.comma);
+                    } else if (top instanceof V.NameValuePair nvp && nvp.elem != null) {
                         stack.pop();
-                        if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                        if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
                             job.named(nvp.name, nvp.elem);
-                            stack.push(StackElem.Char.comma);
+                            stack.push(V.Char.comma);
+                        }
+                        else {
+                            throw new AssertionError();
                         }
                     } else {
                         ioex("unexpected token ,", lexer.coordinates());
@@ -93,19 +93,19 @@ public class JsonReader implements AutoCloseable {
                 case NULL, FALSE, TRUE, NUMBER -> {
                     var v = token2Value(tkn);
                     if (stack.isEmpty()) {
-                        stack.push(new StackElem.Root(v));
+                        stack.push(new V.Root(v));
                     } else {
-                        if (stack.top().equals(StackElem.Char.colon)) {
+                        if (stack.top().equals(V.Char.colon)) {
                             stack.pop(); // pop colon
-                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(v));
-                        } else if (stack.top().equals(StackElem.Char.comma)) {
+                            stack.swap(se -> V.NameValuePair.class.cast(se).withElem(v));
+                        } else if (stack.top().equals(V.Char.comma)) {
                             stack.pop(); // pop comma
-                            if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
+                            if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
                                 jab.item(v);
                             } else {
                                 ioex("unexpected token " + tkn.value(), lexer.coordinates());
                             }
-                        } else if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
+                        } else if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
                             jab.item(v);
                         } else {
                             ioex("unexpected token " + tkn.value(), lexer.coordinates());
@@ -113,42 +113,44 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
                 case OPENING_BRACE -> {
-                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
-                        stack.push(new StackElem.BuilderElem(JsonElement.objectBuilder()));
-                    } else if (EnumSet.allOf(StackElem.Char.class).contains(stack.top())) {
+                    if (stack.isEmpty() || stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
+                        stack.push(new V.BuilderElem(JsonElement.objectBuilder()));
+                    } else if (EnumSet.allOf(V.Char.class).contains(stack.top())) {
                         stack.pop(); // pop comma or colon
-                        stack.push(new StackElem.BuilderElem(JsonElement.objectBuilder()));
+                        stack.push(new V.BuilderElem(JsonElement.objectBuilder()));
                     } else {
                         ioex("unexpected token {", lexer.coordinates());
                     }
                 }
                 case OPENING_BRACKET -> {
-                    if (stack.isEmpty() || stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
-                        stack.push(new StackElem.BuilderElem(JsonElement.arrayBuilder()));
-                    } else if (EnumSet.allOf(StackElem.Char.class).contains(stack.top())) {
+                    if (stack.isEmpty() || stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
+                        stack.push(new V.BuilderElem(JsonElement.arrayBuilder()));
+                    } else if (EnumSet.allOf(V.Char.class).contains(stack.top())) {
                         stack.pop(); // ignore colon or comma
-                        stack.push(new StackElem.BuilderElem(JsonElement.arrayBuilder()));
+                        stack.push(new V.BuilderElem(JsonElement.arrayBuilder()));
                     } else {
                         ioex("unexpected token [", lexer.coordinates());
                     }
                 }
                 case CLOSING_BRACE -> {
-                    if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
+                    var top = stack.top();
+                    if (top instanceof V.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
                         stack.pop();
-                        if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                        if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
                             job.named(nvp.name, je);
                         } else {
                             throw new AssertionError();
                         }
-                    } else if (stack.top() instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
+                    } else if (top instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
                         stack.pop();
                         var o = job.build();
-                        if (stack.top() instanceof StackElem.BuilderElem abe && abe.builder instanceof JsonElement.JsonArrayBuilder jab) {
+                        top = stack.top();
+                        if (top instanceof V.BuilderElem abe && abe.builder instanceof JsonElement.JsonArrayBuilder jab) {
                             jab.item(o);
-                        } else if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem == null) {
-                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(o));
+                        } else if (top instanceof V.NameValuePair nvp && nvp.elem == null) {
+                            stack.swap(se -> V.NameValuePair.class.cast(se).withElem(o));
                         } else if (stack.isEmpty()) {
-                            stack.push(new StackElem.Root(o));
+                            stack.push(new V.Root(o));
                         } else {
                             throw new AssertionError();
                         }
@@ -158,12 +160,12 @@ public class JsonReader implements AutoCloseable {
                 }
                 case CLOSING_BRACKET -> {
                     var top = stack.pop();
-                    if (top instanceof StackElem.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) {
+                    if (top instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) {
                         var jsonArray = jab.build();
-                        if (stack.top() instanceof StackElem.NameValuePair nvp && nvp.elem == null) {
-                            stack.swap(se -> StackElem.NameValuePair.class.cast(se).withElem(jsonArray));
+                        if (stack.top() instanceof V.NameValuePair nvp && nvp.elem == null) {
+                            stack.swap(se -> V.NameValuePair.class.cast(se).withElem(jsonArray));
                         } else {
-                            stack.push(new StackElem.Root(jsonArray));
+                            stack.push(new V.Root(jsonArray));
                         }
                     } else {
                         throw new AssertionError();
@@ -174,9 +176,9 @@ public class JsonReader implements AutoCloseable {
 
         var top = stack.pop();
         if (stack.isEmpty()) {
-            if (top instanceof StackElem.Root r) {
+            if (top instanceof V.Root r) {
                 return r.elem;
-            } else if (top instanceof StackElem.BuilderElem be) {
+            } else if (top instanceof V.BuilderElem be) {
                 return be.builder.build();
             } else {
                 throw new AssertionError();

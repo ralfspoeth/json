@@ -16,6 +16,7 @@ public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
     }
 
     sealed interface Builder<T extends JsonElement> {
+        int size();
 
         T build();
     }
@@ -57,6 +58,11 @@ public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
             ));
             return new JsonObject(tmp);
         }
+
+        @Override
+        public int size() {
+            return data.size();
+        }
     }
 
     final class JsonArrayBuilder implements Builder<JsonArray> {
@@ -96,15 +102,6 @@ public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
 
         public JsonElement.JsonArrayBuilder nullItem() {
             return item(JsonNull.INSTANCE);
-        }
-    }
-
-    final class JsonStringBuilder implements Builder<JsonString> {
-        private final StringBuilder bldr = new StringBuilder();
-
-        @Override
-        public JsonString build() {
-            return new JsonString(bldr.toString());
         }
     }
 }

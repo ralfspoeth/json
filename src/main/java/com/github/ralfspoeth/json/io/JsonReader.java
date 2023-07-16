@@ -4,9 +4,9 @@ import com.github.ralfspoeth.json.*;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
 
-import static java.util.stream.Collectors.toMap;
+import static com.github.ralfspoeth.json.io.JsonReader.V.Char.colon;
+import static com.github.ralfspoeth.json.io.JsonReader.V.Char.comma;
 
 public class JsonReader implements AutoCloseable {
 
@@ -43,11 +43,10 @@ public class JsonReader implements AutoCloseable {
             switch (tkn.type()) {
                 case STRING -> {
                     var str = token2Value(tkn);
-                    if (stack.isEmpty()) {
-                        stack.push(new V.Root(str));
-                    } else switch (stack.top()) {
+                    switch (stack.top()) {
+                        case null -> stack.push(new V.Root(str));
                         case V.ObjBuilderElem obe -> stack.push(new V.NameValuePair(tkn.value(), null));
-                        case V.ArrBuilderElem abe -> abe.builder.item(str);
+                        case V.ArrBuilderElem abe when abe.builder.size() == 0 -> abe.builder.item(str);
                         case V.Char nc -> {
                             stack.pop();
                             switch (nc) {
@@ -68,107 +67,81 @@ public class JsonReader implements AutoCloseable {
                 }
                 case COLON -> {
                     if (stack.top() instanceof V.NameValuePair nvp && nvp.elem == null) {
-                        stack.push(V.Char.colon);
+                        stack.push(colon);
                     } else {
                         ioex("unexpected token :", lexer.coordinates());
                     }
                 }
                 case COMMA -> {
                     switch (stack.top()) {
-                        case V.ArrBuilderElem abe -> stack.push(V.Char.comma);
-                        case V.ObjBuilderElem obe -> stack.push(V.Char.comma);
-                        case V.NameValuePair nvp
-                    }
-                    if (top instanceof V.NameValuePair nvp && nvp.elem != null) {
-                        stack.pop();
-                        if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                            job.named(nvp.name, nvp.elem);
-                            stack.push(V.Char.comma);
-                        } else {
-                            throw new AssertionError();
+                        case V.ArrBuilderElem abe -> stack.push(comma);
+                        case V.ObjBuilderElem obe -> stack.push(comma);
+                        case V.NameValuePair nvp when nvp.elem != null -> {
+                            stack.pop();
+                            if (stack.top() instanceof V.ObjBuilderElem be) {
+                                be.builder.named(nvp.name, nvp.elem);
+                                stack.push(comma);
+                            } else {
+                                throw new AssertionError();
+                            }
                         }
-                    } else {
-                        ioex("unexpected token ,", lexer.coordinates());
+                        default -> ioex("unexpected token ,", lexer.coordinates());
                     }
                 }
                 case NULL, FALSE, TRUE, NUMBER -> {
                     var v = token2Value(tkn);
-                    if (stack.isEmpty()) {
-                        stack.push(new V.Root(v));
-                    } else {
-                        if (stack.top().equals(V.Char.colon)) {
-                            stack.pop(); // pop colon
-                            stack.swap(se -> V.NameValuePair.class.cast(se).withElem(v));
-                        } else if (stack.top().equals(V.Char.comma)) {
-                            stack.pop(); // pop comma
-                            if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
-                                jab.item(v);
-                            } else {
-                                ioex("unexpected token " + tkn.value(), lexer.coordinates());
-                            }
-                        } else if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) { // must be a list
-                            jab.item(v);
-                        } else {
-                            ioex("unexpected token " + tkn.value(), lexer.coordinates());
-                        }
-                    }
+                    handle(tkn.value(), v);
                 }
                 case OPENING_BRACE -> {
-                    var top = stack.top();
-                    if (stack.isEmpty() || top instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
-                        stack.push(new V.BuilderElem(JsonElement.objectBuilder()));
-                    } else if (EnumSet.allOf(V.Char.class).contains(top)) {
-                        stack.pop(); // pop comma or colon
-                        stack.push(new V.BuilderElem(JsonElement.objectBuilder()));
-                    } else {
-                        ioex("unexpected token {", lexer.coordinates());
+                    switch (stack.top()) {
+                        case null -> stack.push(new V.ObjBuilderElem(JsonElement.objectBuilder()));
+                        case V.ArrBuilderElem ignored -> stack.push(new V.ObjBuilderElem(JsonElement.objectBuilder()));
+                        case V.Char ignored -> {
+                            stack.pop();
+                            stack.push(new V.ObjBuilderElem(JsonElement.objectBuilder()));
+                        }
+                        default -> ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
                 case OPENING_BRACKET -> {
-                    if (stack.isEmpty() || stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab && jab.size() == 0) {
-                        stack.push(new V.BuilderElem(JsonElement.arrayBuilder()));
-                    } else if (EnumSet.allOf(V.Char.class).contains(stack.top())) {
-                        stack.pop(); // ignore colon or comma
-                        stack.push(new V.BuilderElem(JsonElement.arrayBuilder()));
-                    } else {
-                        ioex("unexpected token [", lexer.coordinates());
+                    switch (stack.top()) {
+                        case null -> stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
+                        case V.Char ignored -> {
+                            stack.pop();
+                            stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
+                        }
+                        case V.ArrBuilderElem ignored -> {
+                            stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
+                        }
+                        default -> ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
                 case CLOSING_BRACE -> {
-                    var top = stack.pop();
-                    if (top instanceof V.NameValuePair nvp && nvp.elem instanceof JsonElement je) {
-                        stack.pop();
-                        if (stack.top() instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                            job.named(nvp.name, je);
-                        } else {
-                            throw new AssertionError();
+                    var obj = switch (stack.top()) {
+                        case V.NameValuePair nvp when nvp.elem != null -> {
+                            stack.pop(); // remove nvp from top
+                            if (stack.top() instanceof V.ObjBuilderElem obe) {
+                                stack.pop();
+                                obe.builder.named(nvp.name, nvp.elem);
+                                yield obe.builder.build();
+
+                            } else {
+                                throw new AssertionError();
+                            }
                         }
-                    } else if (top instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonObjectBuilder job) {
-                        stack.pop();
-                        var o = job.build();
-                        top = stack.top();
-                        if (top instanceof V.BuilderElem abe && abe.builder instanceof JsonElement.JsonArrayBuilder jab) {
-                            jab.item(o);
-                        } else if (top instanceof V.NameValuePair nvp && nvp.elem == null) {
-                            stack.swap(se -> V.NameValuePair.class.cast(se).withElem(o));
-                        } else if (stack.isEmpty()) {
-                            stack.push(new V.Root(o));
-                        } else {
-                            throw new AssertionError();
+                        case V.ObjBuilderElem obe when obe.builder.size() == 0 -> {
+                            stack.pop();
+                            yield obe.builder.build();
                         }
-                    } else {
-                        ioex("unexpected token }", lexer.coordinates());
-                    }
+                        case null, default -> throw new AssertionError();
+                    };
+                    handle(tkn.value(), obj);
                 }
                 case CLOSING_BRACKET -> {
                     var top = stack.pop();
-                    if (top instanceof V.BuilderElem be && be.builder instanceof JsonElement.JsonArrayBuilder jab) {
-                        var jsonArray = jab.build();
-                        if (stack.top() instanceof V.NameValuePair nvp && nvp.elem == null) {
-                            stack.swap(se -> V.NameValuePair.class.cast(se).withElem(jsonArray));
-                        } else {
-                            stack.push(new V.Root(jsonArray));
-                        }
+                    if (top instanceof V.ArrBuilderElem abe) {
+                        var jsonArray = abe.builder.build();
+                        handle(tkn.value(), jsonArray);
                     } else {
                         throw new AssertionError();
                     }
@@ -177,16 +150,36 @@ public class JsonReader implements AutoCloseable {
         }
 
         var top = stack.pop();
-        if (stack.isEmpty()) {
-            if (top instanceof V.Root r) {
-                return r.elem;
-            } else if (top instanceof V.BuilderElem be) {
-                return be.builder.build();
-            } else {
-                throw new AssertionError();
-            }
+        if (stack.isEmpty() && top instanceof V.Root r) {
+            return r.elem;
         } else {
             throw new IOException("stack not empty or top-most element not a JsonElement");
+        }
+    }
+
+    private void handle(String token, JsonElement v) throws IOException {
+        switch (stack.top()) {
+            case null -> stack.push(new V.Root(v));
+            case V.NameValuePair nvp when nvp.elem==null -> stack.swap(se -> nvp.withElem(v));
+            case V.Char nc -> {
+                switch (nc) {
+                    case colon -> {
+                        stack.pop(); // pop colon, topmost element mubst be an NVP
+                        stack.swap(se -> V.NameValuePair.class.cast(se).withElem(v));
+                    }
+                    case comma -> {
+                        stack.pop(); // pop comma
+                        switch (stack.top()) {
+                            case V.ArrBuilderElem abe -> abe.builder.item(v);
+                            default -> ioex("unexpected token " + token, lexer.coordinates());
+                        }
+                    }
+                }
+            }
+            case V.ArrBuilderElem abe -> {
+                abe.builder.item(v);
+            }
+            default -> ioex("unexpected token " + token, lexer.coordinates());
         }
     }
 

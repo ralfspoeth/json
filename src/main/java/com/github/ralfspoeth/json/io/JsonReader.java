@@ -45,7 +45,7 @@ public class JsonReader implements AutoCloseable {
                     var str = token2Value(tkn);
                     switch (stack.top()) {
                         case null -> stack.push(new V.Root(str));
-                        case V.ObjBuilderElem obe -> stack.push(new V.NameValuePair(tkn.value(), null));
+                        case V.ObjBuilderElem ignored -> stack.push(new V.NameValuePair(tkn.value(), null));
                         case V.ArrBuilderElem abe when abe.builder.size() == 0 -> abe.builder.item(str);
                         case V.Char nc -> {
                             stack.pop();
@@ -74,8 +74,8 @@ public class JsonReader implements AutoCloseable {
                 }
                 case COMMA -> {
                     switch (stack.top()) {
-                        case V.ArrBuilderElem abe -> stack.push(comma);
-                        case V.ObjBuilderElem obe -> stack.push(comma);
+                        case V.ArrBuilderElem ignored -> stack.push(comma);
+                        case V.ObjBuilderElem ignored -> stack.push(comma);
                         case V.NameValuePair nvp when nvp.elem != null -> {
                             stack.pop();
                             if (stack.top() instanceof V.ObjBuilderElem be) {
@@ -110,9 +110,7 @@ public class JsonReader implements AutoCloseable {
                             stack.pop();
                             stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
                         }
-                        case V.ArrBuilderElem ignored -> {
-                            stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
-                        }
+                        case V.ArrBuilderElem ignored -> stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
                         default -> ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
@@ -176,9 +174,7 @@ public class JsonReader implements AutoCloseable {
                     }
                 }
             }
-            case V.ArrBuilderElem abe -> {
-                abe.builder.item(v);
-            }
+            case V.ArrBuilderElem abe -> abe.builder.item(v);
             default -> ioex("unexpected token " + token, lexer.coordinates());
         }
     }

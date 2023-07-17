@@ -12,6 +12,15 @@ class Lexer implements AutoCloseable {
     }
 
     record Token(TokenType type, String value) {
+        final static Token COMMA = new Token(TokenType.COMMA, ",");
+        final static Token NULL = new Token(TokenType.NULL, "null");
+        final static Token TRUE = new Token(TokenType.TRUE, "true");
+        final static Token FALSE = new Token(TokenType.FALSE, "false");
+        final static Token COLON = new Token(TokenType.COLON, ":");
+        final static Token OPENING_BRACE = new Token(TokenType.OPENING_BRACE, "{");
+        final static Token CLOSING_BRACE = new Token(TokenType.CLOSING_BRACE, "}");
+        final static Token OPENING_BRACKET = new Token(TokenType.OPENING_BRACKET, "[");
+        final static Token CLOSING_BRACKET = new Token(TokenType.CLOSING_BRACKET, "]");
     }
 
     private final PushbackReader source;
@@ -103,13 +112,13 @@ class Lexer implements AutoCloseable {
                     case ',', ':', '[', '{', ']', '}' -> {
                         switch (state) {
                             case INITIAL -> nextToken = switch (c) {
-                                case ',' -> new Token(TokenType.COMMA, ",");
-                                case ':' -> new Token(TokenType.COLON, ":");
-                                case '{' -> new Token(TokenType.OPENING_BRACE, "{");
-                                case '}' -> new Token(TokenType.CLOSING_BRACE, "}");
-                                case '[' -> new Token(TokenType.OPENING_BRACKET, "[");
-                                case ']' -> new Token(TokenType.CLOSING_BRACKET, "]");
-                                default -> throw new AssertionError("cannot happen");
+                                case ',' -> Token.COMMA;
+                                case ':' -> Token.COLON;
+                                case '{' -> Token.OPENING_BRACE;
+                                case '}' -> Token.CLOSING_BRACE;
+                                case '[' -> Token.OPENING_BRACKET;
+                                case ']' -> Token.CLOSING_BRACKET;
+                                default -> throw new AssertionError();
                             };
                             case LIT -> {
                                 literal();
@@ -152,9 +161,9 @@ class Lexer implements AutoCloseable {
         var text = buffer.toString();
         buffer.delete(0, buffer.capacity());
         nextToken = switch (text) {
-            case "null" -> new Token(TokenType.NULL, text);
-            case "true" -> new Token(TokenType.TRUE, text);
-            case "false" -> new Token(TokenType.FALSE, text);
+            case "null" -> Token.NULL;
+            case "true" -> Token.TRUE;
+            case "false" -> Token.FALSE;
             default -> {
                 double ignored = Double.parseDouble(text);
                 yield new Token(TokenType.NUMBER, text);

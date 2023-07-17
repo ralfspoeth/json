@@ -11,14 +11,7 @@ public class JsonWriter {
     public String toJson(JsonElement el) {
         var sb = new StringBuilder();
         switch (el) {
-            case JsonValue v -> {
-                switch (v) {
-                    case JsonString s -> sb.append('"').append(s.value()).append('"');
-                    case JsonNull n -> sb.append(n);
-                    case JsonBoolean b -> sb.append(b.value());
-                    case JsonNumber n -> sb.append(n.value());
-                }
-            }
+            case JsonValue v -> v.json();
             case JsonObject o -> sb.append(o.members()
                     .entrySet()
                     .stream()

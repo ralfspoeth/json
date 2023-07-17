@@ -2,6 +2,8 @@ package com.github.ralfspoeth.json;
 
 public sealed interface JsonValue extends JsonElement permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 
+    String json();
+
     static JsonValue from(String input) {
         return switch (input) {
             case "null" -> JsonNull.INSTANCE;

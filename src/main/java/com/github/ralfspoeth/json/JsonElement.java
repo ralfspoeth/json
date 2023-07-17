@@ -104,4 +104,16 @@ public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
             return item(JsonNull.INSTANCE);
         }
     }
+
+    record JsonValueBuilder(JsonValue value) implements Builder<JsonValue> {
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public JsonValue build() {
+            return value;
+        }
+    }
 }

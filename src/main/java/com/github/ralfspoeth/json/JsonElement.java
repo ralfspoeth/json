@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
     static JsonObjectBuilder objectBuilder() {
@@ -25,38 +24,27 @@ public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
 
         private JsonObjectBuilder(){}
 
-        private final Map<String, Object> data = new HashMap<>();
+        private final Map<String, JsonElement> data = new HashMap<>();
         public JsonElement.JsonObjectBuilder named(String name, JsonElement el) {
             data.put(name, el);
             return this;
         }
 
         public JsonElement.JsonObjectBuilder named(String name, Builder<?> b) {
-            data.put(name, b);
-            return this;
+            return named(name, b.build());
         }
 
         public JsonElement.JsonObjectBuilder named(String name, Object o) {
-            data.put(name, JsonValue.of(o));
-            return this;
+            return named(name, JsonValue.of(o));
         }
 
         public JsonElement.JsonObjectBuilder namedNull(String name) {
-            data.put(name, JsonNull.INSTANCE);
-            return this;
+            return named(name, JsonNull.INSTANCE);
         }
 
         @Override
         public JsonObject build() {
-            var tmp = data.entrySet().stream().collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    e-> switch (e.getValue()) {
-                        case JsonElement je -> je;
-                        case Builder<?> ob -> ob.build();
-                        default -> throw new AssertionError(e.getValue().getClass());
-                    }
-            ));
-            return new JsonObject(tmp);
+            return new JsonObject(data);
         }
 
         @Override

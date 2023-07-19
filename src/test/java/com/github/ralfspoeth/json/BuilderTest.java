@@ -15,6 +15,7 @@ class BuilderTest {
                 .named("income", 5)
                 .named("sex", true)
                 .named("seven", new JsonString("murks"))
+                .namedNull("nix")
                 .named("adr", arrayBuilder()
                         .item(5)
                         .item(objectBuilder().named("sowat", "nix"))
@@ -24,7 +25,7 @@ class BuilderTest {
                 )
                 .build();
         assertAll(
-                () -> assertEquals(5, obj.members().size()),
+                () -> assertEquals(6, obj.members().size()),
                 () -> assertEquals(5, obj.getArray("adr").elements().size())
         );
     }

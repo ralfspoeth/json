@@ -8,7 +8,9 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -101,9 +103,9 @@ class LexerTest {
             assertTrue(lexer.hasNext());
             assertEquals(Lexer.TokenType.OPENING_BRACE, lexer.next().type());
             assertTrue(lexer.hasNext());
-            lexer.next(); // comma
+            assertEquals(Lexer.TokenType.COMMA, lexer.next().type());
             assertTrue(lexer.hasNext());
-            lexer.next(); // colon
+            assertEquals(Lexer.TokenType.COLON, lexer.next().type());
             assertTrue(lexer.hasNext());
             assertEquals(Lexer.TokenType.CLOSING_BRACE, lexer.next().type());
             assertFalse(lexer.hasNext());
@@ -121,8 +123,10 @@ class LexerTest {
             while(lxr.hasNext()) {
                 tmp.add(lxr.next());
             }
+            var grp = tmp.stream().collect(Collectors.groupingBy(Lexer.Token::type, Collectors.counting()));
             assertAll(
-                    () -> assertFalse(tmp.contains(null))
+                    () -> assertFalse(tmp.contains(null)),
+                    () -> assertTrue(grp.keySet().containsAll(EnumSet.allOf(Lexer.TokenType.class)))
             );
         }
     }

@@ -26,7 +26,7 @@ class BuilderTest {
                 .build();
         assertAll(
                 () -> assertEquals(6, obj.members().size()),
-                () -> assertEquals(5, obj.getArray("adr").elements().size())
+                () -> assertEquals(5, obj.get("adr", JsonArray.class).elements().size())
         );
     }
 
@@ -35,7 +35,7 @@ class BuilderTest {
         var aIsFalse = objectBuilder().named("a", JsonValue.of(true))
                 .named("a", JsonValue.of(false))
                 .build();
-        assertEquals(JsonBoolean.FALSE, aIsFalse.getValue("a"));
+        assertEquals(JsonBoolean.FALSE, aIsFalse.get("a", JsonBoolean.class));
     }
 
     @Test

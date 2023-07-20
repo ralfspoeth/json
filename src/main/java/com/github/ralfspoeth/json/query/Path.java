@@ -43,11 +43,13 @@ public sealed abstract class Path {
         private RangePath(int min, int max, Path parent) {
             super(parent);
             this.min = min;
-            this.max = max;
+            this.max = (max>0?max:Integer.MAX_VALUE);
         }
 
         Stream<JsonElement> evalArray(JsonArray array) {
-            return IntStream.range(min, max).mapToObj(i -> array.elements().get(i));
+            return IntStream.range(min, max)
+                    .limit(array.elements().size())
+                    .mapToObj(i -> array.elements().get(i));
         }
 
         @Override
@@ -108,7 +110,7 @@ public sealed abstract class Path {
 
     abstract Stream<JsonElement> evalThis(JsonElement elem);
 
-    private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(\\d+)\\]");
+    private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)\\]");
     public static Path of(String pattern) {
         var parts = requireNonNull(pattern).split("/");
         Path prev = null;

@@ -30,7 +30,7 @@ class PathTest {
         var singleElem = arrayBuilder().item(five).build();
         assertAll(
                 () -> assertEquals(Path.of("[0..1]"), Path.of("[0..1]")),
-                () -> assertTrue(Path.of("[0..1]").evaluate(singleElem).allMatch(five::equals))
+                () -> assertTrue(Path.of("[0..-1]").evaluate(singleElem).allMatch(five::equals))
         );
     }
 

@@ -4,9 +4,14 @@ import java.util.Map;
 
 import static java.util.Optional.ofNullable;
 
-public record JsonObject(Map<String, JsonElement> members) implements JsonElement {
+public record JsonObject(Map<String, JsonElement> members) implements JsonAggregate {
     public JsonObject {
         members = Map.copyOf(members);
+    }
+
+    @Override
+    public int size() {
+        return members.size();
     }
 
     public JsonArray getArray(String name) {

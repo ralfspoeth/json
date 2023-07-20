@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public sealed interface JsonElement permits JsonArray, JsonObject, JsonValue {
+public sealed interface JsonElement permits JsonAggregate, JsonValue {
     static JsonObjectBuilder objectBuilder() {
         return new JsonObjectBuilder();
     }

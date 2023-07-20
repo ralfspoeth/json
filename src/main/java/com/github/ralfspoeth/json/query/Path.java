@@ -48,7 +48,7 @@ public sealed abstract class Path {
 
         Stream<JsonElement> evalArray(JsonArray array) {
             return IntStream.range(min, max)
-                    .limit(array.elements().size())
+                    .limit(array.size())
                     .mapToObj(i -> array.elements().get(i));
         }
 

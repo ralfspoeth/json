@@ -29,7 +29,7 @@ class PathTest {
         var five = JsonValue.of(5);
         var singleElem = arrayBuilder().item(five).build();
         assertAll(
-                () -> assertEquals(Path.of("[0..1]"), Path.of("[0..1]")),
+                () -> assertEquals(Path.of("[0..-5]"), Path.of("[0..-1]")),
                 () -> assertTrue(Path.of("[0..-1]").evaluate(singleElem).allMatch(five::equals))
         );
     }

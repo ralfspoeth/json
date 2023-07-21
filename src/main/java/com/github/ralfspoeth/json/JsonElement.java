@@ -14,7 +14,7 @@ public sealed interface JsonElement permits JsonAggregate, JsonValue {
         return new JsonArrayBuilder();
     }
 
-    sealed interface Builder<T extends JsonElement> {
+    sealed interface Builder<T extends JsonAggregate> {
         int size();
 
         T build();
@@ -93,15 +93,4 @@ public sealed interface JsonElement permits JsonAggregate, JsonValue {
         }
     }
 
-    record JsonValueBuilder(JsonValue value) implements Builder<JsonValue> {
-        @Override
-        public int size() {
-            return 1;
-        }
-
-        @Override
-        public JsonValue build() {
-            return value;
-        }
-    }
 }

@@ -3,6 +3,7 @@ package com.github.ralfspoeth.json.io;
 import com.github.ralfspoeth.json.*;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Writer;
 import java.util.stream.Collectors;
 
@@ -27,5 +28,16 @@ public class JsonWriter {
 
     public void write(JsonElement elem, Writer out) throws IOException {
         out.write(toJson(elem));
+    }
+
+    public static void minimize(Reader src, Writer target) {
+        Lexer.tokenStream(src).forEach(t -> {
+            try {
+                target.write(t.value());
+            }
+            catch (IOException ioex) {
+                throw new RuntimeException(ioex);
+            }
+        });
     }
 }

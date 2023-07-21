@@ -1,6 +1,11 @@
 package com.github.ralfspoeth.json.io;
 
 import java.io.*;
+import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 class Lexer implements AutoCloseable {
 
@@ -29,6 +34,39 @@ class Lexer implements AutoCloseable {
         this.source = source instanceof PushbackReader pr ? pr :
                 source instanceof BufferedReader br ? new PushbackReader(br) :
                         new PushbackReader(new BufferedReader(source));
+    }
+
+    static Stream<Token> tokenStream(Reader rdr) {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new Iterator<>() {
+            private final Lexer lxr = new Lexer(rdr);
+
+            @Override
+            public boolean hasNext() {
+                var next = false;
+                try {
+                    next = lxr.hasNext();
+                    if (!next) {
+                        try {
+                            lxr.close();
+                        } catch (IOException closeEx) {
+                            // swallow
+                        }
+                    }
+                } catch (IOException ioex) {
+                    try {
+                        lxr.close();
+                    } catch (IOException closeEx) {
+                        // swallow
+                    }
+                }
+                return next;
+            }
+
+            @Override
+            public Token next() {
+                return lxr.next();
+            }
+        }, Spliterator.IMMUTABLE | Spliterator.ORDERED), false);
     }
 
     private enum State {

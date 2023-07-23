@@ -1,15 +1,21 @@
 package com.github.ralfspoeth.json.io;
 
-import com.github.ralfspoeth.json.*;
+import com.github.ralfspoeth.json.JsonArray;
+import com.github.ralfspoeth.json.JsonElement;
+import com.github.ralfspoeth.json.JsonObject;
+import com.github.ralfspoeth.json.JsonValue;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 
 public class JsonWriter {
+    private JsonWriter() {
+    }
 
-    public String toJson(JsonElement el) {
+    public static String toJson(JsonElement el) {
         var sb = new StringBuilder();
         switch (el) {
             case JsonValue v -> v.json();
@@ -17,25 +23,28 @@ public class JsonWriter {
                     .entrySet()
                     .stream()
                     .map(e -> "%s: %s".formatted(e.getKey(), toJson(e.getValue())))
-                    .collect(Collectors.joining(", ", "{", "}")));
+                    .collect(joining(", ", "{", "}")));
             case JsonArray a -> sb.append(a.elements()
                     .stream()
-                    .map(this::toJson)
-                    .collect(Collectors.joining(", ", "[", "]")));
+                    .map(JsonWriter::toJson)
+                    .collect(joining(", ", "[", "]")));
         }
         return sb.toString();
     }
 
-    public void write(JsonElement elem, Writer out) throws IOException {
+    public static void write(JsonElement elem, Writer out) throws IOException {
         out.write(toJson(elem));
     }
 
     public static void minimize(Reader src, Writer target) {
         Lexer.tokenStream(src).forEach(t -> {
             try {
-                target.write(t.value());
-            }
-            catch (IOException ioex) {
+                target.write(switch (t.type()) {
+                    case STRING -> '\"' + t.value() + '\"';
+                    case NUMBER -> Double.toString(Double.parseDouble(t.value()));
+                    default -> t.value();
+                });
+            } catch (IOException ioex) {
                 throw new RuntimeException(ioex);
             }
         });

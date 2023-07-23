@@ -17,7 +17,7 @@ class JsonElementTest {
                 "name", new JsonString("Hallo"),
                 "value", new JsonArray(List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, JsonBoolean.FALSE, new JsonNumber(5)))
         ));
-        System.out.println(new JsonWriter().toJson(element));
+        System.out.println(JsonWriter.toJson(element));
     }
 
 

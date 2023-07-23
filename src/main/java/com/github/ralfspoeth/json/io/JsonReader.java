@@ -17,27 +17,27 @@ public class JsonReader implements AutoCloseable {
     }
 
     sealed interface V {
-        record ObjBuilderElem(JsonElement.JsonObjectBuilder builder) implements V {
+        record ObjBuilderElem(Element.JsonObjectBuilder builder) implements V {
         }
 
-        record ArrBuilderElem(JsonElement.JsonArrayBuilder builder) implements V {
+        record ArrBuilderElem(Element.JsonArrayBuilder builder) implements V {
         }
 
-        record NameValuePair(String name, JsonElement elem) implements V {
-            NameValuePair withElem(JsonElement e) {
+        record NameValuePair(String name, Element elem) implements V {
+            NameValuePair withElem(Element e) {
                 return new NameValuePair(this.name, e);
             }
         }
 
         enum Char implements V {colon, comma}
 
-        record Root(JsonElement elem) implements V {
+        record Root(Element elem) implements V {
         }
     }
 
     private final Stack<V> stack = new Stack<>();
 
-    public JsonElement readElement() throws IOException {
+    public Element readElement() throws IOException {
         while (lexer.hasNext()) {
             var tkn = lexer.next();
             switch (tkn.type()) {
@@ -94,23 +94,23 @@ public class JsonReader implements AutoCloseable {
                 }
                 case OPENING_BRACE -> {
                     switch (stack.top()) {
-                        case null -> stack.push(new V.ObjBuilderElem(JsonElement.objectBuilder()));
-                        case V.ArrBuilderElem ignored -> stack.push(new V.ObjBuilderElem(JsonElement.objectBuilder()));
+                        case null -> stack.push(new V.ObjBuilderElem(Element.objectBuilder()));
+                        case V.ArrBuilderElem ignored -> stack.push(new V.ObjBuilderElem(Element.objectBuilder()));
                         case V.Char ignored -> {
                             stack.pop();
-                            stack.push(new V.ObjBuilderElem(JsonElement.objectBuilder()));
+                            stack.push(new V.ObjBuilderElem(Element.objectBuilder()));
                         }
                         default -> ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
                 case OPENING_BRACKET -> {
                     switch (stack.top()) {
-                        case null -> stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
+                        case null -> stack.push(new V.ArrBuilderElem(Element.arrayBuilder()));
                         case V.Char ignored -> {
                             stack.pop();
-                            stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
+                            stack.push(new V.ArrBuilderElem(Element.arrayBuilder()));
                         }
-                        case V.ArrBuilderElem ignored -> stack.push(new V.ArrBuilderElem(JsonElement.arrayBuilder()));
+                        case V.ArrBuilderElem ignored -> stack.push(new V.ArrBuilderElem(Element.arrayBuilder()));
                         default -> ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
@@ -155,7 +155,7 @@ public class JsonReader implements AutoCloseable {
         }
     }
 
-    private void handle(String token, JsonElement v) throws IOException {
+    private void handle(String token, Element v) throws IOException {
         switch (stack.top()) {
             case null -> stack.push(new V.Root(v));
             case V.NameValuePair nvp when nvp.elem==null -> stack.swap(se -> nvp.withElem(v));
@@ -179,7 +179,7 @@ public class JsonReader implements AutoCloseable {
         }
     }
 
-    private static JsonValue token2Value(Lexer.Token tkn) {
+    private static Basic token2Value(Lexer.Token tkn) {
         return switch (tkn.type()) {
             case NULL -> JsonNull.INSTANCE;
             case TRUE -> JsonBoolean.TRUE;

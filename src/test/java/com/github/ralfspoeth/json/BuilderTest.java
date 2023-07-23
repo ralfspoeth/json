@@ -2,8 +2,8 @@ package com.github.ralfspoeth.json;
 
 import org.junit.jupiter.api.Test;
 
-import static com.github.ralfspoeth.json.JsonElement.arrayBuilder;
-import static com.github.ralfspoeth.json.JsonElement.objectBuilder;
+import static com.github.ralfspoeth.json.Element.arrayBuilder;
+import static com.github.ralfspoeth.json.Element.objectBuilder;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BuilderTest {
@@ -32,8 +32,8 @@ class BuilderTest {
 
     @Test
     void testDuplicateName() {
-        var aIsFalse = objectBuilder().named("a", JsonValue.of(true))
-                .named("a", JsonValue.of(false))
+        var aIsFalse = objectBuilder().named("a", Basic.of(true))
+                .named("a", Basic.of(false))
                 .build();
         assertEquals(JsonBoolean.FALSE, aIsFalse.get("a", JsonBoolean.class));
     }
@@ -44,8 +44,8 @@ class BuilderTest {
                 .item(JsonBoolean.TRUE)
                 .item(JsonNull.INSTANCE)
                 .item(JsonBoolean.FALSE)
-                .item(JsonValue.of("hallo"))
-                .item(JsonValue.of(1d))
+                .item(Basic.of("hallo"))
+                .item(Basic.of(1d))
                 .build();
         assertAll(
                 () -> assertEquals(5, array.elements().size()),

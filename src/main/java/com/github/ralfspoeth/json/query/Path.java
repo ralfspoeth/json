@@ -1,7 +1,7 @@
 package com.github.ralfspoeth.json.query;
 
 import com.github.ralfspoeth.json.JsonArray;
-import com.github.ralfspoeth.json.JsonElement;
+import com.github.ralfspoeth.json.Element;
 import com.github.ralfspoeth.json.JsonObject;
 
 import java.util.Map;
@@ -22,7 +22,7 @@ public sealed abstract class Path {
             this.memberName = requireNonNull(memberName);
         }
         @Override
-        Stream<JsonElement> evalThis(JsonElement elem) {
+        Stream<Element> evalThis(Element elem) {
             return elem instanceof JsonObject o? Stream.of(o.members().get(memberName)): Stream.of();
         }
 
@@ -46,14 +46,14 @@ public sealed abstract class Path {
             this.max = (max>0?max:Integer.MAX_VALUE);
         }
 
-        Stream<JsonElement> evalArray(JsonArray array) {
+        Stream<Element> evalArray(JsonArray array) {
             return IntStream.range(min, max)
                     .limit(array.size())
                     .mapToObj(i -> array.elements().get(i));
         }
 
         @Override
-        Stream<JsonElement> evalThis(JsonElement elem) {
+        Stream<Element> evalThis(Element elem) {
             return elem instanceof JsonArray ja ? evalArray(ja) : Stream.of();
         }
 
@@ -76,11 +76,11 @@ public sealed abstract class Path {
         }
 
         @Override
-        Stream<JsonElement> evalThis(JsonElement elem) {
+        Stream<Element> evalThis(Element elem) {
             return elem instanceof JsonObject o ? evalObject(o): Stream.of();
         }
 
-        Stream<JsonElement> evalObject(JsonObject o) {
+        Stream<Element> evalObject(JsonObject o) {
             return o.members()
                     .entrySet()
                     .stream()
@@ -104,11 +104,11 @@ public sealed abstract class Path {
         this.parent = parent;
     }
 
-    public Stream<JsonElement> evaluate(JsonElement root) {
+    public Stream<Element> evaluate(Element root) {
         return parent==null ? this.evalThis(root) : parent.evaluate(root).flatMap(this::evalThis);
     }
 
-    abstract Stream<JsonElement> evalThis(JsonElement elem);
+    abstract Stream<Element> evalThis(Element elem);
 
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)\\]");
     public static Path of(String pattern) {

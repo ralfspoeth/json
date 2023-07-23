@@ -1,10 +1,10 @@
 package com.github.ralfspoeth.json;
 
-public sealed interface JsonValue extends JsonElement permits JsonBoolean, JsonNull, JsonNumber, JsonString {
+public sealed interface Basic extends Element permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 
     String json();
 
-    static JsonValue of(Object o) {
+    static Basic of(Object o) {
         return switch(o) {
             case null -> ofNull();
             case Boolean b -> JsonBoolean.of(b);

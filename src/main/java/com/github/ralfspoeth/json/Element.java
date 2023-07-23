@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public sealed interface JsonElement permits JsonAggregate, JsonValue {
+public sealed interface Element permits Aggregate, Basic {
     static JsonObjectBuilder objectBuilder() {
         return new JsonObjectBuilder();
     }
@@ -14,7 +14,7 @@ public sealed interface JsonElement permits JsonAggregate, JsonValue {
         return new JsonArrayBuilder();
     }
 
-    sealed interface Builder<T extends JsonAggregate> {
+    sealed interface Builder<T extends Aggregate> {
         int size();
 
         T build();
@@ -24,21 +24,21 @@ public sealed interface JsonElement permits JsonAggregate, JsonValue {
 
         private JsonObjectBuilder(){}
 
-        private final Map<String, JsonElement> data = new HashMap<>();
-        public JsonElement.JsonObjectBuilder named(String name, JsonElement el) {
+        private final Map<String, Element> data = new HashMap<>();
+        public Element.JsonObjectBuilder named(String name, Element el) {
             data.put(name, el);
             return this;
         }
 
-        public JsonElement.JsonObjectBuilder named(String name, Builder<?> b) {
+        public Element.JsonObjectBuilder named(String name, Builder<?> b) {
             return named(name, b.build());
         }
 
-        public JsonElement.JsonObjectBuilder named(String name, Object o) {
-            return named(name, JsonValue.of(o));
+        public Element.JsonObjectBuilder named(String name, Object o) {
+            return named(name, Basic.of(o));
         }
 
-        public JsonElement.JsonObjectBuilder namedNull(String name) {
+        public Element.JsonObjectBuilder namedNull(String name) {
             return named(name, JsonNull.INSTANCE);
         }
 
@@ -64,7 +64,7 @@ public sealed interface JsonElement permits JsonAggregate, JsonValue {
         public JsonArray build() {
             return new JsonArray(
                     data.stream().map(item -> switch (item) {
-                        case JsonElement je -> je;
+                        case Element je -> je;
                         case Builder<?> jb -> jb.build();
                         default -> throw new AssertionError();
                     }).toList()
@@ -73,22 +73,22 @@ public sealed interface JsonElement permits JsonAggregate, JsonValue {
 
         private final List<Object> data = new ArrayList<>();
 
-        public JsonElement.JsonArrayBuilder item(JsonElement elem) {
+        public Element.JsonArrayBuilder item(Element elem) {
             data.add(elem);
             return this;
         }
 
-        public JsonElement.JsonArrayBuilder item(Builder<?> jb) {
+        public Element.JsonArrayBuilder item(Builder<?> jb) {
             data.add(jb);
             return this;
         }
 
-        public JsonElement.JsonArrayBuilder item(Object o) {
-            data.add(JsonValue.of(o));
+        public Element.JsonArrayBuilder item(Object o) {
+            data.add(Basic.of(o));
             return this;
         }
 
-        public JsonElement.JsonArrayBuilder nullItem() {
+        public Element.JsonArrayBuilder nullItem() {
             return item(JsonNull.INSTANCE);
         }
     }

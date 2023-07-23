@@ -1,6 +1,6 @@
 package com.github.ralfspoeth.json;
 
-public record JsonNumber(double value) implements JsonValue {
+public record JsonNumber(double value) implements Basic {
     public static final JsonNumber ZERO = new JsonNumber(0d);
 
     @Override

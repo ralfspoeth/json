@@ -9,11 +9,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class JsonElementTest {
+class ElementTest {
 
     @Test
     void testElem(){
-        JsonElement element = new JsonObject(Map.of(
+        Element element = new JsonObject(Map.of(
                 "name", new JsonString("Hallo"),
                 "value", new JsonArray(List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, JsonBoolean.FALSE, new JsonNumber(5)))
         ));

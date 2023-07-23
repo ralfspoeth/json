@@ -134,11 +134,12 @@ While `JSON` is clearly closer to the JSON specification,
 it's more difficult to read than `Json`; since
 following the spec was not so much a goal as 
 the ease of use we decided to go with `Json` instead 
-of `JSON` as the prefix.
+of `JSON` as the prefix for the concrete types; we left
+the `Element` interface unchanged.
 
 At the top of the hierarchy we then had
 
-    public sealed interface JsonElement {}
+    public sealed interface Element {}
 
 All implementations must be `final` or `non-sealed`
 in order to comply with the contract for sealed
@@ -154,7 +155,7 @@ because it is implicitly final and the behaviour
 of its `equals` and `hashCode` methods comes without
 any surprises.
 
-    public enum JsonBoolean implements JsonElement {
+    public enum JsonBoolean implements Element {
         TRUE, FALSE
     }
 
@@ -171,7 +172,7 @@ The singleton pattern which goes like
 
 and translates into
 
-    public final class JsonNull implements JsonElement {
+    public final class JsonNull implements Element {
         private JsonNull() {}
         public static final JsonNull INSTANCE = new JsonNull(); 
     }
@@ -183,19 +184,19 @@ records with a single component of type string.
 But in order to make strings part of the sealed
 hierarchy we have to do so:
 
-    public record JsonString(String value) implements JsonElement {
+    public record JsonString(String value) implements Element {
     }
 
 This comes in handy once we deal with aggregate
-types like arrays of `JsonElement` rather than 
-arrays of `JsonElement` UNION `String` which we 
+types like arrays of `Element` rather than 
+arrays of `Element` UNION `String` which we 
 cannot express in Java.
 
-## Model `Number` as Record of Double
+## Model `Number` as Record of `double`
 
 With the same reasoning we model numbers like this:
 
-    public record JsonNumber(double value) implements JsonElement {
+    public record JsonNumber(double value) implements Element {
     }
 
 Note that JavaScript doesn't cater for differences
@@ -209,7 +210,7 @@ As with strings we need to wrap the array in some
 container - a final class or a record - plus
 we want to make sure the contents is immutable:
 
-    public record JsonArray(List<JsonElement> elements) implements JsonElement {
+    public record JsonArray(List<Element> elements) implements Element {
         public JsonArray {
             elements = List.copyOf(elements);
         }
@@ -226,11 +227,91 @@ is passed in with the list of elements.
 
 ## Model `Object` as Record of an Immutable Map
 
-    public record JsonObject(Map<String, JsonElement> members) implements JsonElement {
+The same is true for `JsonObject`s. We model the properties 
+or attributes or members as a map of `String`s (NOT `JsonString`s!) 
+to `Element`s:
+
+    public record JsonObject(Map<String, Element> members) implements Element {
         public JsonObject {
             members = Map.copyOf(members);
         }
     }
 
-The same is true for `JsonObject`s.
+`Map.copyOf` provides a copy but returns the original 
+when that is already immutable.
+
+Since both aggregate types `JsonObject` and `JsonArray` are 
+shallowly immutable and all instances they aggregate are immutable,
+the aggregate types are deeply immutable.
+
+## Differentiating between aggregate and basic types
+
+In lieu with the JSON specification which differentiates
+between primitive and structured types, we differentiate
+between basic and aggregate types like so:
+
+    public sealed interface Element permits Basic, Aggregate {...}
+    public sealed interface Basis extends Element permits
+        JsonBoolean, JsonNull, JsonNumber, JsonString {}
+    public sealed interace Aggregate extends Element permits
+        JsonArray, JsonObject {...}
+
+
+# Builders
+
+The [Builder pattern](https://en.wikipedia.org/wiki/Builder_pattern)
+allows for a piecemeal construction of
+immutable data and works like so:
+
+    var immutable = new Builder(...).add(...).add(...).build();
+
+It does make much sense to provide builders for the basic data
+types; yet very much so for the aggregate data types.
+This is one reason why we introduced the distinction between the two.
+
+The `Builder` interface has been implemented as an inner interface
+class of the `Element` interface with two implementations:
+
+    public sealed interface Element permits Basic, Aggregate {
+        sealed interface Builder<T extends Aggregate> {
+            T build();
+            // ...
+        }
+        final class ArrayBuilder implements Builder<JsonArray>{...}
+        final class ObjectBuilder implements Builder<JsonObject>{...}
+        // ... remainder
+    }
+
+## ArrayBuilder
+
+The array builder simply provides a method that adds an `Element` 
+to a list:
+
+    final class ArrayBuilder implements Builder<JsonArray> {
+        item(Element e) {
+            // add to mutable list
+        }
+        JsonArray build() {
+            return new JsonArray(List.of(mutableList));
+        }
+    }
+
+## ObjectBuilder
+
+The object builder is not so different:
+
+    final class ObjectBuilder implements Builder<JsonObject> {
+        named(String name, Element e) {
+            // put into mutable map
+        }
+        JsonObject build() {
+            return new JsonObject(Map.of(mutableMap));
+        }
+    }
+
+Both builders are instantiable through static methods in the 
+`Element` interface only:
+
+    JsonObjectBuilder objectBuilder();
+    JsonArrayBuilder arrayBuilder();
 

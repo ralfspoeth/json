@@ -1,6 +1,6 @@
 package com.github.ralfspoeth.json;
 
-public final class JsonNull implements JsonValue {
+public final class JsonNull implements Basic {
     public static final JsonNull INSTANCE = new JsonNull();
 
     private JsonNull(){}

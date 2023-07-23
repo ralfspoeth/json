@@ -48,7 +48,7 @@ class JsonReaderTest {
         sources.forEach(source -> {
             try (var parser = new JsonReader(new StringReader(source))) {
                 var v = parser.readElement();
-                assertAll(() -> assertTrue(v instanceof JsonValue));
+                assertAll(() -> assertTrue(v instanceof Basic));
             } catch (IOException ioex) {
                 assertNull(ioex);
             }
@@ -187,7 +187,7 @@ class JsonReaderTest {
         var r = JsonFactory.builder().build();
         var p = r.createParser(largeFile());
         var t = p.nextToken();
-        var l = new ArrayList<Object>();
+        var l = new ArrayList<>();
         while(t!=null) {
             l.add(t.asString());
             t = p.nextToken();

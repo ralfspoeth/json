@@ -1,9 +1,9 @@
 package com.github.ralfspoeth.json.io;
 
 import com.github.ralfspoeth.json.JsonArray;
-import com.github.ralfspoeth.json.JsonElement;
+import com.github.ralfspoeth.json.Element;
 import com.github.ralfspoeth.json.JsonObject;
-import com.github.ralfspoeth.json.JsonValue;
+import com.github.ralfspoeth.json.Basic;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -15,10 +15,10 @@ public class JsonWriter {
     private JsonWriter() {
     }
 
-    public static String toJson(JsonElement el) {
+    public static String toJson(Element el) {
         var sb = new StringBuilder();
         switch (el) {
-            case JsonValue v -> v.json();
+            case Basic v -> v.json();
             case JsonObject o -> sb.append(o.members()
                     .entrySet()
                     .stream()
@@ -32,7 +32,7 @@ public class JsonWriter {
         return sb.toString();
     }
 
-    public static void write(JsonElement elem, Writer out) throws IOException {
+    public static void write(Element elem, Writer out) throws IOException {
         out.write(toJson(elem));
     }
 

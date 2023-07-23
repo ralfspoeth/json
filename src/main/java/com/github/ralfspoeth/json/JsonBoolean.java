@@ -1,6 +1,6 @@
 package com.github.ralfspoeth.json;
 
-public enum JsonBoolean implements JsonValue {
+public enum JsonBoolean implements Basic {
     TRUE{
         @Override
         public String json() {

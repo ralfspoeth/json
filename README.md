@@ -1,13 +1,8 @@
-# RS JSON Implementation
+# Java JSON Implementation
+
 This project implements a JSON parser which operates around immutable data structures for 
 the JSON elements.
 
-My name is Ralf Spöth, I am the author of this 
-library. It has been implemented in my spare time.
-Please note that I am not a fulltime developer or
-Java professional of any kind.
-Nevertheless, I am grateful for feedback; may this 
-code be useful for you.
 
 ## Motivation
 
@@ -17,7 +12,7 @@ https://www.infoq.com/articles/data-oriented-programming-java/),
 note the section "Example: JSON" in particular)
 where the JSON format has been of special interest.
 The JSON type hierarchy is very simple and strict
-enough to apply the algabraic data types introduced
+enough to apply the algebraic data types introduced
 through `sealed` classes (union types)
 and interfaces and `record`s (product types)
 efficiently. These ideas struck with me, so I
@@ -32,10 +27,11 @@ the builder-style API plus the implicitly required
 parser which returns immutable instances of the JSON
 type hierarchy finally lead to this experiment.
 
-Learning a tiny little bit of  [Clojure](https://clojure.org/about/rationale)
+Learning a tiny little bit of 
+[Clojure](https://clojure.org/about/rationale)
 taught me another series of important things,
-the most striking being Rich Hickey's keynote
-about [The Value of Values](https://www.youtube.com/watch?v=-6BsiVyC1kM).
+the most striking being Rich Hickey's keynote about
+[The Value of Values](https://www.youtube.com/watch?v=-6BsiVyC1kM).
 at the Jaxconf 2012 in San Francisco.
 Treating values as immutable things changes the mental
 model of programming at least if you're coming 
@@ -72,7 +68,7 @@ maps of names (strings) and values of any kind).
     }, {
         "name": "Cicero",
         "senator": true,
-        "wars": null
+        "children": null
     }]
 
 This text represents an array of two objects; the
@@ -92,6 +88,16 @@ attribute is an array of a single string valued
 `"De bello gallico"`.
 
 Wikipedia has more on [JSON](https://en.wikipedia.org/wiki/JSON).
+
+JSON is schema-less, that is, you cannot prescribe the structure
+of a JSON document using some kind of schema.
+This sets JSON apart from [XML](https://www.w3.org/TR/xml/) which
+allows for the specification of document type definitions
+[DTDs](https://www.w3.org/TR/xml/#sec-prolog-dtd) and even
+XML schema definitions [XSD](https://www.w3.org/TR/xmlschema/).
+XML, once hyped as the next big thing and with numerous 
+applications still widely in use, has been surpassed by JSON 
+according to (try Google Trends: JSON vs. XML);![img.png](img.png)
 
 ### Remarks
 
@@ -228,7 +234,8 @@ is passed in with the list of elements.
 ## Model `Object` as Record of an Immutable Map
 
 The same is true for `JsonObject`s. We model the properties 
-or attributes or members as a map of `String`s (NOT `JsonString`s!) 
+or attributes or members as a map of `String`s (not `JsonString`s since
+this wouldn't add any value and is much easier to use by clients) 
 to `Element`s:
 
     public record JsonObject(Map<String, Element> members) implements Element {
@@ -241,8 +248,9 @@ to `Element`s:
 when that is already immutable.
 
 Since both aggregate types `JsonObject` and `JsonArray` are 
-shallowly immutable and all instances they aggregate are immutable,
-the aggregate types are deeply immutable.
+shallowly immutable (or unmodifiable) and all basic types  
+are immutable, the aggregate types are effectively immutable as well.
+This makes instance of the entire hierarchy immutable.
 
 ## Differentiating between aggregate and basic types
 
@@ -256,6 +264,9 @@ between basic and aggregate types like so:
     public sealed interace Aggregate extends Element permits
         JsonArray, JsonObject {...}
 
+Naming primitive types basic and structured types aggregates has 
+been a deliberate decision since the term primitive collides with
+the notion of primitive types in the Java language.
 
 # Builders
 

@@ -326,3 +326,26 @@ Both builders are instantiable through static methods in the
     JsonObjectBuilder objectBuilder();
     JsonArrayBuilder arrayBuilder();
 
+# IO: Reading and Writing JSON Instances
+
+## JsonReader
+
+The parser implementation named `JsonReader` in package
+`json.io` implements the `AutoCloseable` interface and is
+meant to be used in try-with-resources statements like so:
+
+    Reader src = // ...
+    try(var rdr = new JsonReader(src)) {
+        return rdr.readElement();
+    }
+
+It uses a `Lexer` internally which tokenizes a character stream
+into tokens like braces, brackets, comma, colon, number literals, 
+string literals, and null, true, and false.
+The parser uses a stack with builders, special tokens or finally with 
+a root object as its sole element. It utilizes
+an inner sealed interface to cater for a limited set of stack
+elements.
+
+## JsonWriter
+

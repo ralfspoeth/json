@@ -4,6 +4,7 @@ import com.github.ralfspoeth.json.*;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Objects;
 
 import static com.github.ralfspoeth.json.io.JsonReader.V.Char.colon;
 import static com.github.ralfspoeth.json.io.JsonReader.V.Char.comma;
@@ -167,9 +168,10 @@ public class JsonReader implements AutoCloseable {
                     }
                     case comma -> {
                         stack.pop(); // pop comma
-                        switch (stack.top()) {
-                            case V.ArrBuilderElem abe -> abe.builder.item(v);
-                            default -> ioex("unexpected token " + token, lexer.coordinates());
+                        if (Objects.requireNonNull(stack.top()) instanceof V.ArrBuilderElem abe) {
+                            abe.builder.item(v);
+                        } else {
+                            ioex("unexpected token " + token, lexer.coordinates());
                         }
                     }
                 }

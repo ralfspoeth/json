@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonReaderTest {
@@ -78,7 +79,7 @@ class JsonReaderTest {
         try (var r = new JsonReader(new StringReader(source))) {
             var o = r.readElement();
             assertAll(() -> assertTrue(o instanceof JsonObject),
-                    () -> assertEquals(1, ((JsonObject) o).members().size()),
+                    () -> assertEquals(1, o instanceof JsonObject jo?jo.members().size():-1),
                     () -> Assertions.assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
             );
         }
@@ -99,8 +100,8 @@ class JsonReaderTest {
             var a = p.readElement();
             assertAll(
                     () -> assertTrue(a instanceof JsonArray),
-                    () -> assertEquals(7, ((JsonArray) a).elements().size()),
-                    () -> assertTrue(((JsonArray) a).elements().contains(new JsonString("str")))
+                    () -> assertEquals(7, a instanceof JsonArray ja?ja.elements().size():-1),
+                    () -> assertTrue(a instanceof JsonArray ja && ja.elements().contains(new JsonString("str")))
             );
         }
     }
@@ -177,7 +178,7 @@ class JsonReaderTest {
 
     private Reader largeFile() {
         return new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream("/large-file.json"),
+                requireNonNull(getClass().getResourceAsStream("/large-file.json")),
                 StandardCharsets.UTF_8
         ));
     }

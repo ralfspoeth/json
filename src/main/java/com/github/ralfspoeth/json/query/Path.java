@@ -32,7 +32,7 @@ public sealed abstract class Path {
         }
 
         @Override
-        boolean equalsSpecial(Path p) {
+        boolean equalsLast(Path p) {
             return p instanceof MemberPath mp && mp.memberName.equals(memberName);
         }
     }
@@ -58,13 +58,13 @@ public sealed abstract class Path {
         }
 
         @Override
-        boolean equalsSpecial(Path p) {
+        boolean equalsLast(Path p) {
             return p instanceof RangePath rp && rp.min == min && rp.max == max;
         }
 
         @Override
         public int hashCode() {
-            return 0;
+            return Objects.hash(max, min);
         }
     }
 
@@ -89,7 +89,7 @@ public sealed abstract class Path {
         }
 
         @Override
-        boolean equalsSpecial(Path p) {
+        boolean equalsLast(Path p) {
             return p instanceof RegexPath rp && rp.regex.equals(regex);
         }
 
@@ -129,10 +129,10 @@ public sealed abstract class Path {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Path p && equalsSpecial(p) && Objects.equals(p.parent, parent);
+        return obj instanceof Path p && equalsLast(p) && Objects.equals(p.parent, parent);
     }
 
-    abstract boolean equalsSpecial(Path p);
+    abstract boolean equalsLast(Path p);
 
     @Override
     public abstract int hashCode();

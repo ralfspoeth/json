@@ -165,7 +165,7 @@ any surprises.
         TRUE, FALSE
     }
 
-## Modell `Null` as Singleton
+## Modelling `Null` as Singleton
 
 As with booleans we decided to implement the `Null`
 instances as copies of the only possible instance.
@@ -183,7 +183,7 @@ and translates into
         public static final JsonNull INSTANCE = new JsonNull(); 
     }
 
-## Model `String` as Record of String
+## Modelling `String` as Record of String
 
 There is no technical need to wrap strings into 
 records with a single component of type string.
@@ -198,7 +198,7 @@ types like arrays of `Element` rather than
 arrays of `Element` UNION `String` which we 
 cannot express in Java.
 
-## Model `Number` as Record of `double`
+## Modelling `Number` as Record of `double`
 
 With the same reasoning we model numbers like this:
 
@@ -210,7 +210,7 @@ between numerical data types -- which is enormously
 limiting, and that we use the primitive Java type
 because `null` values or not acceptable either way.
 
-## Model `Array` as Record of an Immutable List
+## Modelling `Array` as Record of an Immutable List
 
 As with strings we need to wrap the array in some
 container - a final class or a record - plus
@@ -231,7 +231,7 @@ This method also makes sure not actual `null` instance
 is passed in with the list of elements.
 (`JsonNull`s are acceptable of course.)
 
-## Model `Object` as Record of an Immutable Map
+## Modelling `Object` as Record of an Immutable Map
 
 The same is true for `JsonObject`s. We model the properties 
 or attributes or members as a map of `String`s (not `JsonString`s since
@@ -252,7 +252,7 @@ shallowly immutable (or unmodifiable) and all basic types
 are immutable, the aggregate types are effectively immutable as well.
 This makes instance of the entire hierarchy immutable.
 
-## Differentiating between aggregate and basic types
+## Differentiating between Aggregate and Basic Types
 
 In lieu with the JSON specification which differentiates
 between primitive and structured types, we differentiate
@@ -276,7 +276,7 @@ immutable data and works like so:
 
     var immutable = new Builder(...).add(...).add(...).build();
 
-It does make much sense to provide builders for the basic data
+It does not make much sense to provide builders for the basic data
 types; yet very much so for the aggregate data types.
 This is one reason why we introduced the distinction between the two.
 
@@ -295,8 +295,7 @@ class of the `Element` interface with two implementations:
 
 ## ArrayBuilder
 
-The array builder simply provides a method that adds an `Element` 
-to a list:
+The array builder simply provides a method that adds an `Element`:
 
     final class ArrayBuilder implements Builder<JsonArray> {
         item(Element e) {
@@ -326,7 +325,7 @@ Both builders are instantiable through static methods in the
     JsonObjectBuilder objectBuilder();
     JsonArrayBuilder arrayBuilder();
 
-# IO: Reading and Writing JSON Instances
+# IO: Reading and Writing JSON Data
 
 ## JsonReader
 
@@ -334,7 +333,7 @@ The parser implementation named `JsonReader` in package
 `json.io` implements the `AutoCloseable` interface and is
 meant to be used in try-with-resources statements like so:
 
-    Reader src = // ...
+    Reader src = ...
     try(var rdr = new JsonReader(src)) {
         return rdr.readElement();
     }
@@ -348,4 +347,100 @@ an inner sealed interface to cater for a limited set of stack
 elements.
 
 ## JsonWriter
+
+The `JsonWriter` class is instantiated with its 
+default behaviour of indenting the members of JSON 
+objects by 4 characters and putting each member in 
+a separate line. Arrays are printed interspersed 
+by commas and a white space but in a single line.
+
+The usage is similar to that of the `JsonReader` with
+the exception that it uses a single factory method
+only currently:
+
+    Element object = ... 
+    Writer w = ... 
+    try(var wrt = JsonWriter.createDefaultWriter(w)){
+        wrt.write(object);
+    }
+
+The `JsonWriter` provides the static method
+`minimize` which removes whitespace safely from 
+a given input stream.
+
+# Querying
+
+The package `query` provides simple utilities
+for querying data based on some root element.
+
+## The `Path` Utility
+
+The `Path` class is inspired by the [XPath](https://www.w3.org/TR/xpath/)
+specification yet lacks almost all of its features;
+it's currently just a toy.
+
+### Basic Usage
+
+A `Path` instance is instantiated using the factory
+method `Path::of` like so:
+
+    var path = Path.of("a/b/c");
+
+The path expression is split using the `/` character.
+Given the statement above, we obtain the equivalent of
+
+    var path = Path.of("c", Path.of("b", Path.of("a")));
+
+where the second parameter is the parent path.
+We then use `Path::evaluate` which returns a stream
+of `Element`s. Consider this root object `root`
+
+    {
+        "a": {
+            "b": {
+                "c": true
+            }
+        }
+    }
+
+then
+    
+    assert JsonBoolean.TRUE==path.evaluate(root).findFirst().get();
+
+### Syntax
+
+The syntax for the patterns is
+* `a..b` where `a` and `b` are integers; a range pattern applicable to arrays;
+* `#regex` where `regex` is a regular expression filtering attributes of objects;
+* `name` where `name` is just the member name of the root object.
+
+### Examples
+
+Given `[2, 3, 5, 7, 11]` then `Path.of("0..2")` yields
+the stream of the first two array elements.
+
+Given `{"a0":true,"a1":false}` then `Path.of("#a.")`
+yields the stream of `true` and `false`.
+
+Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
+the stream of `5d`.
+
+## Filtering and Casting in a Single Call
+
+Whenever we obtain a stream of `Element`s
+we may want to filter for a type and treat them 
+as such type. The class `FilterAndCast` does 
+exactly that; it provides static methods
+that filter a stream of elements and cast them 
+accordingly.
+
+Here is how you filter an array for number instances
+and cast the stream into a stream of numbers:
+
+    JsonArray ja=...;
+    FilterAndCast.numbers(ja.elements()); // Stream<JsonNumber>
+
+Given the first primes interspersed with booleans
+`[2, 3, true, 5, 7, false, true, 11]`
+yields the equivalent of `[2, 3, 5, 7, 11]`.
 

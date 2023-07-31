@@ -12,16 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ElementTest {
 
     @Test
-    void testElem(){
-        Element element = new JsonObject(Map.of(
-                "name", new JsonString("Hallo"),
-                "value", new JsonArray(List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, JsonBoolean.FALSE, new JsonNumber(5)))
-        ));
-        System.out.println(JsonWriter.toJson(element));
-    }
-
-
-    @Test
     void testMutability() {
         var je = new JsonArray(
                 List.of(

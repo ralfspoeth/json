@@ -1,6 +1,6 @@
 package com.github.ralfspoeth.json.query;
 
-import com.github.ralfspoeth.json.*;
+import com.github.ralfspoeth.json.Basic;
 import org.junit.jupiter.api.Test;
 
 import static com.github.ralfspoeth.json.Element.arrayBuilder;
@@ -11,7 +11,7 @@ class PathTest {
 
     @Test
     void ofEmpty() {
-        assertThrows(NullPointerException.class, ()->Path.of(null));
+        assertThrows(NullPointerException.class, () -> Path.of(null));
     }
 
     @Test
@@ -27,10 +27,18 @@ class PathTest {
     @Test
     void ofRange() {
         var five = Basic.of(5);
-        var singleElem = arrayBuilder().item(five).build();
+        var singleElemArray = arrayBuilder().item(five).build();
+        var multiElemArray = arrayBuilder().item(five).item(five).item(five).build();
         assertAll(
                 () -> assertEquals(Path.of("[0..-5]"), Path.of("[0..-1]")),
-                () -> assertTrue(Path.of("[0..-1]").evaluate(singleElem).allMatch(five::equals))
+                () -> assertTrue(Path.of("[0..-1]").evaluate(singleElemArray).allMatch(five::equals)),
+                () -> assertTrue(Path.of("[0..-1]").evaluate(multiElemArray).allMatch(five::equals)),
+                () -> assertTrue(Path.of("[0..1]").evaluate(multiElemArray).allMatch(five::equals)),
+                () -> assertTrue(Path.of("[0..2]").evaluate(multiElemArray).allMatch(five::equals)),
+                () -> assertEquals(2, Path.of("[0..2]").evaluate(multiElemArray).count()),
+                () -> assertTrue(Path.of("[0..5]").evaluate(multiElemArray).allMatch(five::equals)),
+                () -> assertEquals(3, Path.of("[0..5]").evaluate(multiElemArray).count())
+
         );
     }
 

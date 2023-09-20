@@ -6,15 +6,24 @@ the JSON elements.
 
 ## Motivation
 
-I've read a number of articles around data oriented
+Having read a number of articles around data oriented
 programming (cf. [Brian Goetz, Data-Oriented Programming](
 https://www.infoq.com/articles/data-oriented-programming-java/), 
 note the section "Example: JSON" in particular)
-where the JSON format has been of special interest.
+where the JSON format has been of special interest,
+and being quite dissatisfied with the usage experience
+of popular JSON libraries like [GSON](https://github.com/google/gson)
+or [Jackson](https://github.com/FasterXML/jackson)
+unless the object graph serialization from and to JSON
+the motivation to implement an alternative library was high enough
+to start the project.
+Having a Java representation of a JSON file
+and then 
+
 The JSON type hierarchy is very simple and strict
 enough to apply the algebraic data types introduced
-through `sealed` classes (union types)
-and interfaces and `record`s (product types)
+through `sealed` classes and interfaces (union types)
+and `record`s (product types)
 efficiently. These ideas struck with me, so I
 started to look around for a parser which 
 returns an immutable `JsonElement` from a stream
@@ -53,9 +62,9 @@ has become the _lingua franca_ for RESTful webservices.
 JSON serializes structured data in a human-readable 
 text format. It supports four primitive types
 (strings, `double` numbers, booleans and `null`) and 
-two aggregates types (arrays of any kind
+two aggregates types (arrays of primitive or aggregate types
 and objects which are basically
-maps of names (strings) and values of any kind).
+maps of names (strings) and values of primitive or aggregate types).
 
 ### Example:
 
@@ -72,7 +81,7 @@ maps of names (strings) and values of any kind).
     }]
 
 This text represents an array of two objects; the
-out form reads `[a, b]` where `a` and `b` are the 
+outer form reads `[a, b]` where `a` and `b` are the 
 objects.
 Braces `{` and `}` enclose these two objects
 with name-value-pairs separated by commas, like 
@@ -87,23 +96,23 @@ with the value `false`. The value of the `publications`
 attribute is an array of a single string valued
 `"De bello gallico"`.
 
-Wikipedia has more on [JSON](https://en.wikipedia.org/wiki/JSON).
+Wikipedia has more about JSON [here](https://en.wikipedia.org/wiki/JSON).
 
 JSON is schema-less, that is, you cannot prescribe the structure
 of a JSON document using some kind of schema.
 This sets JSON apart from [XML](https://www.w3.org/TR/xml/) which
 allows for the specification of document type definitions
-[DTDs](https://www.w3.org/TR/xml/#sec-prolog-dtd) and even
-XML schema definitions [XSD](https://www.w3.org/TR/xmlschema/).
+[DTDs](https://www.w3.org/TR/xml/#sec-prolog-dtd) or XML schema definitions ([XSD](https://www.w3.org/TR/xmlschema/)).
 XML, once hyped as the next big thing and with numerous 
 applications still widely in use, has been surpassed by JSON 
-according to (try Google Trends: JSON vs. XML);![img.png](img.png)
+according to Google trends
+(try Google Trends: JSON vs. XML);![img.png](img.png)
 
 ### Remarks
 
 The objects do not expose some notation of a type
-or class. Two objects are considered equal of their 
-attributes match. Arrays may contain any combination
+or class. Two objects are considered equal if their 
+attributes are equal. Arrays may contain any combination
 of instances, including both primitive and structured 
 types as in `[null, true, false, 1, {"x":5}, [2, 3, 4]]`
 
@@ -185,7 +194,7 @@ and translates into
 
 ## Modelling `String` as Record of String
 
-There is no technical need to wrap strings into 
+There is no need to wrap JSON strings into 
 records with a single component of type string.
 But in order to make strings part of the sealed
 hierarchy we have to do so:
@@ -223,12 +232,12 @@ we want to make sure the contents is immutable:
     }
 
 The canonical constructor is overridden such that 
-is instantiates a copy of the list provided; 
+it uses a copy of the list provided; 
 that method is clever enough NOT to copy the list
 parameter if it can be sure that that parameter
 is already an immutable instance.
-This method also makes sure not actual `null` instance
-is passed in with the list of elements.
+This method also makes sure no actual `null` instance
+is passed in within the list of elements.
 (`JsonNull`s are acceptable of course.)
 
 ## Modelling `Object` as Record of an Immutable Map
@@ -244,7 +253,7 @@ to `Element`s:
         }
     }
 
-`Map.copyOf` provides a copy but returns the original 
+`Map.copyOf` provides a copy but returns the original map
 when that is already immutable.
 
 Since both aggregate types `JsonObject` and `JsonArray` are 
@@ -272,12 +281,12 @@ the notion of primitive types in the Java language.
 
 The [Builder pattern](https://en.wikipedia.org/wiki/Builder_pattern)
 allows for a piecemeal construction of
-immutable data and works like so:
+immutable data and works like this:
 
     var immutable = new Builder(...).add(...).add(...).build();
 
 It does not make much sense to provide builders for the basic data
-types; yet very much so for the aggregate data types.
+types; yet very much so for the aggregate types.
 This is one reason why we introduced the distinction between the two.
 
 The `Builder` interface has been implemented as an inner interface
@@ -292,6 +301,9 @@ class of the `Element` interface with two implementations:
         final class ObjectBuilder implements Builder<JsonObject>{...}
         // ... remainder
     }
+
+Since the implementing classes reside within the same compilation unit
+as the `Builder` there is not need for the `permits` clause.
 
 ## ArrayBuilder
 
@@ -324,6 +336,12 @@ Both builders are instantiable through static methods in the
 
     JsonObjectBuilder objectBuilder();
     JsonArrayBuilder arrayBuilder();
+
+The implemeting classes both need to be public because they provide
+different methods for adding intermediate data;
+`JsonArray` provides an `item(Element)` method and
+`JsonObject` a `named(String, Element)` method in order to
+add data their internal structures.
 
 # IO: Reading and Writing JSON Data
 
@@ -407,6 +425,9 @@ then
     
     assert JsonBoolean.TRUE==path.evaluate(root).findFirst().get();
 
+will not throw an `AssertionError`.
+
+
 ### Syntax
 
 The syntax for the patterns is
@@ -417,7 +438,7 @@ The syntax for the patterns is
 ### Examples
 
 Given `[2, 3, 5, 7, 11]` then `Path.of("0..2")` yields
-the stream of the first two array elements.
+the stream of the first two array elements `2` and `3`.
 
 Given `{"a0":true,"a1":false}` then `Path.of("#a.")`
 yields the stream of `true` and `false`.

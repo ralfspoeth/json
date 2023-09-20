@@ -445,23 +445,3 @@ yields the stream of `true` and `false`.
 
 Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
 the stream of `5d`.
-
-## Filtering and Casting in a Single Call
-
-Whenever we obtain a stream of `Element`s
-we may want to filter for a type and treat them 
-as such type. The class `FilterAndCast` does 
-exactly that; it provides static methods
-that filter a stream of elements and cast them 
-accordingly.
-
-Here is how you filter an array for number instances
-and cast the stream into a stream of numbers:
-
-    JsonArray ja=...;
-    FilterAndCast.numbers(ja.elements()); // Stream<JsonNumber>
-
-Given the first primes interspersed with booleans
-`[2, 3, true, 5, 7, false, true, 11]`
-yields the equivalent of `[2, 3, 5, 7, 11]`.
-

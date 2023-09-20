@@ -168,11 +168,11 @@ public class JsonReader implements AutoCloseable {
     private void handle(String token, Element v) throws IOException {
         switch (stack.top()) {
             case null -> stack.push(new Elem.Root(v));
-            case Elem.NameValuePair nvp when nvp.elem==null -> stack.swap(_ -> nvp.withElem(v));
+            case Elem.NameValuePair nvp when nvp.elem==null -> stack.swap(ignore -> nvp.withElem(v));
             case Elem.Char nc -> {
                 switch (nc) {
                     case colon -> {
-                        stack.pop(); // pop colon, topmost element mubst be an NVP
+                        stack.pop(); // pop colon, topmost element must be an NVP
                         stack.swap(se -> Elem.NameValuePair.class.cast(se).withElem(v));
                     }
                     case comma -> {

@@ -1,13 +1,11 @@
 package com.github.ralfspoeth.json.io;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,8 +31,7 @@ class JsonReaderTest {
     void testEmptyArray() throws IOException {
         var source = "[]";
         try (var rdr = new StringReader(source);
-             var parser = new JsonReader(rdr))
-        {
+             var parser = new JsonReader(rdr)) {
             var result = parser.readElement();
             assertAll(
                     () -> assertNotNull(result),
@@ -79,7 +76,7 @@ class JsonReaderTest {
         try (var r = new JsonReader(new StringReader(source))) {
             var o = r.readElement();
             assertAll(() -> assertTrue(o instanceof JsonObject),
-                    () -> assertEquals(1, o instanceof JsonObject jo?jo.members().size():-1),
+                    () -> assertEquals(1, o instanceof JsonObject jo ? jo.members().size() : -1),
                     () -> Assertions.assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
             );
         }
@@ -88,7 +85,7 @@ class JsonReaderTest {
     @Test
     void testDualMemberObject() throws Exception {
         var source = "{\"n\":5, \"m\": 7}";
-        try(var r = new JsonReader(new StringReader(source))) {
+        try (var r = new JsonReader(new StringReader(source))) {
             r.readElement();
         }
     }
@@ -100,7 +97,7 @@ class JsonReaderTest {
             var a = p.readElement();
             assertAll(
                     () -> assertTrue(a instanceof JsonArray),
-                    () -> assertEquals(7, a instanceof JsonArray ja?ja.elements().size():-1),
+                    () -> assertEquals(7, a instanceof JsonArray ja ? ja.elements().size() : -1),
                     () -> assertTrue(a instanceof JsonArray ja && ja.elements().contains(new JsonString("str")))
             );
         }
@@ -139,25 +136,23 @@ class JsonReaderTest {
     @Test
     void testNestedObjectDepth1() throws IOException {
         String source = "{\"a\":{\"b\":[]}}";
-        try(var p = new JsonReader(new StringReader(source))) {
+        try (var p = new JsonReader(new StringReader(source))) {
             var e = p.readElement();
-            if(e instanceof JsonObject o0) {
+            if (e instanceof JsonObject o0) {
                 assertAll(
                         () -> assertEquals(1, o0.members().size()),
                         () -> assertTrue(o0.members().containsKey("a"))
                 );
-                if(o0.members().get("a") instanceof JsonObject o1) {
+                if (o0.members().get("a") instanceof JsonObject o1) {
                     assertAll(
                             () -> assertEquals(1, o1.members().size()),
                             () -> assertTrue(o1.members().containsKey("b")),
                             () -> assertEquals(new JsonArray(List.of()), o1.members().get("b"))
                     );
-                }
-                else {
+                } else {
                     fail("not a JsonObject");
                 }
-            }
-            else {
+            } else {
                 fail("not a JsonObject");
             }
         }
@@ -165,12 +160,11 @@ class JsonReaderTest {
 
     @Test
     void testParseLarge() throws Exception {
-        try(var src = largeFile(); var rdr = new JsonReader(src)) {
+        try (var src = largeFile(); var rdr = new JsonReader(src)) {
             try {
                 var result = rdr.readElement();
                 assertNotNull(result);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -181,18 +175,5 @@ class JsonReaderTest {
                 requireNonNull(getClass().getResourceAsStream("/large-file.json")),
                 StandardCharsets.UTF_8
         ));
-    }
-
-    @Test
-    void testJacksonLarge() throws Exception {
-        var r = JsonFactory.builder().build();
-        var p = r.createParser(largeFile());
-        var t = p.nextToken();
-        var l = new ArrayList<>();
-        while(t!=null) {
-            l.add(t.asString());
-            t = p.nextToken();
-        }
-        assertTrue(l.size()>0);
     }
 }

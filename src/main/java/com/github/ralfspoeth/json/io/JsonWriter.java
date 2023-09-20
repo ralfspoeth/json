@@ -1,9 +1,9 @@
 package com.github.ralfspoeth.json.io;
 
-import com.github.ralfspoeth.json.JsonArray;
-import com.github.ralfspoeth.json.Element;
-import com.github.ralfspoeth.json.JsonObject;
 import com.github.ralfspoeth.json.Basic;
+import com.github.ralfspoeth.json.Element;
+import com.github.ralfspoeth.json.JsonArray;
+import com.github.ralfspoeth.json.JsonObject;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -13,8 +13,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
-import static java.util.stream.Collectors.joining;
 
 public class JsonWriter implements AutoCloseable {
 
@@ -42,7 +40,6 @@ public class JsonWriter implements AutoCloseable {
                 var memberIterator = jo.members().entrySet().iterator();
                 if(memberIterator.hasNext()) {
                     writeMember(level, memberIterator);
-                    Map.Entry<String, Element> member;
                     while(memberIterator.hasNext()) {
                         out.println(',');
                         writeMember(level, memberIterator);
@@ -90,7 +87,7 @@ public class JsonWriter implements AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         out.close();
     }
 

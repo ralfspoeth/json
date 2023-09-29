@@ -55,7 +55,7 @@ public class JsonReader implements AutoCloseable {
                     var str = token2Value(tkn);
                     switch (stack.top()) {
                         case null -> stack.push(new Elem.Root(str));
-                        case Elem.ObjBuilderElem _ -> stack.push(new Elem.NameValuePair(tkn.value()));
+                        case Elem.ObjBuilderElem ignore -> stack.push(new Elem.NameValuePair(tkn.value()));
                         case Elem.ArrBuilderElem abe when abe.builder.size() == 0 -> abe.builder.item(str);
                         case Elem.Char nc -> {
                             stack.pop();
@@ -64,7 +64,7 @@ public class JsonReader implements AutoCloseable {
                                 case comma -> {
                                     stack.top();
                                     switch (stack.top()) {
-                                        case Elem.ObjBuilderElem _ ->
+                                        case Elem.ObjBuilderElem ignore ->
                                                 stack.push(new Elem.NameValuePair(tkn.value()));
                                         case Elem.ArrBuilderElem(var abe) -> abe.item(str);
                                         default -> throw new IllegalStateException("Unexpected value: " + stack.top());
@@ -84,8 +84,8 @@ public class JsonReader implements AutoCloseable {
                 }
                 case COMMA -> {
                     switch (stack.top()) {
-                        case Elem.ArrBuilderElem _ -> stack.push(comma);
-                        case Elem.ObjBuilderElem _ -> stack.push(comma);
+                        case Elem.ArrBuilderElem ignore -> stack.push(comma);
+                        case Elem.ObjBuilderElem ignore -> stack.push(comma);
                         case Elem.NameValuePair nvp when nvp.elem != null -> {
                             stack.pop();
                             if (stack.top() instanceof Elem.ObjBuilderElem be) {
@@ -105,8 +105,8 @@ public class JsonReader implements AutoCloseable {
                 case OPENING_BRACE -> {
                     switch (stack.top()) {
                         case null -> stack.push(Elem.ObjBuilderElem.empty());
-                        case Elem.ArrBuilderElem _ -> stack.push(Elem.ObjBuilderElem.empty());
-                        case Elem.Char _ -> {
+                        case Elem.ArrBuilderElem ignore -> stack.push(Elem.ObjBuilderElem.empty());
+                        case Elem.Char ignore -> {
                             stack.pop();
                             stack.push(Elem.ObjBuilderElem.empty());
                         }
@@ -116,11 +116,11 @@ public class JsonReader implements AutoCloseable {
                 case OPENING_BRACKET -> {
                     switch (stack.top()) {
                         case null -> stack.push(Elem.ArrBuilderElem.empty());
-                        case Elem.Char _ -> {
+                        case Elem.Char ignore -> {
                             stack.pop();
                             stack.push(Elem.ArrBuilderElem.empty());
                         }
-                        case Elem.ArrBuilderElem _ -> stack.push(Elem.ArrBuilderElem.empty());
+                        case Elem.ArrBuilderElem ignore -> stack.push(Elem.ArrBuilderElem.empty());
                         default -> ioex("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
@@ -168,7 +168,7 @@ public class JsonReader implements AutoCloseable {
     private void handle(String token, Element v) throws IOException {
         switch (stack.top()) {
             case null -> stack.push(new Elem.Root(v));
-            case Elem.NameValuePair nvp when nvp.elem==null -> stack.swap(_ -> nvp.withElem(v));
+            case Elem.NameValuePair nvp when nvp.elem==null -> stack.swap(ignore -> nvp.withElem(v));
             case Elem.Char nc -> {
                 switch (nc) {
                     case colon -> {

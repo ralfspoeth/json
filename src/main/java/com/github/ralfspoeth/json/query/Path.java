@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
+
 public sealed abstract class Path {
 
     private static final class MemberPath extends Path {

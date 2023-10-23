@@ -55,6 +55,29 @@ the facade of the parser. We finally managed to use
 mutable builders throughout the parsing phase and
 to return immutable instances in the end.
 
+## Getting Started
+
+Maven Coordinates
+
+    Group ID: io.github.ralfspoeth
+    Artifact ID: json
+
+In your `pom.xml` add
+
+    <dependency>
+        <groupId>io.github.ralfspoeth</groupId>
+        <artifactId>json</artifactId>
+    </dependency>
+
+@TODO add gradle syntax.
+
+If you are using JPMS modules with a `module-info.java` file, add
+    
+    module your.module {
+        requires io.github.ralfspoeth.json;
+        // more
+    }
+
 ## JSON
 
 [RFC 7159](https://datatracker.ietf.org/doc/html/rfc7159)

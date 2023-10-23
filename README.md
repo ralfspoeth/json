@@ -1,6 +1,7 @@
-# Java JSON Implementation
+# Java JSON IO Library
 
-This project implements a JSON parser which operates around immutable data structures for 
+This project implements a JSON parser and serializer 
+which operates around immutable data structures for 
 the JSON elements.
 
 

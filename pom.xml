@@ -4,7 +4,7 @@
 
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
     <url>https://github.com/ralfspoeth/json</url>
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

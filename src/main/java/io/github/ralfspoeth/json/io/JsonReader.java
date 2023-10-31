@@ -18,15 +18,15 @@ public class JsonReader implements AutoCloseable {
     }
 
     sealed interface Elem {
-        record ObjBuilderElem(Element.JsonObjectBuilder builder) implements Elem {
+        record ObjBuilderElem(Aggregate.JsonObjectBuilder builder) implements Elem {
             static ObjBuilderElem empty() {
-                return new ObjBuilderElem(Element.objectBuilder());
+                return new ObjBuilderElem(Aggregate.objectBuilder());
             }
         }
 
-        record ArrBuilderElem(Element.JsonArrayBuilder builder) implements Elem {
+        record ArrBuilderElem(Aggregate.JsonArrayBuilder builder) implements Elem {
             static ArrBuilderElem empty() {
-                return new ArrBuilderElem(Element.arrayBuilder());
+                return new ArrBuilderElem(Aggregate.arrayBuilder());
             }
         }
 

@@ -337,11 +337,11 @@ class of the `Element` interface with two implementations:
         }
         final class ArrayBuilder implements Builder<JsonArray>{...}
         final class ObjectBuilder implements Builder<JsonObject>{...}
-        // ... remainder
+        // ...
     }
 
 Since the implementing classes reside within the same compilation unit
-as the `Builder` there is not need for the `permits` clause.
+as the `Builder` there is no need for the `permits` clause.
 
 ## ArrayBuilder
 

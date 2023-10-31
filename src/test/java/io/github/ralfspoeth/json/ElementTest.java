@@ -13,7 +13,7 @@ class ElementTest {
     @Test
     void testDepth() {
         assertAll(
-                () -> assertEquals(1, Element.objectBuilder().build().depth())
+                () -> assertEquals(1, Aggregate.objectBuilder().build().depth())
         );
     }
 
@@ -48,12 +48,12 @@ class ElementTest {
                 JsonNumber.ZERO,
                 JsonNull.INSTANCE,
                 new JsonString("str"),
-                Element.arrayBuilder()
+                Aggregate.arrayBuilder()
                         .item(JsonNumber.ZERO)
                         .build(),
-                Element.objectBuilder()
+                Aggregate.objectBuilder()
                         .named("a", JsonBoolean.TRUE)
-                        .named("b", Element.arrayBuilder())
+                        .named("b", Aggregate.arrayBuilder())
                         .build()
         );
         var l = str.map(e -> switch (e) {

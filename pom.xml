@@ -3,21 +3,74 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.ralfspoeth</groupId>
+    <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-
+    <version>1.0.0</version>
+    <url>https://github.com/ralfspoeth/json</url>
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.plugin.validation>VERBOSE</maven.plugin.validation>
     </properties>
+    <name>Java JSON IO Implementation</name>
+    <description>
+        This project implements a JSON parser and serializer
+        which operates around immutable data structures for
+        the JSON elements.
+    </description>
     <scm>
+        <url>scm:git:https://github.com/ralfspoeth/json</url>
         <developerConnection>scm:git:https://github.com/ralfspoeth/json.git</developerConnection>
-        <tag>HEAD</tag>
     </scm>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/mit/</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>Ralf Spöth</name>
+            <email>ralf.spoeth@gmail.com</email>
+        </developer>
+    </developers>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.13</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

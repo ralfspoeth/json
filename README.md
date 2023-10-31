@@ -277,6 +277,20 @@ Naming primitive types basic and structured types aggregates has
 been a deliberate decision since the term primitive collides with
 the notion of primitive types in the Java language.
 
+## Aggregates are Functions
+
+Both aggregate types serve as functions: `JsonObject`s are 
+functions of `String`s and `JsonArray`s are functions of
+an index:
+
+    Map<String, Element> members; // given map
+    var obj = new JsonObject(members);
+    Function<String, Element> fun = obj; // legal
+    
+    List<Element> lst; // given list
+    var arr = new JsonArray(lst);
+    IntFunction<Element> ifun = arr; // legal
+
 # Builders
 
 The [Builder pattern](https://en.wikipedia.org/wiki/Builder_pattern)

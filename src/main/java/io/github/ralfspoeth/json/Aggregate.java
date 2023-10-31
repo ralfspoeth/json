@@ -1,5 +1,8 @@
 package io.github.ralfspoeth.json;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,10 +34,6 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         public JsonObjectBuilder named(String name, Element el) {
             data.put(name, el);
             return this;
-        }
-
-        public JsonObjectBuilder named(String name, Builder<?> b) {
-            return named(name, b.build());
         }
 
         public JsonObjectBuilder named(String name, Object o) {
@@ -94,5 +93,44 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         public JsonArrayBuilder nullItem() {
             return item(JsonNull.INSTANCE);
         }
+    }
+    
+    private static JsonArray ofIterable(Iterable<?> iterable) {
+        var ab = new JsonArrayBuilder();
+        for(var it: iterable) {
+            ab.item(Element.of(it));
+        }
+        return ab.build();
+    }
+
+    private static JsonObject ofRecord(Object r) {
+        var rc = r.getClass().getRecordComponents();
+        var ob = new JsonObjectBuilder();
+        for (RecordComponent comp : rc) {
+            var name = comp.getName();
+            try {
+                var value = comp.getAccessor().invoke(r);
+                ob.named(name, Element.of(value));
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return ob.build();
+    }
+
+    private static JsonArray ofArray(Object o) {
+        var ab = arrayBuilder();
+        for(int i=0; i < Array.getLength(o); i++) {
+            ab.item(Element.of(Array.get(o, i)));
+        }
+        return ab.build();
+    }
+    static Aggregate of(Object o) {
+        return switch(o) {
+            case Record r -> ofRecord(r);
+            case Iterable<?> it -> ofIterable(it);
+            case Object a when a.getClass().isArray() -> ofArray(a);
+            case null, default -> throw new IllegalArgumentException("Cannot turn into an aggregate: " + o);
+        };
     }
 }

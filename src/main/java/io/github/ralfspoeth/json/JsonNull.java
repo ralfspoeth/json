@@ -1,6 +1,6 @@
 package io.github.ralfspoeth.json;
 
-public final class JsonNull implements Basic {
+public final class JsonNull implements Basic<Object> {
     public static final JsonNull INSTANCE = new JsonNull();
 
     private JsonNull(){}
@@ -9,4 +9,7 @@ public final class JsonNull implements Basic {
     public String json() {
         return "null";
     }
+
+    @Override
+    public Object value() {return null;}
 }

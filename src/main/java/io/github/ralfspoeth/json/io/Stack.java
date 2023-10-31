@@ -6,7 +6,15 @@ import static java.util.Objects.requireNonNull;
 
 class Stack<T> {
 
-    private record Elem<T>(T item, Elem<T> next) {}
+    private static class Elem<T> {
+        T item;
+        Elem<T> next;
+
+        public Elem(T newItem, Elem<T> currentTop) {
+            this.item = requireNonNull(newItem);
+            this.next = currentTop;
+        }
+    }
 
     private Elem<T> top = null;
 
@@ -21,12 +29,11 @@ class Stack<T> {
     }
 
     public T top() {
-        return top==null?null:top.item;
+        return top == null ? null : top.item;
     }
 
-    public Stack<T> push(T elem) {
-        top = new Elem<>(requireNonNull(elem), top);
-        return this;
+    public void push(T elem) {
+        top = new Elem<>(elem, top);
     }
 
     /**
@@ -35,9 +42,8 @@ class Stack<T> {
      * of the stack.
      *
      * @param replacement a function
-     * @return {@code this}
      */
-    public Stack<T> swap(UnaryOperator<T> replacement) {
-        return push(replacement.apply(pop()));
+    public void swap(UnaryOperator<T> replacement) {
+        requireNonNull(top).item = replacement.apply(top.item);
     }
 }

@@ -2,7 +2,7 @@ package io.github.ralfspoeth.json;
 
 import java.util.Objects;
 
-public record JsonString(CharSequence value) implements Basic {
+public record JsonString(String value) implements Basic<String> {
     public JsonString {
         value = Objects.requireNonNullElse(value, "");
     }

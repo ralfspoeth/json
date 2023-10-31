@@ -99,6 +99,7 @@ public sealed abstract class Path {
             return regex.hashCode();
         }
     }
+
     private final Path parent;
 
     protected Path(Path parent) {

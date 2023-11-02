@@ -67,6 +67,7 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
+        <version>1.0.0</version>
     </dependency>
 
 @TODO add gradle syntax.

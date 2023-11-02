@@ -21,7 +21,7 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
         return members.values().stream().mapToInt(v ->
             switch (v) {
                 case Aggregate a -> a.depth();
-                case Basic<?> _ -> 1;
+                case Basic<?> ignored -> 1;
             }
         ).max().orElse(0)+1;
     }

@@ -1,10 +1,11 @@
 package io.github.ralfspoeth.json;
 
-public sealed interface Basic extends Element permits JsonBoolean, JsonNull, JsonNumber, JsonString {
+public sealed interface Basic<T> extends Element permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 
     String json();
+    T value();
 
-    static Basic of(Object o) {
+    static Basic<?> of(Object o) {
         return switch(o) {
             case null -> JsonNull.INSTANCE;
             case Boolean b -> JsonBoolean.of(b);

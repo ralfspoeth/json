@@ -1,8 +1,9 @@
 package io.github.ralfspoeth.json;
 
 import java.util.List;
+import java.util.function.IntFunction;
 
-public record JsonArray(List<Element> elements) implements Aggregate {
+public record JsonArray(List<Element> elements) implements Aggregate, IntFunction<Element> {
     public JsonArray {
         elements = List.copyOf(elements);
     }
@@ -17,4 +18,9 @@ public record JsonArray(List<Element> elements) implements Aggregate {
         return 1;
     }
 
+
+    @Override
+    public Element apply(int index) {
+        return elements.get(index);
+    }
 }

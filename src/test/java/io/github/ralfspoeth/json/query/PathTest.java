@@ -1,7 +1,7 @@
 package io.github.ralfspoeth.json.query;
 
+import io.github.ralfspoeth.json.Aggregate;
 import io.github.ralfspoeth.json.Basic;
-import io.github.ralfspoeth.json.Element;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +17,7 @@ class PathTest {
     @Test
     void ofSingle() {
         var five = Basic.of(5);
-        var singleElem = Element.objectBuilder().named("one", five).build();
+        var singleElem = Aggregate.objectBuilder().named("one", five).build();
         assertAll(
                 () -> assertEquals(Path.of("one"), Path.of("one")),
                 () -> assertTrue(Path.of("one").evaluate(singleElem).allMatch(five::equals))
@@ -27,8 +27,8 @@ class PathTest {
     @Test
     void ofRange() {
         var five = Basic.of(5);
-        var singleElemArray = Element.arrayBuilder().item(five).build();
-        var multiElemArray = Element.arrayBuilder().item(five).item(five).item(five).build();
+        var singleElemArray = Aggregate.arrayBuilder().item(five).build();
+        var multiElemArray = Aggregate.arrayBuilder().item(five).item(five).item(five).build();
         assertAll(
                 () -> assertEquals(Path.of("[0..-5]"), Path.of("[0..-1]")),
                 () -> assertTrue(Path.of("[0..-1]").evaluate(singleElemArray).allMatch(five::equals)),
@@ -44,8 +44,8 @@ class PathTest {
 
     @Test
     void ofNameRangeRegex() {
-        var root = Element.objectBuilder()
-                .named("one", Element.arrayBuilder().item(Element.objectBuilder().named("two", Basic.of(5))).build())
+        var root = Aggregate.objectBuilder()
+                .named("one", Aggregate.arrayBuilder().item(Aggregate.objectBuilder().named("two", Basic.of(5))).build())
                 .build();
         var path = Path.of("one/[0..1]/#t.*o");
         Assertions.assertEquals(Basic.of(5), path.evaluate(root).findFirst().orElseThrow());
@@ -55,7 +55,7 @@ class PathTest {
     void ofRegex() {
         var path = Path.of("#o.*e");
         var five = Basic.of(5);
-        var singleElem = Element.objectBuilder().named("oe", five).build();
+        var singleElem = Aggregate.objectBuilder().named("oe", five).build();
         Assertions.assertEquals(five, path.evaluate(singleElem).findFirst().orElseThrow());
     }
 

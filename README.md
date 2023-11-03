@@ -139,7 +139,7 @@ with the value `false`. The value of the `publications`
 attribute is an array of a single string valued
 `"De bello gallico"`.
 
-Wikipedia has more about JSON [here](https://en.wikipedia.org/wiki/JSON).
+Wikipedia has more on JSON [here](https://en.wikipedia.org/wiki/JSON).
 
 JSON is schema-less, that is, you cannot prescribe the structure
 of a JSON document using some kind of schema.
@@ -217,11 +217,11 @@ any surprises.
         TRUE, FALSE
     }
 
-## Modelling `Null` as Singleton
+## Modelling `null` as Singleton
 
-As with booleans we decided to implement the `Null`
-instances as copies of the only possible instance.
-The singleton pattern which goes like 
+As with booleans we decided to implement the `null`
+as a singleton class.
+The singleton pattern goes like 
 
     final class Singleton {
         static final Singleton INSTANCE = new Singleton();
@@ -231,15 +231,15 @@ The singleton pattern which goes like
 and translates into
 
     public final class JsonNull implements Element {
-        private JsonNull() {}
+        private JsonNull() {} // prevent instantiation
         public static final JsonNull INSTANCE = new JsonNull(); 
     }
 
 ## Modelling `String` as Record of String
 
-There is no need to wrap JSON strings into 
+There is strictly speaking no need to wrap JSON strings into 
 records with a single component of type string.
-But in order to make strings part of the sealed
+But in order to make JSON strings part of the sealed
 hierarchy we have to do so:
 
     public record JsonString(String value) implements Element {
@@ -270,7 +270,7 @@ we want to make sure the contents is immutable:
 
     public record JsonArray(List<Element> elements) implements Element {
         public JsonArray {
-            elements = List.copyOf(elements);
+            elements = List.copyOf(elements); // defensive copy
         }
     }
 
@@ -278,7 +278,8 @@ The canonical constructor is overridden such that
 it uses a copy of the list provided; 
 that method is clever enough NOT to copy the list
 parameter if it can be sure that that parameter
-is already an immutable instance.
+is already an immutable instance -- most notably if 
+it has been instantiated using `List.of(...)`.
 This method also makes sure no actual `null` instance
 is passed in within the list of elements.
 (`JsonNull`s are acceptable of course.)
@@ -292,12 +293,13 @@ to `Element`s:
 
     public record JsonObject(Map<String, Element> members) implements Element {
         public JsonObject {
-            members = Map.copyOf(members);
+            members = Map.copyOf(members); // defensive copy
         }
     }
 
 `Map.copyOf` provides a copy but returns the original map
-when that is already immutable.
+when that is already immutable, especially when instantiated using
+`Map.of(...)`.
 
 Since both aggregate types `JsonObject` and `JsonArray` are 
 shallowly immutable (or unmodifiable) and all basic types  
@@ -324,13 +326,13 @@ the notion of primitive types in the Java language.
 
 Both aggregate types serve as functions: `JsonObject`s are 
 functions of `String`s and `JsonArray`s are functions of
-an index:
+an `int` index:
 
-    Map<String, Element> members; // given map
+    Map<String, Element> members; // given
     var obj = new JsonObject(members);
     Function<String, Element> fun = obj; // legal
     
-    List<Element> lst; // given list
+    List<Element> lst; // given
     var arr = new JsonArray(lst);
     IntFunction<Element> ifun = arr; // legal
 
@@ -344,12 +346,12 @@ immutable data and works like this:
 
 It does not make much sense to provide builders for the basic data
 types; yet very much so for the aggregate types.
-This is one reason why we introduced the distinction between the two.
+This is another reason why we introduced the distinction between the two.
 
 The `Builder` interface has been implemented as an inner interface
-class of the `Element` interface with two implementations:
+class of the `Aggregate` interface with two implementations:
 
-    public sealed interface Element permits Basic, Aggregate {
+    public sealed interface Aggregate permits JsonArray, JsonObject {
         sealed interface Builder<T extends Aggregate> {
             T build();
             // ...
@@ -394,7 +396,7 @@ Both builders are instantiable through static methods in the
     JsonObjectBuilder objectBuilder();
     JsonArrayBuilder arrayBuilder();
 
-The implemeting classes both need to be public because they provide
+The implementing classes both need to be public because they provide
 different methods for adding intermediate data;
 `JsonArray` provides an `item(Element)` method and
 `JsonObject` a `named(String, Element)` method in order to
@@ -405,7 +407,7 @@ add data their internal structures.
 ## JsonReader
 
 The parser implementation named `JsonReader` in package
-`json.io` implements the `AutoCloseable` interface and is
+`io.github.ralfspoeth.json.io` implements the `AutoCloseable` interface and is
 meant to be used in try-with-resources statements like so:
 
     Reader src = ...
@@ -415,11 +417,9 @@ meant to be used in try-with-resources statements like so:
 
 It uses a `Lexer` internally which tokenizes a character stream
 into tokens like braces, brackets, comma, colon, number literals, 
-string literals, and null, true, and false.
-The parser uses a stack with builders, special tokens or finally with 
-a root object as its sole element. It utilizes
-an inner sealed interface to cater for a limited set of stack
-elements.
+string literals, and `null`, `true`, and `false`.
+The parser uses a stack of nodes wich encapsulate builders, special tokens, or an element. 
+It utilizes an inner sealed interface to cater for this limited set of stack elements.
 
 ## JsonWriter
 
@@ -430,8 +430,8 @@ a separate line. Arrays are printed interspersed
 by commas and a white space but in a single line.
 
 The usage is similar to that of the `JsonReader` with
-the exception that it uses a single factory method
-only currently:
+the exception that it uses a single factory method currently
+but not constructor:
 
     Element object = ... 
     Writer w = ... 
@@ -443,7 +443,7 @@ The `JsonWriter` provides the static method
 `minimize` which removes whitespace safely from 
 a given input stream.
 
-# Querying
+# Querying (Experimental)
 
 The package `query` provides simple utilities
 for querying data based on some root element.

@@ -15,11 +15,8 @@ where the JSON format has been of special interest,
 and being quite dissatisfied with the usage experience
 of popular JSON libraries like [GSON](https://github.com/google/gson)
 or [Jackson](https://github.com/FasterXML/jackson)
-unless the object graph serialization from and to JSON
 the motivation to implement an alternative library was high enough
 to start the project.
-Having a Java representation of a JSON file
-and then 
 
 The JSON type hierarchy is very simple and strict
 enough to apply the algebraic data types introduced
@@ -41,7 +38,7 @@ Learning a tiny little bit of
 [Clojure](https://clojure.org/about/rationale)
 taught me another series of important things,
 the most striking being Rich Hickey's keynote about
-[The Value of Values](https://www.youtube.com/watch?v=-6BsiVyC1kM).
+[The Value of Values](https://www.youtube.com/watch?v=-6BsiVyC1kM)
 at the Jaxconf 2012 in San Francisco.
 Treating values as immutable things changes the mental
 model of programming at least if you're coming 
@@ -67,10 +64,18 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.2</version>
     </dependency>
 
-@TODO add gradle syntax.
+or, when using Gradle (Groovy)
+
+    implementation 'io.github.ralfspoeth:json:1.0.2'
+
+or, with Gradle (Kotlin), put 
+
+    implementation("io.github.ralfspoeth:json:1.0.2")
+
+in your build file.
 
 If you are using JPMS modules with a `module-info.java` file, add
     

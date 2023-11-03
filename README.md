@@ -84,6 +84,19 @@ If you are using JPMS modules with a `module-info.java` file, add
         // more
     }
 
+The module `io.github.ralfspoeth.json` exports two packages that you 
+may use in your application:
+
+    import io.github.ralfspoeth.json.*;
+    import io.github.ralfspoeth.json.io.*;
+
+The first package contains the data types (`Element` and its descendants)
+and the second contains the `JsonReader` and `JsonWriter` classes.
+
+The package `io.github.ralfspoeth.json.query` is immature and not exported.
+It is nevertheless available when you don't define a `module-info` with your 
+application; note that the package may be changed or even deleted.
+
 ## JSON
 
 [RFC 7159](https://datatracker.ietf.org/doc/html/rfc7159)

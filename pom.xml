@@ -4,7 +4,7 @@
 
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
     <packaging>jar</packaging>
     <url>https://github.com/ralfspoeth/json</url>
     <properties>
@@ -21,7 +21,7 @@
     <scm>
         <url>scm:git:https://github.com/ralfspoeth/json</url>
         <developerConnection>scm:git:https://github.com/ralfspoeth/json.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>json-1.0.3</tag>
     </scm>
     <licenses>
         <license>

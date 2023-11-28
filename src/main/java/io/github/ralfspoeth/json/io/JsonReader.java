@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json.io;
 
+import io.github.ralfspoeth.basix.coll.Stack;
 import io.github.ralfspoeth.json.*;
 
 import java.io.IOException;
@@ -60,9 +61,8 @@ public class JsonReader implements AutoCloseable {
                         case Elem.Char nc -> {
                             stack.pop();
                             switch (nc) {
-                                case colon -> stack.swap(se -> Elem.NameValuePair.class.cast(se).withElem(str));
+                                case colon -> stack.push(Elem.NameValuePair.class.cast(stack.pop()).withElem(str));
                                 case comma -> {
-                                    stack.top();
                                     switch (stack.top()) {
                                         case Elem.ObjBuilderElem ignored ->
                                                 stack.push(new Elem.NameValuePair(tkn.value()));
@@ -168,12 +168,12 @@ public class JsonReader implements AutoCloseable {
     private void handle(String token, Element v) throws IOException {
         switch (stack.top()) {
             case null -> stack.push(new Elem.Root(v));
-            case Elem.NameValuePair nvp when nvp.elem==null -> stack.swap(ignore -> nvp.withElem(v));
+            case Elem.NameValuePair nvp when nvp.elem==null -> {stack.pop(); stack.push(nvp.withElem(v));}
             case Elem.Char nc -> {
                 switch (nc) {
                     case colon -> {
                         stack.pop(); // pop colon, topmost element must be an NVP
-                        stack.swap(se -> Elem.NameValuePair.class.cast(se).withElem(v));
+                        stack.push(Elem.NameValuePair.class.cast(stack.pop()).withElem(v));
                     }
                     case comma -> {
                         stack.pop(); // pop comma

@@ -131,17 +131,22 @@
         </plugins>
     </build>
     <dependencies>
+        <dependency>
+            <groupId>io.github.ralfspoeth</groupId>
+            <artifactId>basix</artifactId>
+            <version>1.0.2</version>
+        </dependency>
         <!-- testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.10.0</version>
+            <version>5.10.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.10.0</version>
+            <version>5.10.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

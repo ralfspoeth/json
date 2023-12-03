@@ -23,6 +23,10 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
     sealed interface Builder<T extends Aggregate> {
         int size();
 
+        default boolean isEmpty() {
+            return size()==0;
+        }
+
         T build();
     }
 

@@ -57,7 +57,7 @@ public class JsonReader implements AutoCloseable {
                     switch (stack.top()) {
                         case null -> stack.push(new Elem.Root(str));
                         case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameValuePair(tkn.value()));
-                        case Elem.ArrBuilderElem abe when abe.builder.size() == 0 -> abe.builder.item(str);
+                        case Elem.ArrBuilderElem abe when abe.builder.isEmpty() -> abe.builder.item(str);
                         case Elem.Char nc -> {
                             stack.pop();
                             switch (nc) {
@@ -137,7 +137,7 @@ public class JsonReader implements AutoCloseable {
                                 throw new AssertionError();
                             }
                         }
-                        case Elem.ObjBuilderElem obe when obe.builder.size() == 0 -> {
+                        case Elem.ObjBuilderElem obe when obe.builder.isEmpty() -> {
                             stack.pop();
                             yield obe.builder.build();
                         }

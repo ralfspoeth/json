@@ -64,16 +64,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.6</version>
     </dependency>
 
 or, when using Gradle (Groovy)
 
-    implementation 'io.github.ralfspoeth:json:1.0.2'
+    implementation 'io.github.ralfspoeth:json:1.0.6'
 
 or, with Gradle (Kotlin), put 
 
-    implementation("io.github.ralfspoeth:json:1.0.2")
+    implementation("io.github.ralfspoeth:json:1.0.6")
 
 in your build file.
 
@@ -313,7 +313,7 @@ between primitive and structured types, we differentiate
 between basic and aggregate types like so:
 
     public sealed interface Element permits Basic, Aggregate {...}
-    public sealed interface Basis extends Element permits
+    public sealed interface Basic extends Element permits
         JsonBoolean, JsonNull, JsonNumber, JsonString {}
     public sealed interace Aggregate extends Element permits
         JsonArray, JsonObject {...}

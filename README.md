@@ -541,5 +541,5 @@ and `JsonString`.
 The `enumValue...` methods takes two arguments: a class declared with the `enum` 
 keyword, and the `Element` which must be of type `JsonString`. 
 While `enumValue` uses the `Enum::valueOf` method, the `enumValueIgnoreCase`
-converts the value and all of the constants' names defined in the enum class 
+converts the value and all the constants' names defined in the enum class 
 to uppercase strings before selecting the enum constant.

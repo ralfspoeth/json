@@ -52,11 +52,26 @@ class StandardConversionsTest {
     }
 
     @Test
+    void testBooleanValue() {
+        assertAll(
+                () -> assertTrue(booleanValue(JsonBoolean.TRUE)),
+                () -> assertFalse(booleanValue(JsonBoolean.FALSE)),
+                () -> assertTrue(booleanValue(new JsonString("true"))),
+                () -> assertTrue(booleanValue(new JsonString("TrUe"))),
+                () -> assertFalse(booleanValue(new JsonString("false"))),
+                () -> assertFalse(booleanValue(new JsonString("XXX"))),
+                () -> assertThrows(IllegalArgumentException.class, () -> booleanValue(new JsonNumber(1d)))
+        );
+    }
+
+
+    @Test
     void testEnumValue() {
         enum E {ONE, TWO}
 
         assertAll(
                 () -> assertEquals(E.ONE, enumValue(E.class, new JsonString("ONE"))),
+                () -> assertNotEquals(E.TWO, enumValue(E.class, new JsonString("ONE"))),
                 () -> assertThrows(IllegalArgumentException.class, () -> enumValue(E.class, new JsonString("one"))),
                 () -> assertEquals(E.ONE, enumValueIgnoreCase(E.class, new JsonString("one")))
         );

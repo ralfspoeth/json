@@ -46,7 +46,7 @@ class JsonReaderTest {
         sources.forEach(source -> {
             try (var parser = new JsonReader(new StringReader(source))) {
                 var v = parser.readElement();
-                assertAll(() -> assertTrue(v instanceof Basic));
+                assertAll(() -> assertInstanceOf(Basic.class, v));
             } catch (IOException ioex) {
                 assertNull(ioex);
             }
@@ -75,7 +75,7 @@ class JsonReaderTest {
         var source = "{\"n\":5}";
         try (var r = new JsonReader(new StringReader(source))) {
             var o = r.readElement();
-            assertAll(() -> assertTrue(o instanceof JsonObject),
+            assertAll(() -> assertInstanceOf(JsonObject.class, o),
                     () -> assertEquals(1, o instanceof JsonObject jo ? jo.members().size() : -1),
                     () -> Assertions.assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
             );
@@ -96,7 +96,7 @@ class JsonReaderTest {
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
-                    () -> assertTrue(a instanceof JsonArray),
+                    () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(7, a instanceof JsonArray ja ? ja.elements().size() : -1),
                     () -> assertTrue(a instanceof JsonArray ja && ja.elements().contains(new JsonString("str")))
             );
@@ -109,7 +109,7 @@ class JsonReaderTest {
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
-                    () -> assertTrue(a instanceof JsonArray),
+                    () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(1, ((JsonArray) a).elements().size()),
                     () -> assertTrue(((JsonArray) a).elements().contains(
                             new JsonObject(Map.of("n", new JsonNumber(55)))
@@ -124,7 +124,7 @@ class JsonReaderTest {
         try (var p = new JsonReader(new StringReader(source))) {
             var a = p.readElement();
             assertAll(
-                    () -> assertTrue(a instanceof JsonArray),
+                    () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(2, ((JsonArray) a).elements().size()),
                     () -> assertTrue(((JsonArray) a).elements().contains(
                             new JsonObject(Map.of("m", new JsonNumber(7)))
@@ -156,6 +156,11 @@ class JsonReaderTest {
                 fail("not a JsonObject");
             }
         }
+    }
+
+    @Test
+    void testParseString(){
+        assertEquals(JsonNull.INSTANCE, JsonReader.readElement("null"));
     }
 
     @Test

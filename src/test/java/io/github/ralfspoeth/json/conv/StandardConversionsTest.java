@@ -3,12 +3,10 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.JsonBoolean;
 import io.github.ralfspoeth.json.JsonNumber;
 import io.github.ralfspoeth.json.JsonString;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static io.github.ralfspoeth.json.conv.StandardConversions.*;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class StandardConversionsTest {
 
@@ -46,6 +44,23 @@ class StandardConversionsTest {
         );
     }
 
+    @Test
+    void testStringValue() {
+        assertAll(
+                () -> assertEquals("one", stringValue(new JsonString("one")))
+        );
+    }
+
+    @Test
+    void testEnumValue() {
+        enum E {ONE, TWO}
+
+        assertAll(
+                () -> assertEquals(E.ONE, enumValue(E.class, new JsonString("ONE"))),
+                () -> assertThrows(IllegalArgumentException.class, () -> enumValue(E.class, new JsonString("one"))),
+                () -> assertEquals(E.ONE, enumValueIgnoreCase(E.class, new JsonString("one")))
+        );
+    }
 
 
 }

@@ -12,4 +12,9 @@ public record JsonNumber(double numVal) implements Basic<Double> {
     public Double value() {
         return numVal;
     }
+
+    @Override
+    public boolean booleanValue() {
+        return Double.compare(0d, numVal)==0;
+    }
 }

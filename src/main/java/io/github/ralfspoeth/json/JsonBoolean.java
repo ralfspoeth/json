@@ -11,11 +11,6 @@ public enum JsonBoolean implements Basic<Boolean> {
         public Boolean value() {
             return Boolean.TRUE;
         }
-
-        @Override
-        public boolean booleanValue() {
-            return true;
-        }
     }, FALSE{
         @Override
         public String json() {
@@ -25,11 +20,6 @@ public enum JsonBoolean implements Basic<Boolean> {
         @Override
         public Boolean value() {
             return Boolean.FALSE;
-        }
-
-        @Override
-        public boolean booleanValue() {
-            return false;
         }
     };
 

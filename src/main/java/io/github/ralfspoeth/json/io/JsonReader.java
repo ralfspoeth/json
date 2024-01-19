@@ -5,6 +5,7 @@ import io.github.ralfspoeth.json.*;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.Objects;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
@@ -35,6 +36,7 @@ public class JsonReader implements AutoCloseable {
             NameValuePair(String name) {
                 this(name, null);
             }
+
             NameValuePair withElem(Element e) {
                 return new NameValuePair(this.name, e);
             }
@@ -47,6 +49,14 @@ public class JsonReader implements AutoCloseable {
     }
 
     private final Stack<Elem> stack = new Stack<>();
+
+    public static Element readElement(String s) {
+        try (var rdr = new JsonReader(new StringReader(s))) {
+            return rdr.readElement();
+        } catch (IOException ioex) {
+            throw new AssertionError(ioex);
+        }
+    }
 
     public Element readElement() throws IOException {
         while (lexer.hasNext()) {
@@ -168,7 +178,10 @@ public class JsonReader implements AutoCloseable {
     private void handle(String token, Element v) throws IOException {
         switch (stack.top()) {
             case null -> stack.push(new Elem.Root(v));
-            case Elem.NameValuePair nvp when nvp.elem==null -> {stack.pop(); stack.push(nvp.withElem(v));}
+            case Elem.NameValuePair nvp when nvp.elem == null -> {
+                stack.pop();
+                stack.push(nvp.withElem(v));
+            }
             case Elem.Char nc -> {
                 switch (nc) {
                     case colon -> {

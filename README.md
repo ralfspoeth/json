@@ -502,3 +502,44 @@ yields the stream of `true` and `false`.
 
 Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
 the stream of `5d`.
+
+# Standard Conversions
+
+Package `conv` contains the utility class `StandardConversions`
+which converts `Element`s into primitive types `int`, `long`, `double` or 
+`boolean` and to `String` or a given `Enum` type.
+All conversion methods take any `Element` type as an argument and may
+throw `IllegalArgumentException` for the sake of simplicity.
+The conversion methods in the `StandardConversions` class respects 
+that many JSON authors put all values into double-quotes, even `null`, `true`, and `false`
+as well as numbers. These values are parsed into `JsonString` instance;
+their contains is converted into numbers, boolean values and `null` if possible 
+as well.
+
+## Numerical Conversions
+
+The methods `intValue`, `longValue` and `doubleValue` utilize the 
+`parse<Type>` methods of the respective `Integer`, `Long` and `Double` 
+classes for `JsonString`s, and standard conversion from `double` to `int` and `long`
+for `JsonNumber`s. `JsonBoolean` are converted to 1 and 0 for `TRUE` and `FALSE`, 
+respectively.
+
+
+## String Conversion
+
+The `stringValue` conversion uses natural conversions for all
+`Basic` types, and the `toString` methods applied on the contained 
+`list`s and `map`s of the `Aggregate` types.
+
+## Boolean Conversion
+
+The `booleanValue` conversion does the obvious conversions for `JsonBoolean`
+and `JsonString`.
+
+## Enum Conversion
+
+The `enumValue...` methods takes two arguments: a class declared with the `enum` 
+keyword, and the `Element` which must be of type `JsonString`. 
+While `enumValue` uses the `Enum::valueOf` method, the `enumValueIgnoreCase`
+converts the value and all of the constants' names defined in the enum class 
+to uppercase strings before selecting the enum constant.

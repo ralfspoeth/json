@@ -8,6 +8,21 @@ import static org.junit.jupiter.api.Assertions.*;
 class BuilderTest {
 
     @Test
+    void testObjectBuilderMergeUpdateRemove() {
+        var one = objectBuilder().named("a", 1).named("b", 2).build();
+        var two = objectBuilder().named("b", 3).named("c", 4).build();
+        var merged = Aggregate.builder(one).merge(two).build();
+        var expected = objectBuilder().named("a", 1).named("b", 3).named("c", 4).build();
+        assertAll(
+                () -> assertEquals(expected, merged),
+                () -> assertEquals(objectBuilder().named("a", 1).build(), Aggregate.builder(one).remove("b").build()),
+                () -> assertEquals(objectBuilder().named("a", 1).build(), Aggregate.builder(one).removeAll(two).build()),
+                () -> assertEquals(objectBuilder().named("a", 1).named("b", 3).build(), Aggregate.builder(one).update(two).build())
+        );
+
+    }
+
+    @Test
     void testObjectBuilder() {
         var obj = objectBuilder()
                 .named("name", "Ralf")

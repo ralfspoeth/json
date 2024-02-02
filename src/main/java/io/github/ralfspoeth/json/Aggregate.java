@@ -3,18 +3,39 @@ package io.github.ralfspoeth.json;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static io.github.ralfspoeth.basix.fn.Predicates.in;
 
 public sealed interface Aggregate extends Element permits JsonArray, JsonObject {
     static JsonObjectBuilder objectBuilder() {
         return new JsonObjectBuilder();
     }
 
+    static JsonObjectBuilder builder(Map<String, ? extends Element> map) {
+        var bldr = objectBuilder();
+        map.forEach(bldr::named);
+        return bldr;
+    }
+
+    static JsonObjectBuilder builder(JsonObject from) {
+        return builder(from.members());
+    }
+
     static JsonArrayBuilder arrayBuilder() {
         return new JsonArrayBuilder();
+    }
+
+    static JsonArrayBuilder builder(Iterable<? extends Element> elems) {
+        var ab = new JsonArrayBuilder();
+        for(var elem: elems) {
+            ab.item(elem);
+        }
+        return ab;
+    }
+
+    static JsonArrayBuilder builder(JsonArray from) {
+        return builder(from.elements());
     }
 
     int size();
@@ -46,6 +67,40 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
         public JsonObjectBuilder namedNull(String name) {
             return named(name, JsonNull.INSTANCE);
+        }
+
+        public JsonObjectBuilder update(Map<String, ? extends Element> map) {
+            map.entrySet().stream()
+                    .filter(in(data.keySet(), Map.Entry::getKey))
+                    .forEach(e -> named(e.getKey(), e.getValue()));
+            return this;
+        }
+
+        public JsonObjectBuilder update(JsonObject o) {
+            return update(o.members());
+        }
+
+        public JsonObjectBuilder merge(Map<String, ? extends Element> map) {
+            map.forEach(this::named);
+            return this;
+        }
+
+        public JsonObjectBuilder merge(JsonObject o) {
+            return merge(o.members());
+        }
+
+        public JsonObjectBuilder remove(String key) {
+            data.remove(key);
+            return this;
+        }
+
+        public JsonObjectBuilder removeAll(Collection<String> keys) {
+            keys.forEach(data::remove);
+            return this;
+        }
+
+        public JsonObjectBuilder removeAll(JsonObject o) {
+            return removeAll(o.members().keySet());
         }
 
         @Override

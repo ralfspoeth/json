@@ -162,7 +162,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         return ab.build();
     }
 
-    private static JsonObject ofRecord(Object r) {
+    private static <R extends Record> JsonObject ofRecord(R r) {
         var rc = r.getClass().getRecordComponents();
         var ob = new JsonObjectBuilder();
         for (RecordComponent comp : rc) {

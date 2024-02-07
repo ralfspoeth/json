@@ -2,6 +2,8 @@ package io.github.ralfspoeth.json.conv;
 
 import io.github.ralfspoeth.json.*;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -84,6 +86,49 @@ public class StandardConversions {
             case JsonBoolean b -> b == JsonBoolean.TRUE;
             case JsonString js -> Boolean.parseBoolean(js.value());
             default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);
+        };
+    }
+
+    private static <R extends Record> R asRecord(Class<R> type, JsonObject e) {
+        assert type.isRecord();
+        var comps = type.getRecordComponents();
+        var compTypes = new Class<?>[comps.length];
+        var vals = new Object[comps.length];
+        for(int i=0; i<comps.length; i++) {
+            compTypes[i] = comps[i].getType();
+            vals[i] = as(compTypes[i], e.members().get(comps[i].getName()));
+        }
+        try {
+            var constructor = type.getDeclaredConstructor(compTypes);
+            return constructor.newInstance(vals);
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static <T> T as(Class<T> compType, Element element) {
+        if(compType.isRecord() && element instanceof JsonObject jo) {
+            return (T) asRecord((Class<Record>)compType, jo);
+        } else if(compType.isArray() && element instanceof JsonArray) {
+            var t = compType.getComponentType();
+            return (T)asArray(t, element);
+        }
+        else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    private static Object asArray(Class<?> type, Element element) {
+        return switch (element) {
+            case JsonArray ja -> {
+                var array = java.lang.reflect.Array.newInstance(type, ja.size());
+                for(int i=0; i<ja.size(); i++) {
+                    Array.set(array, i, as(type, ja.elements().get(i)));
+                }
+                yield array;
+            }
+            default -> throw new AssertionError();
+
         };
     }
 }

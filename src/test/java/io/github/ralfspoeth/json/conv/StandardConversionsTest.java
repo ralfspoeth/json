@@ -78,4 +78,12 @@ class StandardConversionsTest {
     }
 
 
+    @Test
+    void testAs() {
+        record R(int x, int y) {
+
+        }
+    }
+
+
 }

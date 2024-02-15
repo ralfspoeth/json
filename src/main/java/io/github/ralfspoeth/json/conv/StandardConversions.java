@@ -7,19 +7,20 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
+import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
+
 public class StandardConversions {
 
-    private StandardConversions(){
+    private StandardConversions() {
         // prevent instantiation
     }
 
     public static int intValue(Element elem) {
         return switch (elem) {
             case JsonNumber n -> (int) n.numVal();
-            case JsonBoolean b -> switch (b) {
-                case TRUE -> 1;
-                case FALSE -> 0;
-            };
+            case TRUE -> 1;
+            case FALSE -> 0;
             case JsonString s -> Integer.parseInt(s.value());
             case JsonNull ignored -> 0;
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to int: " + a);
@@ -29,10 +30,8 @@ public class StandardConversions {
     public static long longValue(Element elem) {
         return switch (elem) {
             case JsonNumber n -> (long) n.numVal();
-            case JsonBoolean b -> switch (b) {
-                case TRUE -> 1L;
-                case FALSE -> 0L;
-            };
+            case TRUE -> 1L;
+            case FALSE -> 0L;
             case JsonString s -> Long.parseLong(s.value());
             case JsonNull ignored -> 0L;
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to long: " + a);
@@ -42,10 +41,8 @@ public class StandardConversions {
     public static double doubleValue(Element elem) {
         return switch (elem) {
             case JsonNumber n -> n.numVal();
-            case JsonBoolean b -> switch (b) {
-                case TRUE -> 1d;
-                case FALSE -> 0d;
-            };
+            case TRUE -> 1d;
+            case FALSE -> 0d;
             case JsonString s -> Double.parseDouble(s.value());
             case JsonNull ignored -> 0d;
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to double: " + a);
@@ -75,7 +72,7 @@ public class StandardConversions {
             case JsonString s -> s.value();
             case JsonNull ignored -> "null";
             case JsonNumber n -> Double.toString(n.numVal());
-            case JsonBoolean b -> Boolean.toString(b == JsonBoolean.TRUE);
+            case JsonBoolean b -> Boolean.toString(b == TRUE);
             case JsonArray a -> a.elements().toString();
             case JsonObject o -> o.members().toString();
         };
@@ -83,7 +80,7 @@ public class StandardConversions {
 
     public static boolean booleanValue(Element elem) {
         return switch (elem) {
-            case JsonBoolean b -> b == JsonBoolean.TRUE;
+            case JsonBoolean b -> b == TRUE;
             case JsonString js -> Boolean.parseBoolean(js.value());
             default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);
         };
@@ -94,26 +91,26 @@ public class StandardConversions {
         var comps = type.getRecordComponents();
         var compTypes = new Class<?>[comps.length];
         var vals = new Object[comps.length];
-        for(int i=0; i<comps.length; i++) {
+        for (int i = 0; i < comps.length; i++) {
             compTypes[i] = comps[i].getType();
             vals[i] = as(compTypes[i], e.members().get(comps[i].getName()));
         }
         try {
             var constructor = type.getDeclaredConstructor(compTypes);
             return constructor.newInstance(vals);
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException ex) {
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     public static <T> T as(Class<T> compType, Element element) {
-        if(compType.isRecord() && element instanceof JsonObject jo) {
-            return (T) asRecord((Class<Record>)compType, jo);
-        } else if(compType.isArray() && element instanceof JsonArray) {
+        if (compType.isRecord() && element instanceof JsonObject jo) {
+            return (T) asRecord((Class<Record>) compType, jo);
+        } else if (compType.isArray() && element instanceof JsonArray) {
             var t = compType.getComponentType();
-            return (T)asArray(t, element);
-        }
-        else {
+            return (T) asArray(t, element);
+        } else {
             throw new IllegalArgumentException();
         }
     }
@@ -122,7 +119,7 @@ public class StandardConversions {
         return switch (element) {
             case JsonArray ja -> {
                 var array = java.lang.reflect.Array.newInstance(type, ja.size());
-                for(int i=0; i<ja.size(); i++) {
+                for (int i = 0; i < ja.size(); i++) {
                     Array.set(array, i, as(type, ja.elements().get(i)));
                 }
                 yield array;
@@ -131,4 +128,41 @@ public class StandardConversions {
 
         };
     }
+
+    private static <T extends Number> T asNumber(Class<T> numType, Element el) {
+        return switch (el) {
+            case JsonNumber n -> {
+                Double doubleValue = n.value();
+                yield asNumType(numType, el, doubleValue);
+            }
+            case JsonString s -> {
+                var doubleValue = Double.parseDouble(s.value());
+                yield asNumType(numType, el, doubleValue);
+            }
+            case TRUE -> asNumType(numType, el, 1d);
+            case FALSE -> asNumType(numType, el, 0d);
+            case JsonNull n -> asNumType(numType, el, 0d);
+            case null, default -> throw new IllegalArgumentException(el + " cannot be cast into " + numType);
+        };
+    }
+
+    private static <T extends Number> T asNumType(Class<T> numType, Element el, Double val) {
+        if (numType.equals(Double.class)) {
+            return (T) val;
+        } else if (numType.equals(Float.class)) {
+            return (T) Float.valueOf(val.floatValue());
+        } else if (numType.equals(Integer.class)) {
+            return (T) Integer.valueOf(val.intValue());
+        } else if (numType.equals(Long.class)) {
+            return (T) Long.valueOf(val.longValue());
+        } else if (numType.equals(Short.class)) {
+            return (T) Short.valueOf(val.shortValue());
+        } else if (numType.equals(Byte.class)) {
+            return (T) Byte.valueOf(val.byteValue());
+        } else {
+            throw new IllegalArgumentException(el + " cannot be cast into " + numType);
+        }
+    }
+
+
 }

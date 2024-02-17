@@ -2,10 +2,10 @@ package io.github.ralfspoeth.json.conv;
 
 import io.github.ralfspoeth.json.*;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
@@ -133,20 +133,20 @@ public class StandardConversions {
         return switch (el) {
             case JsonNumber n -> {
                 Double doubleValue = n.value();
-                yield asNumType(numType, el, doubleValue);
+                yield asNumType(numType, doubleValue);
             }
             case JsonString s -> {
                 var doubleValue = Double.parseDouble(s.value());
-                yield asNumType(numType, el, doubleValue);
+                yield asNumType(numType, doubleValue);
             }
-            case TRUE -> asNumType(numType, el, 1d);
-            case FALSE -> asNumType(numType, el, 0d);
-            case JsonNull n -> asNumType(numType, el, 0d);
+            case TRUE -> asNumType(numType, 1d);
+            case FALSE -> asNumType(numType, 0d);
+            case JsonNull n -> asNumType(numType, 0d);
             case null, default -> throw new IllegalArgumentException(el + " cannot be cast into " + numType);
         };
     }
 
-    private static <T extends Number> T asNumType(Class<T> numType, Element el, Double val) {
+    private static <T extends Number> T asNumType(Class<T> numType, Double val) {
         if (numType.equals(Double.class)) {
             return (T) val;
         } else if (numType.equals(Float.class)) {
@@ -160,9 +160,44 @@ public class StandardConversions {
         } else if (numType.equals(Byte.class)) {
             return (T) Byte.valueOf(val.byteValue());
         } else {
-            throw new IllegalArgumentException(el + " cannot be cast into " + numType);
+            throw new IllegalArgumentException(val + " cannot be cast into " + numType);
         }
     }
 
+    private static <T> T as(Class<T> type, String text) {
+        // find factory method
+        return Stream.of(type.getDeclaredMethods())
+                .filter(m -> Modifier.isStatic(m.getModifiers()))
+                .filter(m -> type.isAssignableFrom(m.getReturnType()))
+                .filter(m -> m.getParameterCount() == 1)
+                .filter(m -> m.getParameterTypes()[0].equals(String.class))
+                .map(m -> invokeStaticMethod(m, text))
+                .map(type::cast)
+                .findFirst()
+                .or(() -> Stream.of(type.getDeclaredConstructors())
+                        .filter(c -> c.getParameterCount() == 1)
+                        .filter(c -> c.getParameterTypes()[0].equals(String.class))
+                        .map(c -> newInstance(c, text))
+                        .map(type::cast)
+                        .findFirst()
+                )
+                .orElseThrow(() -> new IllegalArgumentException("Cannot convert " + text + " into " + type));
+    }
+
+    private static Object invokeStaticMethod(Method m, String arg) {
+        try {
+            return m.invoke(null, arg);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private static <T> T newInstance(Constructor<T> constructor, String text) {
+        try {
+            return constructor.newInstance(text);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

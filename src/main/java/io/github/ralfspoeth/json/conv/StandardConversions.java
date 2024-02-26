@@ -16,6 +16,23 @@ public class StandardConversions {
         // prevent instantiation
     }
 
+
+    /**
+     * Converts an {@link Element element} to {@code int}.
+     *
+     * The result is:
+     * <ul>
+     *     <li>(int){@link JsonNumber#numVal()}</li>
+     *     <li>{@link JsonBoolean#TRUE}: 1</li>
+     *     <li>{@link JsonBoolean#FALSE}: 0</li>
+     *     <li>{@link JsonNull}: 0</li>
+     *     <li>{@link Integer#parseInt(String)} of {@link JsonString#value()}</li>
+     * </ul>
+     *
+     *
+     * @param elem an Element
+     * @return
+     */
     public static int intValue(Element elem) {
         return switch (elem) {
             case JsonNumber n -> (int) n.numVal();

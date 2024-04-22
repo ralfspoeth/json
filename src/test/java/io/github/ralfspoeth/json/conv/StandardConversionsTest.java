@@ -1,9 +1,9 @@
 package io.github.ralfspoeth.json.conv;
 
-import io.github.ralfspoeth.json.JsonBoolean;
-import io.github.ralfspoeth.json.JsonNumber;
-import io.github.ralfspoeth.json.JsonString;
+import io.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Test;
+
+import java.util.function.Function;
 
 import static io.github.ralfspoeth.json.conv.StandardConversions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,12 +68,17 @@ class StandardConversionsTest {
     @Test
     void testEnumValue() {
         enum E {ONE, TWO}
-
+        var obj = Aggregate.objectBuilder().named("e", new JsonString("onet")).build();
+        Function<Element, String> extr = elem -> switch (elem){
+            case JsonObject jo -> stringValue(jo.members().get("e")).substring(0, 3).toUpperCase();
+            default -> throw new IllegalArgumentException("failed");
+        };
         assertAll(
                 () -> assertEquals(E.ONE, enumValue(E.class, new JsonString("ONE"))),
                 () -> assertNotEquals(E.TWO, enumValue(E.class, new JsonString("ONE"))),
                 () -> assertThrows(IllegalArgumentException.class, () -> enumValue(E.class, new JsonString("one"))),
-                () -> assertEquals(E.ONE, enumValueIgnoreCase(E.class, new JsonString("one")))
+                () -> assertEquals(E.ONE, enumValueIgnoreCase(E.class, new JsonString("one"))),
+                () -> assertEquals(E.ONE, enumValue(E.class, obj, extr))
         );
     }
 

@@ -4,6 +4,8 @@ import io.github.ralfspoeth.json.*;
 
 import java.lang.reflect.*;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,7 +21,7 @@ public class StandardConversions {
 
     /**
      * Converts an {@link Element element} to {@code int}.
-     *
+     * <p>
      * The result is:
      * <ul>
      *     <li>(int){@link JsonNumber#numVal()}</li>
@@ -29,9 +31,8 @@ public class StandardConversions {
      *     <li>{@link Integer#parseInt(String)} of {@link JsonString#value()}</li>
      * </ul>
      *
-     *
      * @param elem an Element
-     * @return
+     * @return an int value
      */
     public static int intValue(Element elem) {
         return switch (elem) {
@@ -84,6 +85,10 @@ public class StandardConversions {
         }
     }
 
+    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem, Function<Element, String> extractor) {
+        return Enum.valueOf(enumClass, extractor.apply(elem));
+    }
+
     public static String stringValue(Element elem) {
         return switch (elem) {
             case JsonString s -> s.value();
@@ -133,17 +138,13 @@ public class StandardConversions {
     }
 
     private static Object asArray(Class<?> type, Element element) {
-        return switch (element) {
-            case JsonArray ja -> {
-                var array = java.lang.reflect.Array.newInstance(type, ja.size());
-                for (int i = 0; i < ja.size(); i++) {
-                    Array.set(array, i, as(type, ja.elements().get(i)));
-                }
-                yield array;
+        if (element instanceof JsonArray ja) {
+            var array = java.lang.reflect.Array.newInstance(type, ja.size());
+            for (int i = 0; i < ja.size(); i++) {
+                Array.set(array, i, as(type, ja.elements().get(i)));
             }
-            default -> throw new AssertionError();
-
-        };
+            return array;
+        } else throw new AssertionError();
     }
 
     private static <T extends Number> T asNumber(Class<T> numType, Element el) {
@@ -217,4 +218,29 @@ public class StandardConversions {
         }
     }
 
+
+    /**
+     * Extract the element of a single-valued {@link Aggregate} or the
+     * {@link Basic} element passed in; throws {@link IllegalArgumentException}
+     * when {@code null} or empty or multivalued {@link Aggregate} instance.
+     * <p>
+     * If the argument is {@link JsonObject} then the {@link Map.Entry#getValue()}  value}
+     * of the first member is returned.
+     *
+     * @param elem an element; may not be null
+     * @return the one and only single
+     */
+    public static Element single(Element elem) {
+        return switch (elem) {
+            case JsonObject o when o.size() == 1 -> o.members().values().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError());
+            case JsonArray a when a.size() == 1 -> a.elements().getFirst();
+            case Aggregate ignored -> throw new IllegalArgumentException(
+                    "cannot extract the one and only element from " + elem
+            );
+            case Basic b -> b;
+            case null -> throw new IllegalArgumentException("cannot extract single from null");
+        };
+    }
 }

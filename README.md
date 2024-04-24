@@ -64,16 +64,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.0.6</version>
+        <version>1.0.8</version>
     </dependency>
 
 or, when using Gradle (Groovy)
 
-    implementation 'io.github.ralfspoeth:json:1.0.6'
+    implementation 'io.github.ralfspoeth:json:1.0.8'
 
 or, with Gradle (Kotlin), put 
 
-    implementation("io.github.ralfspoeth:json:1.0.6")
+    implementation("io.github.ralfspoeth:json:1.0.8")
 
 in your build file.
 
@@ -502,6 +502,20 @@ yields the stream of `true` and `false`.
 
 Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
 the stream of `5d`.
+
+# Use in Clojure
+
+Clojure uses maps to aggregate data and prefers keywords as keys in these maps.
+Here is a link to a video from Rich Hickey:
+[Just use maps](https://youtu.be/aSEQfqNYNAc?si=tkFy1CMS8fWN7bP-)
+
+In order to use this Java library, include this in your `deps.edn` file:
+
+    {:deps {
+        io.github.ralfspoeth/json {:mvn/version "1.0.8"}
+        }}
+
+
 
 # Standard Conversions
 

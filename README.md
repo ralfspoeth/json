@@ -515,6 +515,37 @@ In order to use this Java library, include this in your `deps.edn` file:
         io.github.ralfspoeth/json {:mvn/version "1.0.8"}
         }}
 
+Import the `Element` and IO classes into your namespace like this
+
+    (ns your.name.space
+        (:import (io.github.ralfspoeth.json Element Basic JsonNull JsonArray JsonObject)
+        (java.io Reader)
+        (io.github.ralfspoeth.json.io JsonReader))
+        (:require [clojure.java.io :as io]))
+
+
+Use this function in order to read JSON data from some 
+`java.io.Reader`
+
+
+    (defn read-elem [^Reader rdr]
+        (with-open [jsrd (JsonReader. rdr)]
+        (.readElement jsrd)))
+
+and then, in order to turn the resulting `Element` into
+a clojure map
+
+
+    (defn map-json ([^Element elem]
+        (cond
+          (instance? JsonNull elem) nil,
+          (instance? Basic elem) (.value elem)
+          (instance? JsonArray elem) (mapv map-json (.elements elem))
+          (instance? JsonObject elem) (zipmap
+                                        (map keyword (->> elem (.members) (.keySet))),
+                                        (map map-json (->> elem (.members) (.values)))))))
+
+
 
 
 # Standard Conversions

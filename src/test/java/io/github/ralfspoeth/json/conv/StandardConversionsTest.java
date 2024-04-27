@@ -84,7 +84,7 @@ class StandardConversionsTest {
 
 
     @Test
-    void testAs() {
+    void testAsInstance() {
         record R(int x, int y) {
 
         }

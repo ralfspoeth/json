@@ -4,11 +4,13 @@ import io.github.ralfspoeth.json.*;
 
 import java.lang.reflect.*;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.github.ralfspoeth.basix.fn.Functions.indexed;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
 
@@ -108,15 +110,31 @@ public class StandardConversions {
         };
     }
 
+    public static <T> T asInstance(Class<T> targetType, Element element) {
+        if (targetType.isRecord() && element instanceof JsonObject jo) {
+            return (T) asRecord((Class<Record>) targetType, jo);
+        } else if (targetType.isArray() && element instanceof JsonArray) {
+            var t = targetType.getComponentType();
+            return (T) asArray(t, element);
+        } else if(Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
+            return (T)asCollection(targetType, element);
+        }
+        else {
+            throw new IllegalArgumentException();
+        }
+    }
+
     private static <R extends Record> R asRecord(Class<R> type, JsonObject e) {
         assert type.isRecord();
         var comps = type.getRecordComponents();
         var compTypes = new Class<?>[comps.length];
         var vals = new Object[comps.length];
-        for (int i = 0; i < comps.length; i++) {
-            compTypes[i] = comps[i].getType();
-            vals[i] = as(compTypes[i], e.members().get(comps[i].getName()));
-        }
+        Arrays.stream(comps)
+                .map(indexed(0))
+                .forEach(ic -> {
+                    compTypes[ic.index()] = ic.value().getType();
+                    vals[ic.index()] = asInstance(ic.value().getType(), e.members().get(ic.value().getName()));
+        });
         try {
             var constructor = type.getDeclaredConstructor(compTypes);
             return constructor.newInstance(vals);
@@ -126,25 +144,24 @@ public class StandardConversions {
         }
     }
 
-    public static <T> T as(Class<T> compType, Element element) {
-        if (compType.isRecord() && element instanceof JsonObject jo) {
-            return (T) asRecord((Class<Record>) compType, jo);
-        } else if (compType.isArray() && element instanceof JsonArray) {
-            var t = compType.getComponentType();
-            return (T) asArray(t, element);
-        } else {
-            throw new IllegalArgumentException();
-        }
-    }
-
     private static Object asArray(Class<?> type, Element element) {
         if (element instanceof JsonArray ja) {
             var array = java.lang.reflect.Array.newInstance(type, ja.size());
             for (int i = 0; i < ja.size(); i++) {
-                Array.set(array, i, as(type, ja.elements().get(i)));
+                Array.set(array, i, asInstance(type, ja.elements().get(i)));
             }
             return array;
         } else throw new AssertionError();
+    }
+
+    private static Collection<?> asCollection(Class<?> collClass, Element element) {
+        try {
+            var cons = collClass.getDeclaredConstructor(Collection.class);
+            var array = (Object[])asArray(Object.class, element);
+            return (Collection<?>) cons.newInstance(Arrays.asList(array));
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static <T extends Number> T asNumber(Class<T> numType, Element el) {
@@ -182,7 +199,7 @@ public class StandardConversions {
         }
     }
 
-    private static <T> T as(Class<T> type, String text) {
+    private static <T> T asInstance(Class<T> type, String text) {
         // find factory method
         return Stream.of(type.getDeclaredMethods())
                 .filter(m -> Modifier.isStatic(m.getModifiers()))

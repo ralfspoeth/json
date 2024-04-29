@@ -13,54 +13,54 @@ class StandardConversionsTest {
     @Test
     void testIntValue() {
         assertAll(
-                () -> assertEquals(1, intValue(new JsonNumber(1))),
-                () -> assertEquals(1, intValue(new JsonNumber(1.1d))),
-                () -> assertEquals(1, intValue(new JsonString("1"))),
-                () -> assertEquals(1, intValue(JsonBoolean.TRUE)),
-                () -> assertEquals(0, intValue(JsonBoolean.FALSE))
+                () -> assertEquals(1, intValue(new JsonNumber(1), 0)),
+                () -> assertEquals(1, intValue(new JsonNumber(1.1d), 0)),
+                () -> assertEquals(1, intValue(new JsonString("1"), 0)),
+                () -> assertEquals(1, intValue(JsonBoolean.TRUE, 0)),
+                () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1))
         );
     }
 
     @Test
     void testLongValue() {
         assertAll(
-                () -> assertEquals(1L, longValue(new JsonNumber(1))),
-                () -> assertEquals(1L, longValue(new JsonNumber(1.1d))),
-                () -> assertEquals(1L, longValue(new JsonString("1"))),
-                () -> assertEquals(1L, longValue(JsonBoolean.TRUE)),
-                () -> assertEquals(0L, longValue(JsonBoolean.FALSE))
+                () -> assertEquals(1L, longValue(new JsonNumber(1), 0)),
+                () -> assertEquals(1L, longValue(new JsonNumber(1.1d), 0)),
+                () -> assertEquals(1L, longValue(new JsonString("1"), 0)),
+                () -> assertEquals(1L, longValue(JsonBoolean.TRUE, 0)),
+                () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1))
         );
     }
 
     @Test
     void testDoubleValue() {
         assertAll(
-                () -> assertEquals(1d, doubleValue(new JsonNumber(1))),
-                () -> assertEquals(1.1d, doubleValue(new JsonNumber(1.1d))),
-                () -> assertEquals(1d, doubleValue(new JsonString("1"))),
-                () -> assertEquals(1.5d, doubleValue(new JsonString("1.5"))),
-                () -> assertEquals(1d, doubleValue(JsonBoolean.TRUE)),
-                () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE))
+                () -> assertEquals(1d, doubleValue(new JsonNumber(1), 0)),
+                () -> assertEquals(1.1d, doubleValue(new JsonNumber(1.1d), 0)),
+                () -> assertEquals(1d, doubleValue(new JsonString("1"), 0)),
+                () -> assertEquals(1.5d, doubleValue(new JsonString("1.5"), 0)),
+                () -> assertEquals(1d, doubleValue(JsonBoolean.TRUE, 0)),
+                () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE, 1))
         );
     }
 
     @Test
     void testStringValue() {
         assertAll(
-                () -> assertEquals("one", stringValue(new JsonString("one")))
+                () -> assertEquals("one", stringValue(new JsonString("one"), null))
         );
     }
 
     @Test
     void testBooleanValue() {
         assertAll(
-                () -> assertTrue(booleanValue(JsonBoolean.TRUE)),
-                () -> assertFalse(booleanValue(JsonBoolean.FALSE)),
-                () -> assertTrue(booleanValue(new JsonString("true"))),
-                () -> assertTrue(booleanValue(new JsonString("TrUe"))),
-                () -> assertFalse(booleanValue(new JsonString("false"))),
-                () -> assertFalse(booleanValue(new JsonString("XXX"))),
-                () -> assertThrows(IllegalArgumentException.class, () -> booleanValue(new JsonNumber(1d)))
+                () -> assertTrue(booleanValue(JsonBoolean.TRUE, false)),
+                () -> assertFalse(booleanValue(JsonBoolean.FALSE, true)),
+                () -> assertTrue(booleanValue(new JsonString("true"), false)),
+                () -> assertTrue(booleanValue(new JsonString("TrUe"), false)),
+                () -> assertFalse(booleanValue(new JsonString("false"), true)),
+                () -> assertFalse(booleanValue(new JsonString("XXX"), true)),
+                () -> assertThrows(IllegalArgumentException.class, () -> booleanValue(new JsonNumber(1d), false))
         );
     }
 
@@ -70,7 +70,9 @@ class StandardConversionsTest {
         enum E {ONE, TWO}
         var obj = Aggregate.objectBuilder().named("e", new JsonString("onet")).build();
         Function<Element, String> extr = elem -> switch (elem){
-            case JsonObject jo -> stringValue(jo.members().get("e")).substring(0, 3).toUpperCase();
+            case JsonObject jo -> stringValue(jo.members().get("e"), null)
+                    .substring(0, 3)
+                    .toUpperCase();
             default -> throw new IllegalArgumentException("failed");
         };
         assertAll(

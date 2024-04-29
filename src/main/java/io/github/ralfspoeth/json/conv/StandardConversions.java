@@ -36,8 +36,9 @@ public class StandardConversions {
      * @param elem an Element
      * @return an int value
      */
-    public static int intValue(Element elem) {
+    public static int intValue(Element elem, int def) {
         return switch (elem) {
+            case null -> def;
             case JsonNumber n -> (int) n.numVal();
             case TRUE -> 1;
             case FALSE -> 0;
@@ -47,8 +48,9 @@ public class StandardConversions {
         };
     }
 
-    public static long longValue(Element elem) {
+    public static long longValue(Element elem, long def) {
         return switch (elem) {
+            case null -> def;
             case JsonNumber n -> (long) n.numVal();
             case TRUE -> 1L;
             case FALSE -> 0L;
@@ -58,8 +60,9 @@ public class StandardConversions {
         };
     }
 
-    public static double doubleValue(Element elem) {
+    public static double doubleValue(Element elem, double def) {
         return switch (elem) {
+            case null -> def;
             case JsonNumber n -> n.numVal();
             case TRUE -> 1d;
             case FALSE -> 0d;
@@ -70,29 +73,34 @@ public class StandardConversions {
     }
 
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem) {
-        if (elem instanceof JsonString js) {
-            return Enum.valueOf(enumClass, js.value());
-        } else {
-            throw new IllegalArgumentException("cannot convert to enum: " + elem);
-        }
+        return switch (elem) {
+            case null -> null;
+            case JsonString js -> Enum.valueOf(enumClass, js.value());
+            default -> throw new IllegalArgumentException("cannot convert to enum: " + elem);
+        };
     }
 
     public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, Element elem) {
-        if (elem instanceof JsonString js) {
-            return Arrays.stream(enumClass.getEnumConstants())
+        return switch (elem) {
+            case null -> null;
+            case JsonString js -> Arrays
+                    .stream(enumClass.getEnumConstants())
                     .collect(Collectors.toMap(c -> c.name().toUpperCase(), c -> c))
                     .get(js.value().toUpperCase());
-        } else {
-            throw new IllegalArgumentException("cannot convert to enum: " + elem);
-        }
+            default -> throw new IllegalArgumentException("cannot convert to enum: " + elem);
+        };
     }
 
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem, Function<Element, String> extractor) {
-        return Enum.valueOf(enumClass, extractor.apply(elem));
+        return switch(elem) {
+            case null -> null;
+            default -> Enum.valueOf(enumClass, extractor.apply(elem));
+        };
     }
 
-    public static String stringValue(Element elem) {
+    public static String stringValue(Element elem, String def) {
         return switch (elem) {
+            case null -> def;
             case JsonString s -> s.value();
             case JsonNull ignored -> "null";
             case JsonNumber n -> Double.toString(n.numVal());
@@ -102,8 +110,9 @@ public class StandardConversions {
         };
     }
 
-    public static boolean booleanValue(Element elem) {
+    public static boolean booleanValue(Element elem, boolean def) {
         return switch (elem) {
+            case null -> def;
             case JsonBoolean b -> b == TRUE;
             case JsonString js -> Boolean.parseBoolean(js.value());
             default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);

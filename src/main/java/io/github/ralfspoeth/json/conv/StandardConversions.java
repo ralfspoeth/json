@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import static io.github.ralfspoeth.basix.fn.Functions.indexed;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
+import static java.util.Objects.requireNonNull;
 
 public class StandardConversions {
 
@@ -48,6 +49,10 @@ public class StandardConversions {
         };
     }
 
+    public static int intValue(Element elem) {
+        return intValue(requireNonNull(elem), 0);
+    }
+
     public static long longValue(Element elem, long def) {
         return switch (elem) {
             case null -> def;
@@ -58,6 +63,10 @@ public class StandardConversions {
             case JsonNull ignored -> 0L;
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to long: " + a);
         };
+    }
+
+    public static long longValue(Element elem) {
+        return longValue(requireNonNull(elem), 0);
     }
 
     public static double doubleValue(Element elem, double def) {
@@ -71,6 +80,11 @@ public class StandardConversions {
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to double: " + a);
         };
     }
+
+    public static double doubleValue(Element elem) {
+        return doubleValue(requireNonNull(elem), 0d);
+    }
+
 
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem) {
         return switch (elem) {
@@ -110,6 +124,10 @@ public class StandardConversions {
         };
     }
 
+    public static String stringValue(Element elem) {
+        return stringValue(requireNonNull(elem), null);
+    }
+
     public static boolean booleanValue(Element elem, boolean def) {
         return switch (elem) {
             case null -> def;
@@ -118,6 +136,11 @@ public class StandardConversions {
             default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);
         };
     }
+
+    public static boolean booleanValue(Element elem) {
+        return booleanValue(requireNonNull(elem), false);
+    }
+
 
     public static <T> T asInstance(Class<T> targetType, Element element) {
         if (targetType.isRecord() && element instanceof JsonObject jo) {

@@ -9,13 +9,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.basix.fn.Functions.indexed;
+import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 public class StandardConversions {
 
@@ -23,6 +24,45 @@ public class StandardConversions {
         // prevent instantiation
     }
 
+
+    public static JsonObject asJsonObject(Record rec) {
+        var ob = objectBuilder();
+        Arrays.stream(rec.getClass().getRecordComponents()).forEach(rc -> {
+                    if (rc.getType().isArray()) {
+                        ob.named(rc.getName(), asJsonArray(valueOf(rec, rc.getAccessor())));
+                    } else {
+                        ob.basic(rc.getName(), valueOf(rec, rc.getAccessor()));
+                    }
+                }
+        );
+        return ob.build();
+    }
+
+    public static JsonArray asJsonArray(Object array) {
+        assert Iterable.class.isAssignableFrom(array.getClass());
+        var ab = Aggregate.arrayBuilder();
+        //StreamSupport.stream(Spliterators.spliterator(((Iterable)array).iterator(), false))
+        return ab.build();
+    }
+
+    public static JsonObject asJsonObject(Map<?, ?> map) {
+        var members = map.entrySet()
+                .stream()
+                .collect(toMap(key -> String.valueOf(key), val -> elementOf(val, val == null ? Object.class : val.getClass())));
+        return new JsonObject(members);
+    }
+
+    private static Object valueOf(Record rec, Method acc) {
+        try {
+            return acc.invoke(rec);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Element elementOf(Object o, Class<?> type) {
+        return null;
+    }
 
     /**
      * Converts an {@link Element element} to {@code int}.
@@ -101,14 +141,14 @@ public class StandardConversions {
             case null -> null;
             case JsonString js -> Arrays
                     .stream(enumClass.getEnumConstants())
-                    .collect(Collectors.toMap(c -> c.name().toUpperCase(), c -> c))
+                    .collect(toMap(c -> c.name().toUpperCase(), c -> c))
                     .get(js.value().toUpperCase());
             default -> throw new IllegalArgumentException("cannot convert to enum: " + elem);
         };
     }
 
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem, Function<Element, String> extractor) {
-        return switch(elem) {
+        return switch (elem) {
             case null -> null;
             default -> Enum.valueOf(enumClass, extractor.apply(elem));
         };

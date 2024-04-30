@@ -37,7 +37,7 @@ class ElementTest {
 
         assertAll(
                 () -> assertThrows(UnsupportedOperationException.class, () -> je.elements().add(JsonNull.INSTANCE)),
-                () -> assertThrows(UnsupportedOperationException.class, () -> je.elements().remove(0)),
+                () -> assertThrows(UnsupportedOperationException.class, () -> je.elements().removeFirst()),
                 () -> assertThrows(UnsupportedOperationException.class, () -> obj.members().put("c", JsonBoolean.TRUE))
 
         );
@@ -56,7 +56,7 @@ class ElementTest {
                         .build(),
                 objectBuilder()
                         .named("a", JsonBoolean.TRUE)
-                        .named("b", Aggregate.arrayBuilder())
+                        .basic("b", Aggregate.arrayBuilder())
                         .build()
         );
         var l = str.map(e -> switch (e) {
@@ -91,9 +91,9 @@ class ElementTest {
         var b = new B(a, true);
         var c = new C(b, "Bb");
         // json pendants
-        var jsonA = objectBuilder().named("x", 5).build();
-        var jsonB = objectBuilder().named("a", jsonA).named("b", true).build();
-        var jsonC = objectBuilder().named("b", jsonB).named("s", "Bb").build();
+        var jsonA = objectBuilder().basic("x", 5).build();
+        var jsonB = objectBuilder().named("a", jsonA).basic("b", true).build();
+        var jsonC = objectBuilder().named("b", jsonB).basic("s", "Bb").build();
 
         assertAll(
                 () -> assertEquals(jsonA, Element.of(a)),

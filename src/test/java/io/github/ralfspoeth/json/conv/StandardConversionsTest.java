@@ -20,7 +20,8 @@ class StandardConversionsTest {
                 () -> assertEquals(1, intValue(new JsonNumber(1.1d), 0)),
                 () -> assertEquals(1, intValue(new JsonString("1"), 0)),
                 () -> assertEquals(1, intValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1))
+                () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1)),
+                () -> assertThrows(NullPointerException.class, ()->intValue(null))
         );
     }
 
@@ -31,7 +32,8 @@ class StandardConversionsTest {
                 () -> assertEquals(1L, longValue(new JsonNumber(1.1d), 0)),
                 () -> assertEquals(1L, longValue(new JsonString("1"), 0)),
                 () -> assertEquals(1L, longValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1))
+                () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1)),
+                () -> assertThrows(NullPointerException.class, ()->longValue(null))
         );
     }
 
@@ -43,14 +45,16 @@ class StandardConversionsTest {
                 () -> assertEquals(1d, doubleValue(new JsonString("1"), 0)),
                 () -> assertEquals(1.5d, doubleValue(new JsonString("1.5"), 0)),
                 () -> assertEquals(1d, doubleValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE, 1))
+                () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE, 1)),
+                () -> assertThrows(NullPointerException.class, ()->booleanValue(null))
         );
     }
 
     @Test
     void testStringValue() {
         assertAll(
-                () -> assertEquals("one", stringValue(new JsonString("one"), null))
+                () -> assertEquals("one", stringValue(new JsonString("one"), null)),
+                () -> assertThrows(NullPointerException.class, ()->stringValue(null))
         );
     }
 
@@ -63,7 +67,7 @@ class StandardConversionsTest {
                 () -> assertTrue(booleanValue(new JsonString("TrUe"), false)),
                 () -> assertFalse(booleanValue(new JsonString("false"), true)),
                 () -> assertFalse(booleanValue(new JsonString("XXX"), true)),
-                () -> assertThrows(IllegalArgumentException.class, () -> booleanValue(new JsonNumber(1d), false))
+                () -> assertThrows(NullPointerException.class, () -> booleanValue(null))
         );
     }
 

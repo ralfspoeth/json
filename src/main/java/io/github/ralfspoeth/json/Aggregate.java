@@ -61,11 +61,11 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return this;
         }
 
-        public JsonObjectBuilder named(String name, Object o) {
+        public JsonObjectBuilder basic(String name, Object o) {
             return named(name, Basic.of(o));
         }
 
-        public JsonObjectBuilder namedNull(String name) {
+        public JsonObjectBuilder basic(String name) {
             return named(name, JsonNull.INSTANCE);
         }
 

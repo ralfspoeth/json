@@ -3,6 +3,8 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.reflect.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -143,15 +145,16 @@ public class StandardConversions {
 
 
     public static <T> T asInstance(Class<T> targetType, Element element) {
-        if (targetType.isRecord() && element instanceof JsonObject jo) {
+        if (Number.class.isAssignableFrom(targetType)) {
+            return (T) asNumber((Class<Number>)targetType, element);
+        } else if (targetType.isRecord() && element instanceof JsonObject jo) {
             return (T) asRecord((Class<Record>) targetType, jo);
         } else if (targetType.isArray() && element instanceof JsonArray) {
             var t = targetType.getComponentType();
             return (T) asArray(t, element);
-        } else if(Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
-            return (T)asCollection(targetType, element);
-        }
-        else {
+        } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
+            return (T) asCollection(targetType, element);
+        } else {
             throw new IllegalArgumentException();
         }
     }
@@ -164,9 +167,43 @@ public class StandardConversions {
         Arrays.stream(comps)
                 .map(indexed(0))
                 .forEach(ic -> {
-                    compTypes[ic.index()] = ic.value().getType();
-                    vals[ic.index()] = asInstance(ic.value().getType(), e.members().get(ic.value().getName()));
-        });
+                    var ctype = ic.value().getType();
+                    var member = e.members().get(ic.value().getName());
+                    compTypes[ic.index()] = ctype;
+                    if(ctype.isPrimitive()) {
+                        if(ctype.equals(double.class)) {
+                            vals[ic.index()] = doubleValue(member);
+                        } else if (ctype.equals(float.class)) {
+                            vals[ic.index()] = (float)doubleValue(member);
+                        } else if (ctype.equals(long.class)) {
+                            vals[ic.index()] = longValue(member);
+                        } else if (ctype.equals(int.class)) {
+                            vals[ic.index()] = intValue(member);
+                        } else if (ctype.equals(short.class)) {
+                            vals[ic.index()] = (short)intValue(member);
+                        } else if (ctype.equals(char.class)) {
+                            vals[ic.index()] = (char)intValue(member);
+                        } else if (ctype.equals(byte.class)) {
+                            vals[ic.index()] = (byte)intValue(member);
+                        } else if (ctype.equals(boolean.class)) {
+                            vals[ic.index()] = booleanValue(member);
+                        } else {
+                            throw new AssertionError();
+                        }
+                    }
+                    // well known classes
+                    else if (ctype.equals(String.class)) {
+                        vals[ic.index()] = stringValue(member);
+                    } else if (ctype.equals(BigDecimal.class)) {
+                        vals[ic.index()] = new BigDecimal(stringValue(member));
+                    } else if (ctype.equals(BigInteger.class)) {
+                        vals[ic.index()] = new BigInteger(stringValue(member));
+                    }
+                    // generic class case
+                    else {
+                        vals[ic.index()] = asInstance(ic.value().getType(), e.members().get(ic.value().getName()));
+                    }
+                });
         try {
             var constructor = type.getDeclaredConstructor(compTypes);
             return constructor.newInstance(vals);
@@ -189,9 +226,10 @@ public class StandardConversions {
     private static Collection<?> asCollection(Class<?> collClass, Element element) {
         try {
             var cons = collClass.getDeclaredConstructor(Collection.class);
-            var array = (Object[])asArray(Object.class, element);
+            var array = (Object[]) asArray(Object.class, element);
             return (Collection<?>) cons.newInstance(Arrays.asList(array));
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -208,8 +246,9 @@ public class StandardConversions {
             }
             case TRUE -> asNumType(numType, 1d);
             case FALSE -> asNumType(numType, 0d);
-            case JsonNull n -> asNumType(numType, 0d);
-            case null, default -> throw new IllegalArgumentException(el + " cannot be cast into " + numType);
+            case JsonNull ignored -> asNumType(numType, 0d);
+            case null -> asNumType(numType, 0d);
+            default -> throw new IllegalArgumentException(el + " cannot be cast into " + numType);
         };
     }
 

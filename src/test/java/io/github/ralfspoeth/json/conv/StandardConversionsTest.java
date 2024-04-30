@@ -3,8 +3,11 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.function.Function;
 
+import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.conv.StandardConversions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,7 +71,7 @@ class StandardConversionsTest {
     @Test
     void testEnumValue() {
         enum E {ONE, TWO}
-        var obj = Aggregate.objectBuilder().named("e", new JsonString("onet")).build();
+        var obj = objectBuilder().named("e", new JsonString("onet")).build();
         Function<Element, String> extr = elem -> switch (elem){
             case JsonObject jo -> stringValue(jo.members().get("e"), null)
                     .substring(0, 3)
@@ -87,9 +90,28 @@ class StandardConversionsTest {
 
     @Test
     void testAsInstance() {
-        record R(int x, int y) {
+        record R(double x, double y, boolean z, int a, char c, long l, float f, byte b, short s,
+                 BigInteger bi, BigDecimal bd) {}
+        var src = objectBuilder()
+                .named("x", new JsonNumber(1))
+                .named("y", new JsonNumber(2))
+                .named("z", JsonBoolean.TRUE)
+                .named("s", new JsonNumber(255))
+                .named("b", new JsonNumber(127))
+                .named("a", new JsonNumber(5))
+                .named("c", new JsonNumber('X'))
+                .named("l", new JsonNumber(7))
+                .named("f", new JsonNumber(3))
+                .named("bd", new JsonString("10"))
+                .named("bi", new JsonString("2"))
+                .build();
 
-        }
+        var r12 = asInstance(R.class, src);
+        assertAll(
+                () -> assertEquals(new R(1d, 2d, true, 5, 'X', 7l, 3f,
+                        (byte)127, (short)255, BigInteger.TWO, BigDecimal.TEN)
+                        , r12)
+        );
     }
 
 

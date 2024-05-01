@@ -123,6 +123,20 @@ class StandardConversionsTest {
         );
     }
 
+    @Test
+    void testIncompleteRec(){
+        record R(int a, int b) {
+        }
+        var r12 = new R(1, 2);
+        var src = objectBuilder().basic("a", 1).build();
+        assertAll(
+                () -> assertEquals(R.class, asInstance(R.class, src).getClass()),
+                () -> assertEquals(r12.a(), asInstance(R.class, src).a()),
+                () -> assertNotEquals(r12.b(), asInstance(R.class, src).b()),
+                () -> assertEquals(0, asInstance(R.class, src).b())
+        );
+    }
+
 
     @Test
     void testSingle() {

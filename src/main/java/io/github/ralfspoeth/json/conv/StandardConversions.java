@@ -296,21 +296,21 @@ public class StandardConversions {
                     compTypes[ic.index()] = ctype;
                     if (ctype.isPrimitive()) {
                         if (ctype.equals(double.class)) {
-                            vals[ic.index()] = doubleValue(member);
+                            vals[ic.index()] = doubleValue(member, 0d);
                         } else if (ctype.equals(float.class)) {
-                            vals[ic.index()] = (float) doubleValue(member);
+                            vals[ic.index()] = (float) doubleValue(member, 0d);
                         } else if (ctype.equals(long.class)) {
-                            vals[ic.index()] = longValue(member);
+                            vals[ic.index()] = longValue(member, 0L);
                         } else if (ctype.equals(int.class)) {
-                            vals[ic.index()] = intValue(member);
+                            vals[ic.index()] = intValue(member, 0);
                         } else if (ctype.equals(short.class)) {
-                            vals[ic.index()] = (short) intValue(member);
+                            vals[ic.index()] = (short) intValue(member, 0);
                         } else if (ctype.equals(char.class)) {
-                            vals[ic.index()] = (char) intValue(member);
+                            vals[ic.index()] = (char) intValue(member, 0);
                         } else if (ctype.equals(byte.class)) {
-                            vals[ic.index()] = (byte) intValue(member);
+                            vals[ic.index()] = (byte) intValue(member, 0);
                         } else if (ctype.equals(boolean.class)) {
-                            vals[ic.index()] = booleanValue(member);
+                            vals[ic.index()] = booleanValue(member, false);
                         } else {
                             throw new AssertionError();
                         }

@@ -3,9 +3,11 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.reflect.*;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
@@ -15,8 +17,11 @@ import static io.github.ralfspoeth.basix.fn.Functions.indexed;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
-import static java.util.Objects.requireNonNull;
+import static java.util.Arrays.stream;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
+import static java.util.Objects.requireNonNull;
+
 
 public class StandardConversions {
 
@@ -24,6 +29,54 @@ public class StandardConversions {
         // prevent instantiation
     }
 
+    private static Map<String, ?> asMap(Element elem) {
+        if (elem instanceof JsonObject jo) {
+            return jo.members().entrySet().stream()
+                    .collect(toMap(Map.Entry::getKey, e -> asObject(e.getValue())));
+        } else {
+            throw new IllegalArgumentException(elem + " is not a JSON Object");
+        }
+    }
+
+    private static Object asBasic(Element elem) {
+        if (elem instanceof Basic<?> basic) {
+            return basic.value();
+        } else {
+            throw new IllegalArgumentException(elem + " is nott a basic JSON element");
+        }
+    }
+
+    private static List<?> asList(Element elem) {
+        if (elem instanceof JsonArray ar) {
+            return ar.elements().stream().map(
+                    StandardConversions::asObject
+            ).toList();
+        } else {
+            throw new IllegalArgumentException(elem + " is not a JSON array");
+        }
+    }
+
+    /**
+     * Provides the most natural mapping of a JSON element
+     * to their Java counterparts.
+     * <p/>
+     * A {@link JsonObject object} is basically converted into its members
+     * the values of which are each passed to this conversion.
+     * An {@link JsonArray array) is represented by a {@link List}
+     * with this function applied to all its {@link JsonArray#elements() elements}.
+     * All other {@link Basic} elements are converted using the basic's
+     * {@link Basic#value()} function.
+     * <p/>
+     * @param elem a JSON element
+     * @return either a {@link Map}, a {@link List} or a {@code double}, {@code null}, {@code true} or {@code false}
+     */
+    public static Object asObject(Element elem) {
+        return switch (elem) {
+            case JsonObject jo -> asMap(jo);
+            case JsonArray ja -> asList(ja);
+            case Basic<?> basic -> asBasic(basic);
+        };
+    }
 
     public static JsonObject asJsonObject(Record rec) {
         var ob = objectBuilder();
@@ -137,21 +190,52 @@ public class StandardConversions {
     }
 
     public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, Element elem) {
-        return switch (elem) {
-            case null -> null;
-            case JsonString js -> Arrays
-                    .stream(enumClass.getEnumConstants())
-                    .collect(toMap(c -> c.name().toUpperCase(), c -> c))
+        if (elem instanceof JsonString js) {
+            return stream(enumClass.getEnumConstants())
+                    .collect(toMap(c -> c.name().toUpperCase(), identity()))
                     .get(js.value().toUpperCase());
-            default -> throw new IllegalArgumentException("cannot convert to enum: " + elem);
-        };
+        } else {
+            throw new IllegalArgumentException("cannot convert to enum: " + elem);
+        }
     }
 
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem, Function<Element, String> extractor) {
-        return switch (elem) {
-            case null -> null;
-            default -> Enum.valueOf(enumClass, extractor.apply(elem));
-        };
+        return extractor
+                .andThen(s -> Enum.valueOf(enumClass, s))
+                .apply(elem);
+    }
+
+    private static <T> T instanceFromString(Class<T> clazz, String string) {
+        var parameterTypes = new Class[]{String.class};
+
+        return stream(clazz.getDeclaredConstructors())
+                .filter(c -> Arrays.equals(c.getParameterTypes(), parameterTypes))
+                .map(c -> newInst(c, string))
+                .map(clazz::cast)
+                .findFirst().or(() ->
+                        stream(clazz.getDeclaredMethods())
+                                .filter(m -> Modifier.isStatic(m.getModifiers()))
+                                .filter(m -> Arrays.equals(m.getParameterTypes(), parameterTypes))
+                                .filter(m -> m.getReturnType().equals(clazz))
+                                .map(m -> invoke(m, clazz, string))
+                                .findFirst()
+                ).orElseThrow();
+    }
+
+    private static <T> T newInst(Constructor<T> constructor, Object... args) {
+        try {
+            return constructor.newInstance(args);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static <T> T invoke(Method m, Class<T> clazz, Object... args) {
+        try {
+            return (T) m.invoke(clazz, args);
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String stringValue(Element elem, String def) {
@@ -186,7 +270,7 @@ public class StandardConversions {
 
     public static <T> T asInstance(Class<T> targetType, Element element) {
         if (Number.class.isAssignableFrom(targetType)) {
-            return (T) asNumber((Class<Number>)targetType, element);
+            return (T) asNumber((Class<Number>) targetType, element);
         } else if (targetType.isRecord() && element instanceof JsonObject jo) {
             return (T) asRecord((Class<Record>) targetType, jo);
         } else if (targetType.isArray() && element instanceof JsonArray) {
@@ -210,21 +294,21 @@ public class StandardConversions {
                     var ctype = ic.value().getType();
                     var member = e.members().get(ic.value().getName());
                     compTypes[ic.index()] = ctype;
-                    if(ctype.isPrimitive()) {
-                        if(ctype.equals(double.class)) {
+                    if (ctype.isPrimitive()) {
+                        if (ctype.equals(double.class)) {
                             vals[ic.index()] = doubleValue(member);
                         } else if (ctype.equals(float.class)) {
-                            vals[ic.index()] = (float)doubleValue(member);
+                            vals[ic.index()] = (float) doubleValue(member);
                         } else if (ctype.equals(long.class)) {
                             vals[ic.index()] = longValue(member);
                         } else if (ctype.equals(int.class)) {
                             vals[ic.index()] = intValue(member);
                         } else if (ctype.equals(short.class)) {
-                            vals[ic.index()] = (short)intValue(member);
+                            vals[ic.index()] = (short) intValue(member);
                         } else if (ctype.equals(char.class)) {
-                            vals[ic.index()] = (char)intValue(member);
+                            vals[ic.index()] = (char) intValue(member);
                         } else if (ctype.equals(byte.class)) {
-                            vals[ic.index()] = (byte)intValue(member);
+                            vals[ic.index()] = (byte) intValue(member);
                         } else if (ctype.equals(boolean.class)) {
                             vals[ic.index()] = booleanValue(member);
                         } else {
@@ -349,26 +433,32 @@ public class StandardConversions {
 
     /**
      * Extract the element of a single-valued {@link Aggregate} or the
-     * {@link Basic} element passed in; throws {@link IllegalArgumentException}
-     * when {@code null} or empty or multivalued {@link Aggregate} instance.
+     * {@link Basic} element passed in.
      * <p>
+     * The function works recursively so as to peel out the single inner element of a potential
+     * complex structure.
+     * {@snippet :
+     * String src = """
+     *     {"a": [{"b": {"c": 5}}]}
+     * """;
+     * }
+     * @code src} represents a map of a single name-value pair, the value
+     * being an array of another single-valued array, the value of which is another
+     * single-values map. the result of {@link #single(Element)} is therefore the
+     * {@link JsonNumber 5}.
+     * <p/>
      * If the argument is {@link JsonObject} then the {@link Map.Entry#getValue()}  value}
      * of the first member is returned.
      *
-     * @param elem an element; may not be null
-     * @return the one and only single
+     * @param elem an element; must not be null
+     * @return the one and only single element
      */
     public static Element single(Element elem) {
-        return switch (elem) {
-            case JsonObject o when o.size() == 1 -> o.members().values().stream()
-                    .findFirst()
-                    .orElseThrow(() -> new AssertionError());
-            case JsonArray a when a.size() == 1 -> a.elements().getFirst();
-            case Aggregate ignored -> throw new IllegalArgumentException(
-                    "cannot extract the one and only element from " + elem
-            );
-            case Basic b -> b;
-            case null -> throw new IllegalArgumentException("cannot extract single from null");
+        return switch (requireNonNull(elem)) {
+            case JsonObject o when o.size() == 1 -> single(o.members().values().iterator().next());
+            case JsonArray a when a.size() == 1 -> single(a.elements().getFirst());
+            case Aggregate ag -> ag;
+            case Basic<?> b -> b;
         };
     }
 }

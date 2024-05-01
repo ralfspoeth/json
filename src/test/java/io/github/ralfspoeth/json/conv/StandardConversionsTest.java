@@ -1,8 +1,11 @@
 package io.github.ralfspoeth.json.conv;
 
 import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.function.Function;
@@ -81,7 +84,8 @@ class StandardConversionsTest {
                     .substring(0, 3)
                     .toUpperCase();
             default -> throw new IllegalArgumentException("failed");
-        };
+        }; // extracts the member named "e", first three letters of the value, then to upper case
+
         assertAll(
                 () -> assertEquals(E.ONE, enumValue(E.class, new JsonString("ONE"))),
                 () -> assertNotEquals(E.TWO, enumValue(E.class, new JsonString("ONE"))),
@@ -118,5 +122,21 @@ class StandardConversionsTest {
         );
     }
 
+
+    @Test
+    void testSingle() throws IOException {
+        var src = """
+                {"a": [{"b": [5]}]}""";
+        try (var rdr = new JsonReader(new StringReader(src))) {
+            var elem = rdr.readElement();
+            var sngl = single(elem);
+            assertAll(
+                    () -> assertEquals(new JsonNumber(5), sngl)
+            );
+        }
+        catch (Throwable t) {
+            fail(t);
+        }
+    }
 
 }

@@ -64,16 +64,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.0.8</version>
+        <version>1.0.9</version>
     </dependency>
 
 or, when using Gradle (Groovy)
 
-    implementation 'io.github.ralfspoeth:json:1.0.8'
+    implementation 'io.github.ralfspoeth:json:1.0.9'
 
 or, with Gradle (Kotlin), put 
 
-    implementation("io.github.ralfspoeth:json:1.0.8")
+    implementation("io.github.ralfspoeth:json:1.0.9")
 
 in your build file.
 
@@ -512,7 +512,7 @@ Here is a link to a video from Rich Hickey:
 In order to use this Java library, include this in your `deps.edn` file:
 
     {:deps {
-        io.github.ralfspoeth/json {:mvn/version "1.0.8"}
+        io.github.ralfspoeth/json {:mvn/version "1.0.9"}
         }}
 
 Import the `Element` and IO classes into your namespace like this

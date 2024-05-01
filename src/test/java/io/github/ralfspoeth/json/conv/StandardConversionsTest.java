@@ -4,10 +4,11 @@ import io.github.ralfspoeth.json.*;
 import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
@@ -116,7 +117,7 @@ class StandardConversionsTest {
 
         var r12 = asInstance(R.class, src);
         assertAll(
-                () -> assertEquals(new R(1d, 2d, true, 5, 'X', 7l, 3f,
+                () -> assertEquals(new R(1d, 2d, true, 5, 'X', 7L, 3f,
                         (byte)127, (short)255, BigInteger.TWO, BigDecimal.TEN)
                         , r12)
         );
@@ -124,13 +125,21 @@ class StandardConversionsTest {
 
 
     @Test
-    void testSingle() throws IOException {
+    void testSingle() {
         var src = """
                 {"a": [{"b": [5]}]}""";
         try (var rdr = new JsonReader(new StringReader(src))) {
             var elem = rdr.readElement();
             var sngl = single(elem);
             assertAll(
+                    () -> assertEquals(JsonBoolean.TRUE, single(JsonBoolean.TRUE)),
+                    () -> assertEquals(JsonBoolean.FALSE, single(JsonBoolean.FALSE)),
+                    () -> assertEquals(JsonNull.INSTANCE, single(JsonNull.INSTANCE)),
+                    () -> assertEquals(new JsonString("hallo"), single(new JsonString("hallo"))),
+                    () -> assertEquals(new JsonNumber(4), single(new JsonNumber(4))),
+                    () -> assertEquals(new JsonNumber(5), single(new JsonArray(List.of(new JsonNumber(5))))),
+                    () -> assertEquals(new JsonArray(List.of()), single(new JsonArray(List.of()))),
+                    () -> assertEquals(new JsonObject(Map.of()), single(new JsonObject(Map.of()))),
                     () -> assertEquals(new JsonNumber(5), sngl)
             );
         }
@@ -138,5 +147,7 @@ class StandardConversionsTest {
             fail(t);
         }
     }
+
+
 
 }

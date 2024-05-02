@@ -3,12 +3,11 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.reflect.*;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -18,9 +17,9 @@ import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
 import static java.util.Arrays.stream;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
-import static java.util.Objects.requireNonNull;
 
 
 public class StandardConversions {
@@ -60,15 +59,19 @@ public class StandardConversions {
      * Provides the most natural mapping of a JSON element
      * to their Java counterparts.
      * <p/>
-     * A {@link JsonObject object} is basically converted into its members
-     * the values of which are each passed to this conversion.
+     * A {@link JsonObject object} is basically converted into its map of
+     * {@link JsonObject#members() members},
+     * the values of which are passed to {@link #asObject(Element)} recursively.
      * An {@link JsonArray array) is represented by a {@link List}
-     * with this function applied to all its {@link JsonArray#elements() elements}.
+     * with {@link #asObject(Element) this} function applied to all
+     * its {@link JsonArray#elements() elements}.
      * All other {@link Basic} elements are converted using the basic's
      * {@link Basic#value()} function.
      * <p/>
+     *
      * @param elem a JSON element
-     * @return either a {@link Map}, a {@link List} or a {@code double}, {@code null}, {@code true} or {@code false}
+     * @return either a {@link Map}, a {@link List}
+     * or a {@code String}, {@code double}, {@code null}, {@code true} or {@code false}
      */
     public static Object asObject(Element elem) {
         return switch (elem) {
@@ -80,7 +83,7 @@ public class StandardConversions {
 
     public static JsonObject asJsonObject(Record rec) {
         var ob = objectBuilder();
-        Arrays.stream(rec.getClass().getRecordComponents()).forEach(rc -> {
+        stream(rec.getClass().getRecordComponents()).forEach(rc -> {
                     if (rc.getType().isArray()) {
                         ob.named(rc.getName(), asJsonArray(valueOf(rec, rc.getAccessor())));
                     } else {
@@ -180,13 +183,16 @@ public class StandardConversions {
         return doubleValue(requireNonNull(elem), 0d);
     }
 
-
-    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem) {
+    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem, E def) {
         return switch (elem) {
-            case null -> null;
+            case null -> def;
             case JsonString js -> Enum.valueOf(enumClass, js.value());
             default -> throw new IllegalArgumentException("cannot convert to enum: " + elem);
         };
+    }
+
+    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem) {
+        return enumValue(enumClass, requireNonNull(elem), (E) null);
     }
 
     public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, Element elem) {
@@ -288,7 +294,7 @@ public class StandardConversions {
         var comps = type.getRecordComponents();
         var compTypes = new Class<?>[comps.length];
         var vals = new Object[comps.length];
-        Arrays.stream(comps)
+        stream(comps)
                 .map(indexed(0))
                 .forEach(ic -> {
                     var ctype = ic.value().getType();
@@ -441,7 +447,10 @@ public class StandardConversions {
      * String src = """
      *     {"a": [{"b": {"c": 5}}]}
      * """;
-     * }
+     *}
+     *
+     * @param elem an element; must not be null
+     * @return the one and only single element
      * @code src} represents a map of a single name-value pair, the value
      * being an array of another single-valued array, the value of which is another
      * single-values map. the result of {@link #single(Element)} is therefore the
@@ -449,9 +458,6 @@ public class StandardConversions {
      * <p/>
      * If the argument is {@link JsonObject} then the {@link Map.Entry#getValue()}  value}
      * of the first member is returned.
-     *
-     * @param elem an element; must not be null
-     * @return the one and only single element
      */
     public static Element single(Element elem) {
         return switch (requireNonNull(elem)) {

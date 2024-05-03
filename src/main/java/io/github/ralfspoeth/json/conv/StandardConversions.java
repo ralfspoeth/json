@@ -30,7 +30,9 @@ public class StandardConversions {
 
     private static Map<String, ?> asMap(Element elem) {
         if (elem instanceof JsonObject jo) {
-            return jo.members().entrySet().stream()
+            return jo.members()
+                    .entrySet()
+                    .stream()
                     .collect(toMap(Map.Entry::getKey, e -> asObject(e.getValue())));
         } else {
             throw new IllegalArgumentException(elem + " is not a JSON Object");
@@ -47,9 +49,10 @@ public class StandardConversions {
 
     private static List<?> asList(Element elem) {
         if (elem instanceof JsonArray ar) {
-            return ar.elements().stream().map(
-                    StandardConversions::asObject
-            ).toList();
+            return ar.elements()
+                    .stream()
+                    .map(StandardConversions::asObject)
+                    .toList();
         } else {
             throw new IllegalArgumentException(elem + " is not a JSON array");
         }

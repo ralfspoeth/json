@@ -64,9 +64,9 @@ public class StandardConversions {
      * <p/>
      * A {@link JsonObject object} is basically converted into its map of
      * {@link JsonObject#members() members},
-     * the values of which are passed to {@link #asObject(Element)} recursively.
+     * the values of which are passed to {@code #asObject(Element)} recursively.
      * An {@link JsonArray array) is represented by a {@link List}
-     * with {@link #asObject(Element) this} function applied to all
+     * with {@code #asObject(Element) this} function applied to all
      * its {@link JsonArray#elements() elements}.
      * All other {@link Basic} elements are converted using the basic's
      * {@link Basic#value()} function.
@@ -107,7 +107,7 @@ public class StandardConversions {
     public static JsonObject asJsonObject(Map<?, ?> map) {
         var members = map.entrySet()
                 .stream()
-                .collect(toMap(key -> String.valueOf(key), val -> elementOf(val, val == null ? Object.class : val.getClass())));
+                .collect(toMap(String::valueOf, val -> elementOf(val, val == null ? Object.class : val.getClass())));
         return new JsonObject(members);
     }
 

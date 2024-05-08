@@ -137,6 +137,33 @@ class StandardConversionsTest {
         );
     }
 
+    @Test
+    void testOverStated() {
+        record R(int a) {}
+        var r1 = new R(1);
+        var src = objectBuilder()
+                .basic("a",1)
+                .basic("b", 2)
+                .build();
+        assertAll(
+                ()->assertEquals(r1, asInstance(R.class, src))
+        );
+    }
+
+    @Test
+    void testIncompleteAndOverStated() {
+        record R(int a) {}
+        var r0 = new R(0);
+        var src = objectBuilder()
+                .basic("b", 2)
+                .build();
+        assertAll(
+                ()->assertEquals(r0, asInstance(R.class, src))
+        );
+    }
+
+
+
 
     @Test
     void testSingle() {

@@ -2,9 +2,15 @@ package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.Aggregate;
 import io.github.ralfspoeth.json.Basic;
+import io.github.ralfspoeth.json.JsonArray;
+import io.github.ralfspoeth.json.JsonObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
+import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
@@ -17,7 +23,7 @@ class PathTest {
     @Test
     void ofSingle() {
         var five = Basic.of(5);
-        var singleElem = Aggregate.objectBuilder().named("one", five).build();
+        var singleElem = objectBuilder().named("one", five).build();
         assertAll(
                 () -> assertEquals(Path.of("one"), Path.of("one")),
                 () -> assertTrue(Path.of("one").evaluate(singleElem).allMatch(five::equals))
@@ -44,8 +50,10 @@ class PathTest {
 
     @Test
     void ofNameRangeRegex() {
-        var root = Aggregate.objectBuilder()
-                .named("one", Aggregate.arrayBuilder().item(Aggregate.objectBuilder().named("two", Basic.of(5))).build())
+        var root = objectBuilder()
+                .named("one", new JsonArray(List.of(
+                        new JsonObject(Map.of("two", Basic.of(5)))
+                )))
                 .build();
         var path = Path.of("one/[0..1]/#t.*o");
         Assertions.assertEquals(Basic.of(5), path.evaluate(root).findFirst().orElseThrow());
@@ -55,7 +63,7 @@ class PathTest {
     void ofRegex() {
         var path = Path.of("#o.*e");
         var five = Basic.of(5);
-        var singleElem = Aggregate.objectBuilder().named("oe", five).build();
+        var singleElem = objectBuilder().named("oe", five).build();
         Assertions.assertEquals(five, path.evaluate(singleElem).findFirst().orElseThrow());
     }
 

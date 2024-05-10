@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.in;
 
@@ -28,9 +29,9 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
     static JsonArrayBuilder builder(Iterable<? extends Element> elems) {
         var ab = new JsonArrayBuilder();
-        for(var elem: elems) {
-            ab.item(elem);
-        }
+        StreamSupport
+                .stream(elems.spliterator(), false)
+                .forEach(ab::item);
         return ab;
     }
 
@@ -39,13 +40,14 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
     }
 
     int size();
+
     int depth();
 
     sealed interface Builder<T extends Aggregate> {
         int size();
 
         default boolean isEmpty() {
-            return size()==0;
+            return size() == 0;
         }
 
         T build();
@@ -53,9 +55,11 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
     final class JsonObjectBuilder implements Builder<JsonObject> {
 
-        private JsonObjectBuilder(){}
+        private JsonObjectBuilder() {
+        }
 
         private final Map<String, Element> data = new HashMap<>();
+
         public JsonObjectBuilder named(String name, Element el) {
             data.put(name, el);
             return this;
@@ -115,7 +119,8 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
     }
 
     final class JsonArrayBuilder implements Builder<JsonArray> {
-        private JsonArrayBuilder(){}
+        private JsonArrayBuilder() {
+        }
 
         public int size() {
             return data.size();
@@ -139,24 +144,26 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return this;
         }
 
-        public JsonArrayBuilder item(Builder<?> jb) {
-            data.add(jb);
-            return this;
+        public JsonArrayBuilder basic(Object o) {
+            return item(Basic.of(o));
         }
 
-        public JsonArrayBuilder item(Object o) {
-            data.add(Basic.of(o));
-            return this;
+        public JsonArrayBuilder aggregate(Object o) {
+            return item(Aggregate.of(o));
+        }
+
+        public JsonArrayBuilder element(Object o) {
+            return item(Element.of(o));
         }
 
         public JsonArrayBuilder nullItem() {
             return item(JsonNull.INSTANCE);
         }
     }
-    
+
     private static JsonArray ofIterable(Iterable<?> iterable) {
         var ab = new JsonArrayBuilder();
-        for(var it: iterable) {
+        for (var it : iterable) {
             ab.item(Element.of(it));
         }
         return ab.build();
@@ -179,16 +186,17 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
     private static JsonArray ofArray(Object o) {
         var ab = arrayBuilder();
-        for(int i=0; i < Array.getLength(o); i++) {
+        for (int i = 0, len = Array.getLength(o); i < len; i++) {
             ab.item(Element.of(Array.get(o, i)));
         }
         return ab.build();
     }
+
     static Aggregate of(Object o) {
-        return switch(o) {
+        return switch (o) {
             case Record r -> ofRecord(r);
-            case Iterable<?> it -> ofIterable(it);
             case Object a when a.getClass().isArray() -> ofArray(a);
+            case Iterable<?> it -> ofIterable(it);
             case null, default -> throw new IllegalArgumentException("Cannot turn into an aggregate: " + o);
         };
     }

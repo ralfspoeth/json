@@ -98,9 +98,12 @@ public class StandardConversions {
     }
 
     public static JsonArray asJsonArray(Object array) {
-        assert Iterable.class.isAssignableFrom(array.getClass());
+        assert array.getClass().isArray();
         var ab = Aggregate.arrayBuilder();
-        //StreamSupport.stream(Spliterators.spliterator(((Iterable)array).iterator(), false))
+        var compType = array.getClass().getComponentType();
+        for (int i = 0, len = Array.getLength(array); i < len; i++) {
+            ab.item(elementOf(Array.get(array, i), compType));
+        }
         return ab.build();
     }
 
@@ -120,8 +123,19 @@ public class StandardConversions {
     }
 
     private static Element elementOf(Object o, Class<?> type) {
-        return null;
+        if (o == null) {
+            return JsonNull.INSTANCE;
+        } else if (type.isPrimitive()) {
+            return Basic.of(o);
+        } else if (Number.class.isAssignableFrom(type) && o instanceof Number n) {
+            return Basic.of(n.doubleValue());
+        } else if (CharSequence.class.isAssignableFrom(type) && o instanceof CharSequence cs) {
+            return Basic.of(cs.toString());
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
+
 
     /**
      * Converts an {@link Element element} to {@code int}.

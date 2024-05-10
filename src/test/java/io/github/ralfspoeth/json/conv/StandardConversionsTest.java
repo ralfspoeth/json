@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.conv.StandardConversions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -93,6 +94,22 @@ class StandardConversionsTest {
                 () -> assertThrows(IllegalArgumentException.class, () -> enumValue(E.class, new JsonString("one"))),
                 () -> assertEquals(E.ONE, enumValueIgnoreCase(E.class, new JsonString("one"))),
                 () -> assertEquals(E.ONE, enumValue(E.class, obj, extr))
+        );
+    }
+
+    @Test
+    void testAsJsonArray() {
+        boolean[] trueFalse = {true, false};
+        int[] one23 = {1, 2, 3};
+        double[] four5 = {4.d, 5.d};
+        String[] sixes = {"six", "six"};
+        Object[] nulls = {null};
+        assertAll(
+                () -> assertEquals(arrayBuilder().item(JsonBoolean.TRUE).item(JsonBoolean.FALSE).build(), asJsonArray(trueFalse)),
+                () -> assertEquals(arrayBuilder().element(1).element(2).element(3).build(), asJsonArray(one23)),
+                () -> assertEquals(arrayBuilder().element(4d).element(5d).build(), asJsonArray(four5)),
+                () -> assertEquals(arrayBuilder().element("six").element("six").build(), asJsonArray(sixes)),
+                () -> assertEquals(arrayBuilder().item(JsonNull.INSTANCE).build(), asJsonArray(nulls))
         );
     }
 

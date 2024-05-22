@@ -43,7 +43,7 @@ public class StandardConversions {
         if (elem instanceof Basic<?> basic) {
             return basic.value();
         } else {
-            throw new IllegalArgumentException(elem + " is nott a basic JSON element");
+            throw new IllegalArgumentException(elem + " is not a basic JSON element");
         }
     }
 
@@ -209,7 +209,7 @@ public class StandardConversions {
     }
 
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem) {
-        return enumValue(enumClass, requireNonNull(elem), (E) null);
+        return enumValue(enumClass, elem, (E) null);
     }
 
     public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, Element elem) {
@@ -227,6 +227,39 @@ public class StandardConversions {
                 .andThen(s -> Enum.valueOf(enumClass, s))
                 .apply(elem);
     }
+
+    public static Object primitiveArray(Class<?> type, Element elem) {
+        return switch(elem) {
+            case JsonArray ja when type.isPrimitive() -> {
+                Object array = Array.newInstance(type, ja.size());
+                indexed(ja.elements()).forEach(ie -> Array.set(array, ie.index(), primitiveValue(type, ie.value())));
+                yield array;
+            }
+            default -> throw new IllegalArgumentException(elem + " is not a JSON array");
+        };
+    }
+
+    private static Object primitiveValue(Class<?> type, Element elem) {
+        if(type.equals(int.class)) {
+            return intValue(elem, 0);
+        } else if (type.equals(long.class)) {
+            return longValue(elem, 0l);
+        } else if (type.equals(double.class)) {
+            return doubleValue(elem, 0d);
+        } else if (type.equals(float.class)) {
+            return (float)doubleValue(elem, 0d);
+        } else if (type.equals(short.class)) {
+            return (short)intValue(elem, 0);
+        } else if (type.equals(char.class)) {
+            return (char)intValue(elem, 0);
+        } else if (type.equals(byte.class)) {
+            return (byte)intValue(elem, 0);
+        } else if (type.equals(boolean.class)) {
+            return booleanValue(elem);
+        } else throw new AssertionError();
+    }
+
+
 
     private static <T> T instanceFromString(Class<T> clazz, String string) {
         var parameterTypes = new Class[]{String.class};
@@ -317,26 +350,8 @@ public class StandardConversions {
                     var ctype = ic.value().getType();
                     var member = e.members().get(ic.value().getName());
                     compTypes[ic.index()] = ctype;
-                    if (ctype.isPrimitive()) {
-                        if (ctype.equals(double.class)) {
-                            vals[ic.index()] = doubleValue(member, 0d);
-                        } else if (ctype.equals(float.class)) {
-                            vals[ic.index()] = (float) doubleValue(member, 0d);
-                        } else if (ctype.equals(long.class)) {
-                            vals[ic.index()] = longValue(member, 0L);
-                        } else if (ctype.equals(int.class)) {
-                            vals[ic.index()] = intValue(member, 0);
-                        } else if (ctype.equals(short.class)) {
-                            vals[ic.index()] = (short) intValue(member, 0);
-                        } else if (ctype.equals(char.class)) {
-                            vals[ic.index()] = (char) intValue(member, 0);
-                        } else if (ctype.equals(byte.class)) {
-                            vals[ic.index()] = (byte) intValue(member, 0);
-                        } else if (ctype.equals(boolean.class)) {
-                            vals[ic.index()] = booleanValue(member, false);
-                        } else {
-                            throw new AssertionError();
-                        }
+                    if (ctype.isPrimitive())  {
+                        vals[ic.index()] = primitiveValue(ctype, member);
                     }
                     // well known classes
                     else if (ctype.equals(String.class)) {
@@ -476,12 +491,17 @@ public class StandardConversions {
      * If the argument is {@link JsonObject} then the {@link Map.Entry#getValue()}  value}
      * of the first member is returned.
      */
-    public static Element single(Element elem) {
+    public static Basic<?> single(Element elem) {
         return switch (requireNonNull(elem)) {
-            case JsonObject o when o.size() == 1 -> single(o.members().values().iterator().next());
+            case JsonObject o when o.size() == 1 -> single(o.members()
+                    .values()
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(AssertionError::new)
+            );
             case JsonArray a when a.size() == 1 -> single(a.elements().getFirst());
-            case Aggregate ag -> ag;
             case Basic<?> b -> b;
+            case Aggregate ag -> throw new IllegalArgumentException(ag + " is not an aggregate of size 1");
         };
     }
 }

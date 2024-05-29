@@ -4,39 +4,27 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.util.*;
-import java.util.stream.StreamSupport;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.in;
+import static java.util.function.Predicate.not;
 
 public sealed interface Aggregate extends Element permits JsonArray, JsonObject {
     static JsonObjectBuilder objectBuilder() {
         return new JsonObjectBuilder();
     }
 
-    static JsonObjectBuilder builder(Map<String, ? extends Element> map) {
+    static JsonObjectBuilder objectBuilder(Map<String, ? extends Element> map) {
         var bldr = objectBuilder();
         map.forEach(bldr::named);
         return bldr;
     }
 
-    static JsonObjectBuilder builder(JsonObject from) {
-        return builder(from.members());
+    static JsonObjectBuilder objectBuilder(JsonObject from) {
+        return objectBuilder(from.members());
     }
 
     static JsonArrayBuilder arrayBuilder() {
         return new JsonArrayBuilder();
-    }
-
-    static JsonArrayBuilder builder(Iterable<? extends Element> elems) {
-        var ab = new JsonArrayBuilder();
-        StreamSupport
-                .stream(elems.spliterator(), false)
-                .forEach(ab::item);
-        return ab;
-    }
-
-    static JsonArrayBuilder builder(JsonArray from) {
-        return builder(from.elements());
     }
 
     int size();
@@ -93,6 +81,17 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return merge(o.members());
         }
 
+        public JsonObjectBuilder insert(Map<String, ? extends Element> map) {
+            map.entrySet().stream()
+                    .filter(not(in(data.keySet(), Map.Entry::getKey)))
+                    .forEach(e -> named(e.getKey(), e.getValue()));
+            return this;
+        }
+
+        public JsonObjectBuilder insert(JsonObject o) {
+            return insert(o.members());
+        }
+
         public JsonObjectBuilder remove(String key) {
             data.remove(key);
             return this;
@@ -128,21 +127,25 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
         @Override
         public JsonArray build() {
-            return new JsonArray(
-                    data.stream().map(item -> switch (item) {
-                        case Element je -> je;
-                        case Builder<?> jb -> jb.build();
-                        default -> throw new AssertionError();
-                    }).toList()
-            );
+            return buildArray();
         }
 
-        private final List<Object> data = new ArrayList<>();
+        public JsonArray buildArray() {
+            return new JsonArray(data.stream().toList());
+        }
+
+        private final List<Element> data = new ArrayList<>();
 
         public JsonArrayBuilder item(Element elem) {
-            data.add(elem);
+            if(data.add(elem)) return this; else throw new AssertionError();
+        }
+
+        public JsonArrayBuilder combine(JsonArrayBuilder other) {
+            other.data.forEach(this::item);
             return this;
         }
+
+
 
         public JsonArrayBuilder basic(Object o) {
             return item(Basic.of(o));

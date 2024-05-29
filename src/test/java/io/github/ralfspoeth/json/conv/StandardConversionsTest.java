@@ -206,5 +206,14 @@ class StandardConversionsTest {
     }
 
 
+    @Test
+    void testAsJsonObject() {
+        record R(int x) {}
+        record S(String s, boolean b, R r, Object[] array) {}
+        var r = new R(5);
+        var s = new S("hallo", true, r, new Object[]{null});
+        var jo = asJsonObject(s);
+        System.out.println(jo);
+    }
 
 }

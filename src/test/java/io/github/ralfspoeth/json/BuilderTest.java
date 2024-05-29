@@ -11,13 +11,13 @@ class BuilderTest {
     void testObjectBuilderMergeUpdateRemove() {
         var one = objectBuilder().basic("a", 1).basic("b", 2).build();
         var two = objectBuilder().basic("b", 3).basic("c", 4).build();
-        var merged = Aggregate.builder(one).merge(two).build();
+        var merged = Aggregate.objectBuilder(one).merge(two).build();
         var expected = objectBuilder().basic("a", 1).basic("b", 3).basic("c", 4).build();
         assertAll(
                 () -> assertEquals(expected, merged),
-                () -> assertEquals(objectBuilder().basic("a", 1).build(), Aggregate.builder(one).remove("b").build()),
-                () -> assertEquals(objectBuilder().basic("a", 1).build(), Aggregate.builder(one).removeAll(two).build()),
-                () -> assertEquals(objectBuilder().basic("a", 1).basic("b", 3).build(), Aggregate.builder(one).update(two).build())
+                () -> assertEquals(objectBuilder().basic("a", 1).build(), Aggregate.objectBuilder(one).remove("b").build()),
+                () -> assertEquals(objectBuilder().basic("a", 1).build(), Aggregate.objectBuilder(one).removeAll(two).build()),
+                () -> assertEquals(objectBuilder().basic("a", 1).basic("b", 3).build(), Aggregate.objectBuilder(one).update(two).build())
         );
 
     }

@@ -5,14 +5,13 @@ import io.github.ralfspoeth.json.*;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.basix.fn.Functions.indexed;
+import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
@@ -99,12 +98,24 @@ public class StandardConversions {
 
     public static JsonArray asJsonArray(Object array) {
         assert array.getClass().isArray();
-        var ab = Aggregate.arrayBuilder();
+        var ab = arrayBuilder();
         var compType = array.getClass().getComponentType();
         for (int i = 0, len = Array.getLength(array); i < len; i++) {
             ab.item(elementOf(Array.get(array, i), compType));
         }
         return ab.build();
+    }
+
+    public static JsonArray asJsonArray(Collection<?> coll) {
+        //var ab = arrayBuilder();
+        return coll.stream()
+                .map(Element::of)
+                .collect(Collector.of(
+                        Aggregate::arrayBuilder,
+                        Aggregate.JsonArrayBuilder::item,
+                        Aggregate.JsonArrayBuilder::combine,
+                        Aggregate.JsonArrayBuilder::buildArray
+                ));
     }
 
     public static JsonObject asJsonObject(Map<?, ?> map) {

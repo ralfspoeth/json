@@ -2,13 +2,13 @@ package io.github.ralfspoeth.json.conv;
 
 import io.github.ralfspoeth.json.*;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -334,7 +334,10 @@ public class StandardConversions {
             return (T) asArray(t, element);
         } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
             return (T) asCollection(targetType, element);
-        } else {
+        } else if(element instanceof JsonString js) {
+            return asInstance(targetType, js.value());
+        }
+        else {
             throw new IllegalArgumentException();
         }
     }
@@ -432,42 +435,55 @@ public class StandardConversions {
         }
     }
 
+    private static final Map<MethodType, MethodHandle> bestHandles = new HashMap<>();
+
     private static <T> T asInstance(Class<T> type, String text) {
-        // find factory method
-        return Stream.of(type.getDeclaredMethods())
-                .filter(m -> Modifier.isStatic(m.getModifiers()))
-                .filter(m -> type.isAssignableFrom(m.getReturnType()))
-                .filter(m -> m.getParameterCount() == 1)
-                .filter(m -> m.getParameterTypes()[0].equals(String.class))
-                .map(m -> invokeStaticMethod(m, text))
-                .map(type::cast)
-                .findFirst()
-                .or(() -> Stream.of(type.getDeclaredConstructors())
-                        .filter(c -> c.getParameterCount() == 1)
-                        .filter(c -> c.getParameterTypes()[0].equals(String.class))
-                        .map(c -> newInstance(c, text))
-                        .map(type::cast)
-                        .findFirst()
-                )
-                .orElseThrow(() -> new IllegalArgumentException("Cannot convert " + text + " into " + type));
+        var mt = MethodType.methodType(type, String.class);
+        return invokeHandle(
+                bestHandles.computeIfAbsent(mt, StandardConversions::findBestHandle),
+                text
+        );
     }
 
-    private static Object invokeStaticMethod(Method m, String arg) {
+    @SuppressWarnings("unchecked")
+    private static <T> T invokeHandle(MethodHandle handle, String text) {
         try {
-            return m.invoke(null, arg);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    private static <T> T newInstance(Constructor<T> constructor, String text) {
-        try {
-            return constructor.newInstance(text);
-        } catch (Exception e) {
+            return (T)handle.invoke(text);
+        } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
 
+    private static MethodHandle findBestHandle(MethodType mt) {
+        var type = mt.returnType();
+        var lu = MethodHandles.publicLookup();
+
+        return Stream.of(type.getDeclaredMethods())
+                .filter(m -> Modifier.isStatic(m.getModifiers())) // only static methods
+                .filter(m -> type.isAssignableFrom(m.getReturnType())) // proper return type
+                .filter(m -> m.getParameterCount() == mt.parameterCount())
+                .filter(m -> Arrays.stream(m.getParameterTypes()).map(indexed(0)).allMatch(i -> i.value().isAssignableFrom(mt.parameterType(i.index()))))// same params
+                .map(m -> toStaticHandle(mt, m, lu, type))
+                .findFirst()
+                .or(() -> Optional.of(toConstructorHandle(mt, lu, type)))
+                .orElseThrow(() -> new IllegalArgumentException("No static factory or constructor for " + mt));
+    }
+
+    private static MethodHandle toConstructorHandle(MethodType mt, MethodHandles.Lookup lu, Class<?> type) {
+        try {
+            return lu.findConstructor(type, mt);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static MethodHandle toStaticHandle(MethodType mt, Method m, MethodHandles.Lookup lu, Class<?> type) {
+        try {
+            return lu.findStatic(type, m.getName(), mt);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Extract the element of a single-valued {@link Aggregate} or the

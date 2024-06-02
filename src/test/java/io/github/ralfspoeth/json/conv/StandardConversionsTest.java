@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Function;
 
@@ -205,6 +206,13 @@ class StandardConversionsTest {
         }
     }
 
+
+    @Test
+    void testAsInstanceFromString() {
+        var today = LocalDate.now();
+        var jsonToday = new JsonString(today.toString());
+        assertEquals(today, asInstance(LocalDate.class, jsonToday));
+    }
 
 
 }

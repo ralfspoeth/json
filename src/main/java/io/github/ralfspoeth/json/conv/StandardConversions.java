@@ -5,12 +5,16 @@ import io.github.ralfspoeth.json.*;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.basix.fn.Functions.indexed;
+import static io.github.ralfspoeth.basix.fn.Predicates.eq;
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
@@ -18,6 +22,7 @@ import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
 import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
 
@@ -28,33 +33,32 @@ public class StandardConversions {
     }
 
     private static Map<String, ?> asMap(Element elem) {
-        if (elem instanceof JsonObject jo) {
-            return jo.members()
+        return switch (elem) {
+            case JsonObject jo -> jo.members()
                     .entrySet()
                     .stream()
+                    .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
                     .collect(toMap(Map.Entry::getKey, e -> asObject(e.getValue())));
-        } else {
-            throw new IllegalArgumentException(elem + " is not a JSON Object");
-        }
+            case null, default -> throw new IllegalArgumentException(elem + " is not a JSON Object");
+        };
     }
 
     private static Object asBasic(Element elem) {
-        if (elem instanceof Basic<?> basic) {
-            return basic.value();
-        } else {
-            throw new IllegalArgumentException(elem + " is not a basic JSON element");
-        }
+        return switch (elem) {
+            case Basic<?> basic -> basic.value();
+            case null, default -> throw new IllegalArgumentException(elem + " is not a basic JSON element");
+        };
     }
 
     private static List<?> asList(Element elem) {
-        if (elem instanceof JsonArray ar) {
-            return ar.elements()
+        return switch (elem) {
+            case JsonArray ar -> ar.elements()
                     .stream()
+                    .filter(not(eq(JsonNull.INSTANCE, identity())))
                     .map(StandardConversions::asObject)
                     .toList();
-        } else {
-            throw new IllegalArgumentException(elem + " is not a JSON array");
-        }
+            case null, default -> throw new IllegalArgumentException(elem + " is not a JSON array");
+        };
     }
 
     /**
@@ -233,14 +237,15 @@ public class StandardConversions {
         }
     }
 
-    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem, Function<Element, String> extractor) {
+    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element
+            elem, Function<Element, String> extractor) {
         return extractor
                 .andThen(s -> Enum.valueOf(enumClass, s))
                 .apply(elem);
     }
 
     public static Object primitiveArray(Class<?> type, Element elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja when type.isPrimitive() -> {
                 Object array = Array.newInstance(type, ja.size());
                 indexed(ja.elements()).forEach(ie -> Array.set(array, ie.index(), primitiveValue(type, ie.value())));
@@ -251,25 +256,24 @@ public class StandardConversions {
     }
 
     private static Object primitiveValue(Class<?> type, Element elem) {
-        if(type.equals(int.class)) {
+        if (type.equals(int.class)) {
             return intValue(elem, 0);
         } else if (type.equals(long.class)) {
             return longValue(elem, 0l);
         } else if (type.equals(double.class)) {
             return doubleValue(elem, 0d);
         } else if (type.equals(float.class)) {
-            return (float)doubleValue(elem, 0d);
+            return (float) doubleValue(elem, 0d);
         } else if (type.equals(short.class)) {
-            return (short)intValue(elem, 0);
+            return (short) intValue(elem, 0);
         } else if (type.equals(char.class)) {
-            return (char)intValue(elem, 0);
+            return (char) intValue(elem, 0);
         } else if (type.equals(byte.class)) {
-            return (byte)intValue(elem, 0);
+            return (byte) intValue(elem, 0);
         } else if (type.equals(boolean.class)) {
             return booleanValue(elem);
         } else throw new AssertionError();
     }
-
 
 
     private static <T> T instanceFromString(Class<T> clazz, String string) {
@@ -361,7 +365,7 @@ public class StandardConversions {
                     var ctype = ic.value().getType();
                     var member = e.members().get(ic.value().getName());
                     compTypes[ic.index()] = ctype;
-                    if (ctype.isPrimitive())  {
+                    if (ctype.isPrimitive()) {
                         vals[ic.index()] = primitiveValue(ctype, member);
                     }
                     // well known classes

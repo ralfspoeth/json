@@ -527,14 +527,12 @@ Import the `Element` and IO classes into your namespace like this
 Use this function in order to read JSON data from some 
 `java.io.Reader`
 
-
     (defn read-elem [^Reader rdr]
         (with-open [jsrd (JsonReader. rdr)]
         (.readElement jsrd)))
 
 and then, in order to turn the resulting `Element` into
 a clojure map
-
 
     (defn map-json ([^Element elem]
         (cond
@@ -550,7 +548,15 @@ a clojure map
 
 # Standard Conversions
 
-Package `conv` contains the utility class `StandardConversions`
+The package `io.github.ralfspoeth.json.conv` 
+contains the utility class `StandardConversions`
+which is meant to provide conversions for a number of standard use cases - where 
+_standard_ is certainly opinionated. 
+It contains functions that turn an `Element` into a primitive like `int` or `boolean` or 
+an instance of some given class, and another set of functions that turn a primitive or
+an object into an `Element`. 
+
+
 which converts `Element`s into primitive types `int`, `long`, `double` or 
 `boolean` and to `String` or a given `Enum` type.
 All conversion methods take any `Element` type as an argument and may
@@ -561,6 +567,41 @@ as well as numbers. These values are parsed into `JsonString` instance;
 their contains is converted into numbers, boolean values and `null` if possible 
 as well.
 
+## Take the Clutter Away
+
+The JSON structure _done right_ as we think gives us the basis for further processing data
+utilizing the pattern matching features of Java. However, there are still situations
+where a JSON structure is replicated with each element mapped onto its natural counterpart,
+that is
+
+* `null` to `null`s,
+* `true` and `false` to `boolean`s,
+* `JsonDouble` to `double`s,
+* `JsonString` to `String`s,
+* `JsonObject` to immutable `Map<String, ?>`s, and 
+* `JsonArray` to immutable `List<?>`s.
+
+So, a nested JSON structure like
+
+    {"a": null, "b": true, "c": {
+        "x": [1, 2, null, true], "y": false, "z": null
+    }}
+
+is converted by `StandardConversions.asObject` into 
+
+    Map.of( // "a" to null binding is cut out
+        "b", Boolean.TRUE, // note the primitive wrapper
+        "c", Map.of(
+            "x", List.of(1, 2, true), // null element is cut out 
+            "y", Boolean.FALSE // "z" to null binding is left out
+        )
+    )
+
+Things to note: maps and lists accept `null` values in principle,
+yet the newer factory methods `List.of` or `Map.of` do not accept null values
+or `null` bindings; so, `JsonNull` instances are filtered out of aggregates.
+That said, always consider the maps and lists regardless of the depth of the structure immutable.
+
 ## Numerical Conversions
 
 The methods `intValue`, `longValue` and `doubleValue` utilize the 
@@ -568,6 +609,14 @@ The methods `intValue`, `longValue` and `doubleValue` utilize the
 classes for `JsonString`s, and standard conversion from `double` to `int` and `long`
 for `JsonNumber`s. `JsonBoolean` are converted to 1 and 0 for `TRUE` and `FALSE`, 
 respectively.
+
+These functions are provided with and without a default value as their second parameter.
+`intValue(Element elem, int def)` accepts `null` elements and return the `def`ault instead;
+the method fails with `IllegalArgumentException` for `Aggregate`s. The companion methods work likewise.
+
+There is no direct support for `byte`, `char`, `short` and `float` 
+which is very much in line with the choices of Java's functions and stream design.
+
 
 
 ## String Conversion

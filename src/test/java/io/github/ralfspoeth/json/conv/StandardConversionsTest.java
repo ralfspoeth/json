@@ -225,12 +225,11 @@ class StandardConversionsTest {
         var jo = asJsonObject(s);
         System.out.println(jo);
     }
+
     @Test
     void testAsInstanceFromString() {
         var today = LocalDate.now();
         var jsonToday = new JsonString(today.toString());
         assertEquals(today, asInstance(LocalDate.class, jsonToday));
     }
-
-
 }

@@ -43,6 +43,7 @@ public class StandardConversions {
         };
     }
 
+    // turns a basic into an object
     private static Object asBasic(Element elem) {
         return switch (elem) {
             case Basic<?> basic -> basic.value();
@@ -50,6 +51,7 @@ public class StandardConversions {
         };
     }
 
+    // turns a JsonArray into a list
     private static List<?> asList(Element elem) {
         return switch (elem) {
             case JsonArray ar -> ar.elements()
@@ -367,9 +369,11 @@ public class StandardConversions {
             return (T) asCollection(targetType, element);
         } else if(element instanceof JsonString js) {
             return asInstance(targetType, js.value());
+        } else if(element == null) {
+            return null;
         }
         else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("%s cannot be converted into %s".formatted(element, targetType));
         }
     }
 
@@ -493,8 +497,9 @@ public class StandardConversions {
                 .filter(m -> Modifier.isStatic(m.getModifiers())) // only static methods
                 .filter(m -> type.isAssignableFrom(m.getReturnType())) // proper return type
                 .filter(m -> m.getParameterCount() == mt.parameterCount())
-                .filter(m -> Arrays.stream(m.getParameterTypes()).map(indexed(0)).allMatch(i -> i.value().isAssignableFrom(mt.parameterType(i.index()))))// same params
-                .map(m -> toStaticHandle(mt, m, lu, type))
+                .filter(m -> Arrays.stream(m.getParameterTypes()).map(indexed(0))
+                        .allMatch(i -> i.value().isAssignableFrom(mt.parameterType(i.index()))))// same params
+                .map(m -> toStaticHandle(m.getName(), MethodType.methodType(mt.returnType(), m.getParameterTypes())))
                 .findFirst()
                 .or(() -> Optional.of(toConstructorHandle(mt, lu, type)))
                 .orElseThrow(() -> new IllegalArgumentException("No static factory or constructor for " + mt));
@@ -508,9 +513,10 @@ public class StandardConversions {
         }
     }
 
-    private static MethodHandle toStaticHandle(MethodType mt, Method m, MethodHandles.Lookup lu, Class<?> type) {
+    private static MethodHandle toStaticHandle(String name, MethodType type) {
+        var lu = MethodHandles.publicLookup();
         try {
-            return lu.findStatic(type, m.getName(), mt);
+            return lu.findStatic(type.returnType(), name, type);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

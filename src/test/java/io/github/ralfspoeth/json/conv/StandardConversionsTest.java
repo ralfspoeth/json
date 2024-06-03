@@ -58,6 +58,12 @@ class StandardConversionsTest {
     void testStringValue() {
         assertAll(
                 () -> assertEquals("one", stringValue(new JsonString("one"), null)),
+                () -> assertEquals("1.0", stringValue(new JsonNumber(1d), null)),
+                () -> assertEquals("1.1", stringValue(new JsonNumber(1.1d), null)),
+                () -> assertEquals("1.123", stringValue(new JsonNumber(1.123d), null)),
+                () -> assertEquals("true", stringValue(JsonBoolean.TRUE, null)),
+                () -> assertEquals("false", stringValue(JsonBoolean.FALSE, null)),
+                () -> assertEquals("null", stringValue(JsonNull.INSTANCE, null)),
                 () -> assertThrows(NullPointerException.class, ()->stringValue(null))
         );
     }

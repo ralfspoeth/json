@@ -617,8 +617,6 @@ the method fails with `IllegalArgumentException` for `Aggregate`s. The companion
 There is no direct support for `byte`, `char`, `short` and `float` 
 which is very much in line with the choices of Java's functions and stream design.
 
-
-
 ## String Conversion
 
 The `stringValue` conversion uses natural conversions for all

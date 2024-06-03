@@ -87,11 +87,27 @@ public class StandardConversions {
         };
     }
 
+
+    /**
+     * Convert a {@link Record} instance into a {@link JsonObject}, mapping
+     * each of the record's components such that its name becomes the next member's name
+     * and the value of the component of the record is mapped recursively.
+     *
+     * If the component is another {@code Record}, the mapping is done through this method.
+     * If it is an array or a collection type, it is converted into a {@link JsonArray}
+     *
+     * @param rec
+     * @return
+     */
     public static JsonObject asJsonObject(Record rec) {
         var ob = objectBuilder();
         stream(rec.getClass().getRecordComponents()).forEach(rc -> {
                     if (rc.getType().isArray()) {
                         ob.named(rc.getName(), asJsonArray(valueOf(rec, rc.getAccessor())));
+                    } else if (rc.getType().isRecord()) {
+                        ob.named(rc.getName(), asJsonObject((Record) valueOf(rec, rc.getAccessor())));
+                    } else if (Collection.class.isAssignableFrom(rc.getType())) {
+                        ob.named(rc.getName(), asJsonArray((Collection<?>) valueOf(rec, rc.getAccessor())));
                     } else {
                         ob.basic(rc.getName(), valueOf(rec, rc.getAccessor()));
                     }

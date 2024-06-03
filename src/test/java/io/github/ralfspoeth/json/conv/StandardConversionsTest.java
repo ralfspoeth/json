@@ -26,7 +26,7 @@ class StandardConversionsTest {
                 () -> assertEquals(1, intValue(new JsonString("1"), 0)),
                 () -> assertEquals(1, intValue(JsonBoolean.TRUE, 0)),
                 () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1)),
-                () -> assertThrows(NullPointerException.class, ()->intValue(null))
+                () -> assertThrows(NullPointerException.class, () -> intValue(null))
         );
     }
 
@@ -38,7 +38,7 @@ class StandardConversionsTest {
                 () -> assertEquals(1L, longValue(new JsonString("1"), 0)),
                 () -> assertEquals(1L, longValue(JsonBoolean.TRUE, 0)),
                 () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1)),
-                () -> assertThrows(NullPointerException.class, ()->longValue(null))
+                () -> assertThrows(NullPointerException.class, () -> longValue(null))
         );
     }
 
@@ -51,7 +51,7 @@ class StandardConversionsTest {
                 () -> assertEquals(1.5d, doubleValue(new JsonString("1.5"), 0)),
                 () -> assertEquals(1d, doubleValue(JsonBoolean.TRUE, 0)),
                 () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE, 1)),
-                () -> assertThrows(NullPointerException.class, ()->booleanValue(null))
+                () -> assertThrows(NullPointerException.class, () -> booleanValue(null))
         );
     }
 
@@ -59,7 +59,13 @@ class StandardConversionsTest {
     void testStringValue() {
         assertAll(
                 () -> assertEquals("one", stringValue(new JsonString("one"), null)),
-                () -> assertThrows(NullPointerException.class, ()->stringValue(null))
+                () -> assertEquals("1.0", stringValue(new JsonNumber(1d), null)),
+                () -> assertEquals("1.1", stringValue(new JsonNumber(1.1d), null)),
+                () -> assertEquals("1.123", stringValue(new JsonNumber(1.123d), null)),
+                () -> assertEquals("true", stringValue(JsonBoolean.TRUE, null)),
+                () -> assertEquals("false", stringValue(JsonBoolean.FALSE, null)),
+                () -> assertEquals("null", stringValue(JsonNull.INSTANCE, null)),
+                () -> assertThrows(NullPointerException.class, () -> stringValue(null))
         );
     }
 
@@ -81,7 +87,7 @@ class StandardConversionsTest {
     void testEnumValue() {
         enum E {ONE, TWO}
         var obj = objectBuilder().named("e", new JsonString("onet")).build();
-        Function<Element, String> extr = elem -> switch (elem){
+        Function<Element, String> extr = elem -> switch (elem) {
             case JsonObject jo -> stringValue(jo.members().get("e"), null)
                     .substring(0, 3)
                     .toUpperCase();
@@ -91,6 +97,7 @@ class StandardConversionsTest {
         assertAll(
                 () -> assertEquals(E.ONE, enumValue(E.class, new JsonString("ONE"))),
                 () -> assertNotEquals(E.TWO, enumValue(E.class, new JsonString("ONE"))),
+                () -> assertEquals(E.TWO, enumValue(E.class, new JsonString("TWO"))),
                 () -> assertThrows(IllegalArgumentException.class, () -> enumValue(E.class, new JsonString("one"))),
                 () -> assertEquals(E.ONE, enumValueIgnoreCase(E.class, new JsonString("one"))),
                 () -> assertEquals(E.ONE, enumValue(E.class, obj, extr))
@@ -117,7 +124,8 @@ class StandardConversionsTest {
     @Test
     void testAsInstance() {
         record R(double x, double y, boolean z, int a, char c, long l, float f, byte b, short s,
-                 BigInteger bi, BigDecimal bd) {}
+                 BigInteger bi, BigDecimal bd) {
+        }
         var src = objectBuilder()
                 .named("x", new JsonNumber(1))
                 .named("y", new JsonNumber(2))
@@ -135,13 +143,13 @@ class StandardConversionsTest {
         var r12 = asInstance(R.class, src);
         assertAll(
                 () -> assertEquals(new R(1d, 2d, true, 5, 'X', 7L, 3f,
-                        (byte)127, (short)255, BigInteger.TWO, BigDecimal.TEN)
+                                (byte) 127, (short) 255, BigInteger.TWO, BigDecimal.TEN)
                         , r12)
         );
     }
 
     @Test
-    void testIncompleteRec(){
+    void testIncompleteRec() {
         record R(int a, int b) {
         }
         var r12 = new R(1, 2);
@@ -156,30 +164,30 @@ class StandardConversionsTest {
 
     @Test
     void testOverStated() {
-        record R(int a) {}
+        record R(int a) {
+        }
         var r1 = new R(1);
         var src = objectBuilder()
-                .basic("a",1)
+                .basic("a", 1)
                 .basic("b", 2)
                 .build();
         assertAll(
-                ()->assertEquals(r1, asInstance(R.class, src))
+                () -> assertEquals(r1, asInstance(R.class, src))
         );
     }
 
     @Test
     void testIncompleteAndOverStated() {
-        record R(int a) {}
+        record R(int a) {
+        }
         var r0 = new R(0);
         var src = objectBuilder()
                 .basic("b", 2)
                 .build();
         assertAll(
-                ()->assertEquals(r0, asInstance(R.class, src))
+                () -> assertEquals(r0, asInstance(R.class, src))
         );
     }
-
-
 
 
     @Test
@@ -200,13 +208,23 @@ class StandardConversionsTest {
                     //() -> assertEquals(new JsonObject(Map.of()), single(new JsonObject(Map.of()))),
                     () -> assertEquals(new JsonNumber(5), sngl)
             );
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             fail(t);
         }
     }
 
 
+    @Test
+    void testAsJsonObject() {
+        record R(int x) {
+        }
+        record S(String s, boolean b, R r, Object[] array) {
+        }
+        var r = new R(5);
+        var s = new S("hallo", true, r, new Object[]{null});
+        var jo = asJsonObject(s);
+        System.out.println(jo);
+    }
     @Test
     void testAsInstanceFromString() {
         var today = LocalDate.now();

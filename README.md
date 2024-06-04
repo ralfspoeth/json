@@ -2,8 +2,14 @@
 
 This project implements a JSON parser and serializer 
 which operates around immutable data structures for 
-the JSON elements.
+the JSON elements, that is: text to JSON and JSON to text.
 
+The library contains some standard conversion functions
+that support JSON to Record, JSON to array or Collection, and JSON to primitive
+conversions as well as some JSON to Object conversions whenever
+the target class supports a conversion from a String.
+It does not provide generalized Object-to-JSON or JSON-to-Object
+(de-)serialization nor are there any plans to do so in the future.
 
 ## Motivation
 

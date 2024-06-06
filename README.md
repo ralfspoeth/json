@@ -2,8 +2,14 @@
 
 This project implements a JSON parser and serializer 
 which operates around immutable data structures for 
-the JSON elements.
+the JSON elements, that is: text to JSON and JSON to text.
 
+The library contains some standard conversion functions
+that support JSON to Record, JSON to array or Collection, and JSON to primitive
+conversions as well as some JSON to Object conversions whenever
+the target class supports a conversion from a String.
+It does not provide generalized Object-to-JSON or JSON-to-Object
+(de-)serialization nor are there any plans to do so in the future.
 
 ## Motivation
 
@@ -54,6 +60,8 @@ to return immutable instances in the end.
 
 ## Getting Started
 
+### Importing The Library
+
 Maven Coordinates
 
     Group ID: io.github.ralfspoeth
@@ -84,18 +92,62 @@ If you are using JPMS modules with a `module-info.java` file, add
         // more
     }
 
+### Basic Usage
+
 The module `io.github.ralfspoeth.json` exports two packages that you 
 may use in your application:
 
     import io.github.ralfspoeth.json.*;
     import io.github.ralfspoeth.json.io.*;
+    import io.github.ralfspoeth.json.conv.*;
 
 The first package contains the data types (`Element` and its descendants)
 and the second contains the `JsonReader` and `JsonWriter` classes.
+The last package contains the `StandardConversions` class with static 
+conversion functions.
 
 The package `io.github.ralfspoeth.json.query` is immature and not exported.
 It is nevertheless available when you don't define a `module-info` with your 
 application; note that the package may be changed or even deleted.
+
+In your code you'll typically write something like this 
+when your want to start with 
+
+    Reader r = ...;
+    try(var rdr = new JsonReader(r)) { // auto-closeable
+        Element elem = rdr.readElement(); 
+        
+        // use it, e.g. by converting it...
+        MyRecord rcd = StandardConversions.asInstance(MyRecord.class, elem); 
+        
+        // or easily switch over elem
+        double dbl = switch(elem) {
+            case JsonNumber(double d) -> d;
+            null, default -> throw new IllegalArgumentException("...");
+        }
+    }
+
+Writing data into a JSON stream works either through the builders
+
+    Writer out = ...;
+    JsonObject jo = Aggregate.objectBuilder()
+        .named("x", JsonBoolean.TRUE)
+        .named("y", new JsonNumber(5d))
+        .build();
+    try(var w = JsonWriter.createDefaultWriter(out)) {
+        w.write(jo);
+    }
+
+or through standard conversions from an object of a `Record` subclass
+
+    Writer out = ...;
+    record Rec(boolean x, double y) {}
+    Rec r = new Rec(true, 5d);
+    JsonObject jo = StandardConversions.asJsonObject(r);
+    try(var w = JsonWriter.createDefaultWriter(out)) {
+        w.write(jo);
+    }
+
 
 ## JSON
 

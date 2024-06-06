@@ -1,8 +1,5 @@
 package io.github.ralfspoeth.json;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.RecordComponent;
 import java.util.*;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.in;
@@ -141,18 +138,12 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         }
 
         public JsonArrayBuilder combine(JsonArrayBuilder other) {
-            other.data.forEach(this::item);
+            this.data.addAll(other.data);
             return this;
         }
 
-
-
         public JsonArrayBuilder basic(Object o) {
             return item(Basic.of(o));
-        }
-
-        public JsonArrayBuilder aggregate(Object o) {
-            return item(Aggregate.of(o));
         }
 
         public JsonArrayBuilder element(Object o) {
@@ -162,45 +153,5 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         public JsonArrayBuilder nullItem() {
             return item(JsonNull.INSTANCE);
         }
-    }
-
-    private static JsonArray ofIterable(Iterable<?> iterable) {
-        var ab = new JsonArrayBuilder();
-        for (var it : iterable) {
-            ab.item(Element.of(it));
-        }
-        return ab.build();
-    }
-
-    private static <R extends Record> JsonObject ofRecord(R r) {
-        var rc = r.getClass().getRecordComponents();
-        var ob = new JsonObjectBuilder();
-        for (RecordComponent comp : rc) {
-            var name = comp.getName();
-            try {
-                var value = comp.getAccessor().invoke(r);
-                ob.named(name, Element.of(value));
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return ob.build();
-    }
-
-    private static JsonArray ofArray(Object o) {
-        var ab = arrayBuilder();
-        for (int i = 0, len = Array.getLength(o); i < len; i++) {
-            ab.item(Element.of(Array.get(o, i)));
-        }
-        return ab.build();
-    }
-
-    static Aggregate of(Object o) {
-        return switch (o) {
-            case Record r -> ofRecord(r);
-            case Object a when a.getClass().isArray() -> ofArray(a);
-            case Iterable<?> it -> ofIterable(it);
-            case null, default -> throw new IllegalArgumentException("Cannot turn into an aggregate: " + o);
-        };
     }
 }

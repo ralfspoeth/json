@@ -1,14 +1,40 @@
 package io.github.ralfspoeth.json;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 import java.util.Map;
 import java.util.function.Function;
 
+import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toMap;
 
 public record JsonObject(Map<String, Element> members) implements Aggregate, Function<String, Element> {
 
     public JsonObject {
         members = Map.copyOf(members);
+    }
+
+    public static <R extends Record> JsonObject ofRecord(R r) {
+        var rc = r.getClass().getRecordComponents();
+        var ob = objectBuilder();
+        for (RecordComponent comp : rc) {
+            var name = comp.getName();
+            try {
+                var value = comp.getAccessor().invoke(r);
+                ob.named(name, Element.of(value));
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return ob.build();
+    }
+
+    public static JsonObject asJsonObject(Map<?, ?> map) {
+        var members = map.entrySet()
+                .stream()
+                .collect(toMap(String::valueOf, Element::of));
+        return new JsonObject(members);
     }
 
     @Override
@@ -25,35 +51,6 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
             }
         ).max().orElse(0)+1;
     }
-
-    /*
-    public <R extends Record> R toRecord(Class<R> r) {
-        var rc = r.getRecordComponents();
-        var rct = new Class<?>[rc.length];
-        for(int i=0; i<rc.length;i++) {
-            rct[i] = rc[i].getType();
-        }
-
-        var values = new Element[rc.length];
-        for(int i=0; i< rc.length; i++) {
-            values[i] = members.get(rc[i].getName());
-        }
-
-        var args = new Object[values.length];
-        for(int i=0; i < args.length; i++) {
-            args[i] = switch (values[i]) {
-                case Basic<?> b -> b.value();
-                case JsonObject jo -> jo.toRecord((Class<? extends Record>)rct[i]);
-                case null, default -> null;
-            };
-        }
-
-        try {
-            return r.getDeclaredConstructor(rct).newInstance(args);
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }*/
 
     public <T extends Element> T get(String name, Class<T> cls) {
         return ofNullable(members.get(name)).map(cls::cast).orElse(null);

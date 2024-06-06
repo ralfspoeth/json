@@ -10,12 +10,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.basix.fn.Functions.indexed;
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
-import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
@@ -66,20 +64,19 @@ public class StandardConversions {
     /**
      * Provides the most natural mapping of a JSON element
      * to their Java counterparts.
-     * <p/>
+     *
      * A {@link JsonObject object} is basically converted into its map of
      * {@link JsonObject#members() members},
-     * the values of which are passed to {@code #asObject(Element)} recursively.
-     * An {@link JsonArray array) is represented by a {@link List}
-     * with {@code #asObject(Element) this} function applied to all
+     * the values of which are passed to this method recursively.
+     * An {@link JsonArray array} is represented by a {@link List}
+     * with this function applied to all
      * its {@link JsonArray#elements() elements}.
      * All other {@link Basic} elements are converted using the basic's
      * {@link Basic#value()} function.
-     * <p/>
      *
      * @param elem a JSON element
      * @return either a {@link Map}, a {@link List}
-     * or a {@code String}, {@code double}, {@code null}, {@code true} or {@code false}
+     * or a {@code String}, {@code double}, {@code null}, or {@code boolean}
      */
     public static Object asObject(Element elem) {
         return switch (elem) {
@@ -87,96 +84,6 @@ public class StandardConversions {
             case JsonArray ja -> asList(ja);
             case Basic<?> basic -> asBasic(basic);
         };
-    }
-
-
-    /**
-     * Convert a {@link Record} instance into a {@link JsonObject}, mapping
-     * each of the record's components such that its name becomes the next member's name
-     * and the value of the component of the record is mapped recursively.
-     *
-     * If the component is another {@code Record}, the mapping is done through this method.
-     * If it is an array or a collection type, it is converted into a {@link JsonArray}
-     *
-     * @param rec
-     * @return
-     */
-    public static JsonObject asJsonObject(Record rec) {
-        var ob = objectBuilder();
-        stream(rec.getClass().getRecordComponents()).forEach(rc -> {
-                    if (rc.getType().isArray()) {
-                        ob.named(rc.getName(), asJsonArray(valueOf(rec, rc.getAccessor())));
-                    } else if (rc.getType().isRecord()) {
-                        ob.named(rc.getName(), asJsonObject((Record) valueOf(rec, rc.getAccessor())));
-                    } else if (Collection.class.isAssignableFrom(rc.getType())) {
-                        ob.named(rc.getName(), asJsonArray((Collection<?>) valueOf(rec, rc.getAccessor())));
-                    } else {
-                        ob.basic(rc.getName(), valueOf(rec, rc.getAccessor()));
-                    }
-                }
-        );
-        return ob.build();
-    }
-
-    /**
-     * Create an {@link JsonArray} from an array object.
-     *
-     *
-     *
-     * @param array must be an array, that is {@code assert array.getClass().isArray()}; the
-     *              elements of this array may be anything that can be converted into an
-     *              {@link Element}
-     * @return JsonArray a new instance with the same length and order as the array
-     */
-    public static JsonArray asJsonArray(Object array) {
-        assert array.getClass().isArray();
-        var ab = arrayBuilder();
-        var compType = array.getClass().getComponentType();
-        for (int i = 0, len = Array.getLength(array); i < len; i++) {
-            ab.item(elementOf(Array.get(array, i), compType));
-        }
-        return ab.build();
-    }
-
-    public static JsonArray asJsonArray(Collection<?> coll) {
-        //var ab = arrayBuilder();
-        return coll.stream()
-                .map(Element::of)
-                .collect(Collector.of(
-                        Aggregate::arrayBuilder,
-                        Aggregate.JsonArrayBuilder::item,
-                        Aggregate.JsonArrayBuilder::combine,
-                        Aggregate.JsonArrayBuilder::buildArray
-                ));
-    }
-
-    public static JsonObject asJsonObject(Map<?, ?> map) {
-        var members = map.entrySet()
-                .stream()
-                .collect(toMap(String::valueOf, val -> elementOf(val, val == null ? Object.class : val.getClass())));
-        return new JsonObject(members);
-    }
-
-    private static Object valueOf(Record rec, Method acc) {
-        try {
-            return acc.invoke(rec);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Element elementOf(Object o, Class<?> type) {
-        if (o == null) {
-            return JsonNull.INSTANCE;
-        } else if (type.isPrimitive()) {
-            return Basic.of(o);
-        } else if (Number.class.isAssignableFrom(type) && o instanceof Number n) {
-            return Basic.of(n.doubleValue());
-        } else if (CharSequence.class.isAssignableFrom(type) && o instanceof CharSequence cs) {
-            return Basic.of(cs.toString());
-        } else {
-            throw new UnsupportedOperationException();
-        }
     }
 
 
@@ -272,17 +179,6 @@ public class StandardConversions {
                 .apply(elem);
     }
 
-    public static Object primitiveArray(Class<?> type, Element elem) {
-        return switch (elem) {
-            case JsonArray ja when type.isPrimitive() -> {
-                Object array = Array.newInstance(type, ja.size());
-                indexed(ja.elements()).forEach(ie -> Array.set(array, ie.index(), primitiveValue(type, ie.value())));
-                yield array;
-            }
-            default -> throw new IllegalArgumentException(elem + " is not a JSON array");
-        };
-    }
-
     private static Object primitiveValue(Class<?> type, Element elem) {
         if (type.equals(int.class)) {
             return intValue(elem, 0);
@@ -367,7 +263,7 @@ public class StandardConversions {
     }
 
 
-    public static <T> T asInstance(Class<T> targetType, Element element) {
+    public static <T> T as(Class<T> targetType, Element element) {
         if (Number.class.isAssignableFrom(targetType)) {
             return (T) asNumber((Class<Number>) targetType, element);
         } else if (targetType.isRecord() && element instanceof JsonObject jo) {
@@ -378,7 +274,7 @@ public class StandardConversions {
         } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
             return (T) asCollection(targetType, element);
         } else if(element instanceof JsonString js) {
-            return asInstance(targetType, js.value());
+            return as(targetType, js.value());
         } else if(element == null) {
             return null;
         }
@@ -411,7 +307,7 @@ public class StandardConversions {
                     }
                     // generic class case
                     else {
-                        vals[ic.index()] = asInstance(ic.value().getType(), e.members().get(ic.value().getName()));
+                        vals[ic.index()] = as(ic.value().getType(), e.members().get(ic.value().getName()));
                     }
                 });
         try {
@@ -427,7 +323,7 @@ public class StandardConversions {
         if (element instanceof JsonArray ja) {
             var array = java.lang.reflect.Array.newInstance(type, ja.size());
             for (int i = 0; i < ja.size(); i++) {
-                Array.set(array, i, asInstance(type, ja.elements().get(i)));
+                Array.set(array, i, as(type, ja.elements().get(i)));
             }
             return array;
         } else throw new AssertionError();
@@ -482,7 +378,7 @@ public class StandardConversions {
 
     private static final Map<MethodType, MethodHandle> bestHandles = new HashMap<>();
 
-    private static <T> T asInstance(Class<T> type, String text) {
+    private static <T> T as(Class<T> type, String text) {
         var mt = MethodType.methodType(type, String.class);
         return invokeHandle(
                 bestHandles.computeIfAbsent(mt, StandardConversions::findBestHandle),
@@ -530,41 +426,5 @@ public class StandardConversions {
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Extract the element of a single-valued {@link Aggregate} or the
-     * {@link Basic} element passed in.
-     * <p>
-     * The function works recursively so as to peel out the single inner element of a potential
-     * complex structure.
-     * {@snippet :
-     * String src = """
-     *     {"a": [{"b": {"c": 5}}]}
-     * """;
-     *}
-     *
-     * @param elem an element; must not be null
-     * @return the one and only single element
-     * @code src} represents a map of a single name-value pair, the value
-     * being an array of another single-valued array, the value of which is another
-     * single-values map. the result of {@link #single(Element)} is therefore the
-     * {@link JsonNumber 5}.
-     * <p/>
-     * If the argument is {@link JsonObject} then the {@link Map.Entry#getValue()}  value}
-     * of the first member is returned.
-     */
-    public static Basic<?> single(Element elem) {
-        return switch (requireNonNull(elem)) {
-            case JsonObject o when o.size() == 1 -> single(o.members()
-                    .values()
-                    .stream()
-                    .findFirst()
-                    .orElseThrow(AssertionError::new)
-            );
-            case JsonArray a when a.size() == 1 -> single(a.elements().getFirst());
-            case Basic<?> b -> b;
-            case Aggregate ag -> throw new IllegalArgumentException(ag + " is not an aggregate of size 1");
-        };
     }
 }

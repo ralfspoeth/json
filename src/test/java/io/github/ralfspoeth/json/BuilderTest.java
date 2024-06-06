@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
@@ -41,7 +42,7 @@ class BuilderTest {
                 .build();
         assertAll(
                 () -> assertEquals(6, obj.members().size()),
-                () -> assertEquals(5, obj.get("adr", JsonArray.class).elements().size())
+                () -> Assertions.assertEquals(5, obj.get("adr", JsonArray.class).elements().size())
         );
     }
 
@@ -51,7 +52,7 @@ class BuilderTest {
                 .named("a", Basic.of(true))
                 .named("a", Basic.of(false))
                 .build();
-        assertEquals(JsonBoolean.FALSE, aIsFalse.get("a", JsonBoolean.class));
+        Assertions.assertEquals(JsonBoolean.FALSE, aIsFalse.get("a", JsonBoolean.class));
     }
 
     @Test

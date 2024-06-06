@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.function.Function;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
@@ -111,17 +110,17 @@ class StandardConversionsTest {
         String[] sixes = {"six", "six"};
         Object[] nulls = {null};
         assertAll(
-                () -> assertEquals(arrayBuilder().item(JsonBoolean.TRUE).item(JsonBoolean.FALSE).build(), asJsonArray(trueFalse)),
-                () -> assertEquals(arrayBuilder().element(1).element(2).element(3).build(), asJsonArray(one23)),
-                () -> assertEquals(arrayBuilder().element(4d).element(5d).build(), asJsonArray(four5)),
-                () -> assertEquals(arrayBuilder().element("six").element("six").build(), asJsonArray(sixes)),
-                () -> assertEquals(arrayBuilder().item(JsonNull.INSTANCE).build(), asJsonArray(nulls))
+                () -> assertEquals(arrayBuilder().item(JsonBoolean.TRUE).item(JsonBoolean.FALSE).build(), JsonArray.of(trueFalse)),
+                () -> assertEquals(arrayBuilder().element(1).element(2).element(3).build(), JsonArray.of(one23)),
+                () -> assertEquals(arrayBuilder().element(4d).element(5d).build(), JsonArray.of(four5)),
+                () -> assertEquals(arrayBuilder().element("six").element("six").build(), JsonArray.of(sixes)),
+                () -> assertEquals(arrayBuilder().item(JsonNull.INSTANCE).build(), JsonArray.of(nulls))
         );
     }
 
 
     @Test
-    void testAsInstance() {
+    void testAs() {
         record R(double x, double y, boolean z, int a, char c, long l, float f, byte b, short s,
                  BigInteger bi, BigDecimal bd) {
         }
@@ -139,7 +138,7 @@ class StandardConversionsTest {
                 .named("bi", new JsonString("2"))
                 .build();
 
-        var r12 = asInstance(R.class, src);
+        var r12 = as(R.class, src);
         assertAll(
                 () -> assertEquals(new R(1d, 2d, true, 5, 'X', 7L, 3f,
                                 (byte) 127, (short) 255, BigInteger.TWO, BigDecimal.TEN)
@@ -154,10 +153,10 @@ class StandardConversionsTest {
         var r12 = new R(1, 2);
         var src = objectBuilder().basic("a", 1).build();
         assertAll(
-                () -> assertEquals(R.class, asInstance(R.class, src).getClass()),
-                () -> assertEquals(r12.a(), asInstance(R.class, src).a()),
-                () -> assertNotEquals(r12.b(), asInstance(R.class, src).b()),
-                () -> assertEquals(0, asInstance(R.class, src).b())
+                () -> assertEquals(R.class, as(R.class, src).getClass()),
+                () -> assertEquals(r12.a(), as(R.class, src).a()),
+                () -> assertNotEquals(r12.b(), as(R.class, src).b()),
+                () -> assertEquals(0, as(R.class, src).b())
         );
     }
 
@@ -171,7 +170,7 @@ class StandardConversionsTest {
                 .basic("b", 2)
                 .build();
         assertAll(
-                () -> assertEquals(r1, asInstance(R.class, src))
+                () -> assertEquals(r1, as(R.class, src))
         );
     }
 
@@ -191,9 +190,9 @@ class StandardConversionsTest {
                 .basic("c", true)
                 .build();
         assertAll(
-                () -> assertEquals(r0, asInstance(R.class, src)),
-                () -> assertEquals(s2, asInstance(S.class, src)),
-                () -> assertEquals(t02, asInstance(T.class, src))
+                () -> assertEquals(r0, as(R.class, src)),
+                () -> assertEquals(s2, as(S.class, src)),
+                () -> assertEquals(t02, as(T.class, src))
         );
     }
 
@@ -227,7 +226,7 @@ class StandardConversionsTest {
                 ], "quark": null}
                 """;
         var ret = JsonReader.readElement(src);
-        var retConvd = StandardConversions.asInstance(T.class, ret);
+        var retConvd = StandardConversions.as(T.class, ret);
 
         // assertions
         assertAll(
@@ -237,41 +236,11 @@ class StandardConversionsTest {
     }
 
     @Test
-    void testSingle() {
-        var src = """
-                {"a": [{"b": [5]}]}""";
-        var elem = JsonReader.readElement(src);
-        var sngl = single(elem);
-        assertAll(
-                () -> assertEquals(JsonBoolean.TRUE, single(JsonBoolean.TRUE)),
-                () -> assertEquals(JsonBoolean.FALSE, single(JsonBoolean.FALSE)),
-                () -> assertEquals(JsonNull.INSTANCE, single(JsonNull.INSTANCE)),
-                () -> assertEquals(new JsonString("hallo"), single(new JsonString("hallo"))),
-                () -> assertEquals(new JsonNumber(4), single(new JsonNumber(4))),
-                () -> assertEquals(new JsonNumber(5), single(new JsonArray(List.of(new JsonNumber(5))))),
-                () -> assertEquals(new JsonNumber(5), sngl)
-        );
-    }
-
-
-    @Test
-    void testAsJsonObject() {
-        record R(int x) {
-        }
-        record S(String s, boolean b, R r, Object[] array) {
-        }
-        var r = new R(5);
-        var s = new S("hallo", true, r, new Object[]{null});
-        var jo = asJsonObject(s);
-        System.out.println(jo);
-    }
-
-    @Test
-    void testAsInstanceFromString() {
+    void testAsFromString() {
         var today = LocalDate.now();
         assertAll(
-                () -> assertEquals(today, asInstance(LocalDate.class, new JsonString(today.toString()))),
-                () -> assertEquals(today, asInstance(LocalDate.class, Basic.of(today)))
+                () -> assertEquals(today, as(LocalDate.class, new JsonString(today.toString()))),
+                () -> assertEquals(today, as(LocalDate.class, Basic.of(today)))
 
         );
     }

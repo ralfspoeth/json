@@ -77,12 +77,12 @@ class Lexer implements AutoCloseable {
     private State state = State.INITIAL;
     private final StringBuilder buffer = new StringBuilder();
 
-    public boolean hasNext() throws IOException {
+    boolean hasNext() throws IOException {
         readNextToken();
         return nextToken != null;
     }
 
-    public Token next() {
+    Token next() {
         if (nextToken == null) {
             throw new IllegalStateException("Lexer has no next token");
         } else {
@@ -219,7 +219,7 @@ class Lexer implements AutoCloseable {
     record Coordinates(int row, int column) {
     }
 
-    public Coordinates coordinates() {
+    Coordinates coordinates() {
         return new Coordinates(row, column);
     }
 

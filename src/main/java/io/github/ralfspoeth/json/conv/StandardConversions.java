@@ -118,6 +118,16 @@ public class StandardConversions {
         return ob.build();
     }
 
+    /**
+     * Create an {@link JsonArray} from an array object.
+     *
+     *
+     *
+     * @param array must be an array, that is {@code assert array.getClass().isArray()}; the
+     *              elements of this array may be anything that can be converted into an
+     *              {@link Element}
+     * @return JsonArray a new instance with the same length and order as the array
+     */
     public static JsonArray asJsonArray(Object array) {
         assert array.getClass().isArray();
         var ab = arrayBuilder();

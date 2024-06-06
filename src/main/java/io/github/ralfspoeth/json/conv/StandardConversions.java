@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.basix.fn.Functions.indexed;
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
-import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
 import static java.util.Arrays.stream;

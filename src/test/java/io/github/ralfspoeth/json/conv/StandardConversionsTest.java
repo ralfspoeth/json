@@ -140,9 +140,11 @@ class StandardConversionsTest {
 
         var r12 = as(R.class, src);
         assertAll(
-                () -> assertEquals(new R(1d, 2d, true, 5, 'X', 7L, 3f,
-                                (byte) 127, (short) 255, BigInteger.TWO, BigDecimal.TEN)
-                        , r12)
+                () -> assertEquals(
+                        new R(1d, 2d, true, 5, 'X', 7L, 3f,
+                                (byte) 127, (short) 255
+                                , BigInteger.TWO, BigDecimal.TEN
+                        ), r12)
         );
     }
 

@@ -6,6 +6,7 @@ import io.github.ralfspoeth.json.JsonObject;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -13,7 +14,7 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 
-public sealed abstract class Path {
+public sealed abstract class Path implements Function<Element, Stream<Element>> {
 
     private static final class MemberPath extends Path {
 
@@ -106,8 +107,9 @@ public sealed abstract class Path {
         this.parent = parent;
     }
 
-    public Stream<Element> evaluate(Element root) {
-        return parent==null ? this.evalThis(root) : parent.evaluate(root).flatMap(this::evalThis);
+    @Override
+    public Stream<Element> apply(Element root) {
+        return parent==null ? this.evalThis(root) : parent.apply(root).flatMap(this::evalThis);
     }
 
     abstract Stream<Element> evalThis(Element elem);

@@ -69,7 +69,38 @@ class PathTest {
     void testFlatMap() {
         var array = JsonArray.ofArray(new int[]{1, 2, 3, 4});
         var path = Path.of("[0..4]");
-        assertTrue(Stream.of(array).flatMap(path).allMatch(JsonNumber.class::isInstance));
+        assertTrue(Stream.of(array)
+                .flatMap(path)
+                .allMatch(JsonNumber.class::isInstance));
+
+        var obj = objectBuilder()
+                .named("a",
+                        objectBuilder()
+                                .named("b", objectBuilder()
+                                        .named("c", Basic.of("Zeh"))
+                                        .build()
+                                ).build()
+                )
+                .named("x", Basic.of(null))
+                .build();
+
+        var l = Stream.of(obj)
+                .flatMap(Path.of("a"))
+                .flatMap(Path.of("b"))
+                .flatMap(Path.of("c"))
+                .toList();
+        assertAll(
+                () -> assertEquals(new JsonString("Zeh"), l.getFirst()),
+                () -> assertEquals(new JsonString("Zeh"), l.getLast())
+        );
+
+        var m = Stream.of(obj)
+                .flatMap(Path.of("a/b/c"))
+                .toList();
+        assertAll(
+                () -> assertEquals(new JsonString("Zeh"), m.getFirst()),
+                () -> assertEquals(new JsonString("Zeh"), m.getLast())
+        );
     }
 
 }

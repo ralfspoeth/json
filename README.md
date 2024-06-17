@@ -687,3 +687,7 @@ keyword, and the `Element` which must be of type `JsonString`.
 While `enumValue` uses the `Enum::valueOf` method, the `enumValueIgnoreCase`
 converts the value and all the constants' names defined in the enum class 
 to uppercase strings before selecting the enum constant.
+
+## Conversions To Instances of Other Classes
+
+The `StandardConversions` class provides the `asInstance` function

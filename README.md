@@ -690,4 +690,81 @@ to uppercase strings before selecting the enum constant.
 
 ## Conversions To Instances of Other Classes
 
-The `StandardConversions` class provides the `asInstance` function
+The `StandardConversions` class provides the `as(Class, Element)` function
+which may be used to convert an `Element` into an instance of the given 
+class.
+
+The implementation provided is especially useful for `record`s, arrays, and
+`Collection`s and intends to return immutable objects
+whenever possible. 
+It is not meant to be a deserialization facility.
+
+### JsonObject to Record
+
+Let `record Point(double x, double y){}` be the target type.
+The conversion of a JSON source `{"x": 5.1, "y": 7.2}` has then
+a very natural representation as `Point(5.1, 7.2)`, which can be easily
+implemented:
+
+    record Point(double x, double y) {}
+    var jo = Aggregate.objectBuilder()
+        .named("x", 5.1)
+        .named("y", 7.2)
+        .build();
+    Point p = StandardConversions.as(Point.class, jo);
+    assert new Point(5.1, 7.2).equals(p);
+
+The implementation is as tolerant as it can be with missing
+or redundant members. Missing primitives are initialized with 
+their zero defaults, missing references with `null`. 
+Redundant members are simply ignored. So
+
+    var xOnly = Aggregate.objectBuilder()
+        .named("x", 5.1)
+        .build();
+    Point px = StandardConversions.as(Point.class, xOnly);
+    assert new Point(5.1, 0).equals(px);
+
+and
+
+    var xz = Aggregate.objectBuilder()
+        .named("x", 5.1)
+        .named("z", false) // or anything else
+        .build();
+    var pxz = StandardConversions.as(Point.class, xz);
+    assert new Point(5.1, 0).equals(pxz);
+
+Needless to say: the record components' names must match
+the member names of the JSON object.
+An `IllegalArgumentException` will be thrown when
+the value of the member cannot be converted into the type of the 
+record component.
+
+### String to Object
+
+If the target type is a class with a static factory method 
+that accepts a single string as parameter _or_ a constructor
+which accepts a string as its sole parameter.
+Static factory methods take precedence.
+Examples for these kinds of classes are
+
+    LocalDate/Time
+    BigDecimal
+    BigInteger
+
+and others from the JDK base module.
+
+### JsonArray to Array
+
+A `JsonArray` can be converted into an array of `Object`s; 
+all elements are converted using `StandardConversions.as` with 
+the arrays component type as the target type.
+
+### JsonArray to Collection
+
+This libray assume that the target collection type provides
+a copy constructor which takes another collection as its sole parameter.
+The `JsonArray` is first converted into an array of `Object`s which 
+is then passed into the `List.of` factory method. The result is being
+passed to the constructor of the collection type.
+

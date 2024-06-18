@@ -3,7 +3,6 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
@@ -16,6 +15,8 @@ import static io.github.ralfspoeth.basix.fn.Functions.indexed;
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
+import static java.lang.invoke.MethodHandles.publicLookup;
+import static java.lang.invoke.MethodType.methodType;
 import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -378,7 +379,7 @@ public class StandardConversions {
     private static final Map<MethodType, MethodHandle> bestHandles = new HashMap<>();
 
     private static <T> T as(Class<T> type, String text) {
-        var mt = MethodType.methodType(type, String.class);
+        var mt = methodType(type, String.class);
         return invokeHandle(
                 bestHandles.computeIfAbsent(mt, StandardConversions::findBestHandle),
                 text
@@ -396,7 +397,6 @@ public class StandardConversions {
 
     private static MethodHandle findBestHandle(MethodType mt) {
         var type = mt.returnType();
-        var lu = MethodHandles.publicLookup();
 
         return Stream.of(type.getDeclaredMethods())
                 .filter(m -> Modifier.isStatic(m.getModifiers())) // only static methods
@@ -404,24 +404,23 @@ public class StandardConversions {
                 .filter(m -> m.getParameterCount() == mt.parameterCount())
                 .filter(m -> Arrays.stream(m.getParameterTypes()).map(indexed(0))
                         .allMatch(i -> i.value().isAssignableFrom(mt.parameterType(i.index()))))// same params
-                .map(m -> toStaticHandle(m.getName(), MethodType.methodType(mt.returnType(), m.getParameterTypes())))
+                .map(m -> toStaticHandle(m.getName(), methodType(mt.returnType(), m.getParameterTypes())))
                 .findFirst()
-                .or(() -> Optional.of(toConstructorHandle(mt, lu, type)))
+                .or(() -> Optional.of(toConstructorHandle(mt, type)))
                 .orElseThrow(() -> new IllegalArgumentException("No static factory or constructor for " + mt));
     }
 
-    private static MethodHandle toConstructorHandle(MethodType mt, MethodHandles.Lookup lu, Class<?> type) {
+    private static MethodHandle toConstructorHandle(MethodType mt, Class<?> type) {
         try {
-            return lu.findConstructor(type, mt);
+            return publicLookup().findConstructor(type, mt);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
     private static MethodHandle toStaticHandle(String name, MethodType type) {
-        var lu = MethodHandles.publicLookup();
         try {
-            return lu.findStatic(type.returnType(), name, type);
+            return publicLookup().findStatic(type.returnType(), name, type);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

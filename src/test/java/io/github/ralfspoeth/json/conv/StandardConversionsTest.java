@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
@@ -244,6 +247,59 @@ class StandardConversionsTest {
                 () -> assertEquals(today, as(LocalDate.class, new JsonString(today.toString()))),
                 () -> assertEquals(today, as(LocalDate.class, Basic.of(today)))
 
+        );
+    }
+
+
+    @Test
+    void testDeconstruct() {
+
+        // arbitrary class
+        class Demo {
+            int X;
+            double y;
+            List<Integer> ints;
+
+            Demo(int a, double b, int[] array) {
+                this.X = a;
+                this.y = b;
+                this.ints = IntStream.of(array).boxed().toList();
+            }
+
+            @Override
+            public String toString() {
+                return "Demo{" +
+                        "X=" + X +
+                        ", y=" + y +
+                        ", ints=" + ints +
+                        '}';
+            }
+        }
+
+        var src = """
+                {"a": true,
+                 "b": null,
+                 "c": 0,
+                 "d": "D",
+                 "e": [1, 2, 3],
+                 "f": {"x":1, "y":2}}
+                """;
+        var jo = JsonReader.readElement(src);
+        var result = switch (jo) {
+            case JsonObject(Map<String, Element> m) -> new Demo(
+                    StandardConversions.intValue(m.get("c"), 0),
+                    StandardConversions.doubleValue(m.get("a"), 0d),
+                    ((JsonArray) m.get("e")).elements().stream()
+                            .mapToInt(e -> (int) ((JsonNumber) e).numVal())
+                            .toArray()
+            );
+            default -> throw new AssertionError();
+        };
+        var expected = new Demo(0, 1.0, new int[]{1, 2, 3});
+        assertAll(
+                () -> assertEquals(expected.X, result.X),
+                () -> assertEquals(expected.y, result.y),
+                () -> assertEquals(expected.ints, result.ints)
         );
     }
 }

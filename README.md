@@ -148,6 +148,9 @@ or through standard conversions from an object of a `Record` subclass
         w.write(jo);
     }
 
+The entire API is designed such that it never returns
+`null` as an `Element` reference nor accepts `null`
+for any `Element` typed parameters.
 
 ## JSON
 
@@ -698,6 +701,8 @@ The implementation provided is especially useful for `record`s, arrays, and
 `Collection`s and intends to return immutable objects
 whenever possible. 
 It is not meant to be a deserialization facility.
+
+Note that `JsonNull.INSTANCE` is _always_ converted to `null`.
 
 ### JsonObject to Record
 

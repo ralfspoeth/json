@@ -264,7 +264,9 @@ public class StandardConversions {
 
 
     public static <T> T as(Class<T> targetType, Element element) {
-        if (Number.class.isAssignableFrom(targetType)) {
+        if(element == JsonNull.INSTANCE) {
+            return null;
+        } else if (Number.class.isAssignableFrom(targetType)) {
             return (T) asNumber((Class<Number>) targetType, element);
         } else if (targetType.isRecord() && element instanceof JsonObject jo) {
             return (T) asRecord((Class<Record>) targetType, jo);
@@ -275,8 +277,6 @@ public class StandardConversions {
             return (T) asCollection(targetType, element);
         } else if(element instanceof JsonString js) {
             return as(targetType, js.value());
-        } else if(element == null) {
-            return null;
         }
         else {
             throw new IllegalArgumentException("%s cannot be converted into %s".formatted(element, targetType));

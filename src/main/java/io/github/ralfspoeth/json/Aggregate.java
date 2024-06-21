@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json;
 import java.util.*;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.in;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 
 public sealed interface Aggregate extends Element permits JsonArray, JsonObject {
@@ -46,7 +47,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         private final Map<String, Element> data = new HashMap<>();
 
         public JsonObjectBuilder named(String name, Element el) {
-            data.put(name, el);
+            data.put(requireNonNull(name), requireNonNull(el));
             return this;
         }
 
@@ -54,8 +55,8 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return named(name, Basic.of(o));
         }
 
-        public JsonObjectBuilder basic(String name) {
-            return named(name, JsonNull.INSTANCE);
+        public JsonObjectBuilder element(String name, Object o) {
+            return named(name, Element.of(o));
         }
 
         public JsonObjectBuilder update(Map<String, ? extends Element> map) {
@@ -134,12 +135,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         private final List<Element> data = new ArrayList<>();
 
         public JsonArrayBuilder item(Element elem) {
-            if(data.add(elem)) return this; else throw new AssertionError();
-        }
-
-        public JsonArrayBuilder combine(JsonArrayBuilder other) {
-            this.data.addAll(other.data);
-            return this;
+            if(data.add(requireNonNull(elem))) return this; else throw new AssertionError();
         }
 
         public JsonArrayBuilder basic(Object o) {

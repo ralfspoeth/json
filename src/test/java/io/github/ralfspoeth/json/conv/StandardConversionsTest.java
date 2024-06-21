@@ -302,4 +302,12 @@ class StandardConversionsTest {
                 () -> assertEquals(expected.ints, result.ints)
         );
     }
+
+    @Test
+    void testJsonNullToObject() {
+        assertAll(
+                () -> assertNull(as(Object.class, JsonNull.INSTANCE)),
+                () -> assertNull(as(Record.class, JsonNull.INSTANCE))
+        );
+    }
 }

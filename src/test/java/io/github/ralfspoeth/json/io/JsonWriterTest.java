@@ -15,7 +15,7 @@ class JsonWriterTest {
         var orig = Aggregate.objectBuilder()
                 .named("a", new JsonNumber(5))
                 .basic("bb", 6d)
-                .basic("fuck")
+                .basic("fuck", null)
                 .named("arr", Aggregate.arrayBuilder()
                         .item(Basic.of(null))
                         .item(Basic.of(7.5))
@@ -26,7 +26,6 @@ class JsonWriterTest {
 
         try (var pw = new StringWriter(); var wrt = JsonWriter.createDefaultWriter(new PrintWriter(pw))) {
             wrt.write(orig);
-            System.out.println(pw.getBuffer().toString());
             try(var sr = new StringReader(pw.toString()); var rdr = new JsonReader(sr)) {
                 var result = rdr.readElement();
                 assertEquals(orig, result);

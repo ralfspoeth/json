@@ -30,7 +30,7 @@ class BuilderTest {
                 .basic("income", 5)
                 .basic("sex", true)
                 .named("seven", new JsonString("murks"))
-                .basic("nix")
+                .basic("nix", null)
                 .named("adr", Aggregate.arrayBuilder()
                         .element(5)
                         .item(objectBuilder().basic("sowat", "nix").build())

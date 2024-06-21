@@ -12,4 +12,9 @@ public final class JsonNull implements Basic<Object> {
 
     @Override
     public Object value() {return null;}
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[value=null]";
+    }
 }

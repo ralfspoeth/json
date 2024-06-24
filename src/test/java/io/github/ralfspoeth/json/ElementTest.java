@@ -66,7 +66,7 @@ class ElementTest {
             case Basic<?> b -> b.json();
             case Aggregate a -> a.toString();
         }).toList();
-        System.out.println(l);
+        assertNotNull(l);
     }
 
     @Test
@@ -81,7 +81,7 @@ class ElementTest {
     }
 
     @Test
-    void testOfRecords() {
+    void testJsonOfRecords() {
         record A(int x){}
         record B(A a, boolean b){}
         record C(B b, String s) {}

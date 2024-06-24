@@ -64,7 +64,6 @@ public class StandardConversions {
     /**
      * Provides the most natural mapping of a JSON element
      * to their Java counterparts.
-     *
      * A {@link JsonObject object} is basically converted into its map of
      * {@link JsonObject#members() members},
      * the values of which are passed to this method recursively.
@@ -199,40 +198,6 @@ public class StandardConversions {
         } else throw new AssertionError();
     }
 
-
-    private static <T> T instanceFromString(Class<T> clazz, String string) {
-        var parameterTypes = new Class[]{String.class};
-
-        return stream(clazz.getDeclaredConstructors())
-                .filter(c -> Arrays.equals(c.getParameterTypes(), parameterTypes))
-                .map(c -> newInst(c, string))
-                .map(clazz::cast)
-                .findFirst().or(() ->
-                        stream(clazz.getDeclaredMethods())
-                                .filter(m -> Modifier.isStatic(m.getModifiers()))
-                                .filter(m -> Arrays.equals(m.getParameterTypes(), parameterTypes))
-                                .filter(m -> m.getReturnType().equals(clazz))
-                                .map(m -> invoke(m, clazz, string))
-                                .findFirst()
-                ).orElseThrow();
-    }
-
-    private static <T> T newInst(Constructor<T> constructor, Object... args) {
-        try {
-            return constructor.newInstance(args);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static <T> T invoke(Method m, Class<T> clazz, Object... args) {
-        try {
-            return (T) m.invoke(clazz, args);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static String stringValue(Element elem, String def) {
         return switch (elem) {
             case null -> def;
@@ -262,7 +227,6 @@ public class StandardConversions {
         return booleanValue(requireNonNull(elem), false);
     }
 
-
     public static <T> T as(Class<T> targetType, Element element) {
         if(element == JsonNull.INSTANCE) {
             return null;
@@ -277,8 +241,7 @@ public class StandardConversions {
             return (T) asCollection(targetType, element);
         } else if(element instanceof JsonString js) {
             return as(targetType, js.value());
-        }
-        else {
+        } else {
             throw new IllegalArgumentException("%s cannot be converted into %s".formatted(element, targetType));
         }
     }
@@ -404,7 +367,7 @@ public class StandardConversions {
                 .filter(m -> m.getParameterCount() == mt.parameterCount())
                 .filter(m -> Arrays.stream(m.getParameterTypes()).map(indexed(0))
                         .allMatch(i -> i.value().isAssignableFrom(mt.parameterType(i.index()))))// same params
-                .map(m -> toStaticHandle(m.getName(), methodType(mt.returnType(), m.getParameterTypes())))
+                .map(m -> toStaticHandle(methodType(mt.returnType(), m.getParameterTypes()), m.getName()))
                 .findFirst()
                 .or(() -> Optional.of(toConstructorHandle(mt, type)))
                 .orElseThrow(() -> new IllegalArgumentException("No static factory or constructor for " + mt));
@@ -418,7 +381,7 @@ public class StandardConversions {
         }
     }
 
-    private static MethodHandle toStaticHandle(String name, MethodType type) {
+    private static MethodHandle toStaticHandle(MethodType type, String name) {
         try {
             return publicLookup().findStatic(type.returnType(), name, type);
         } catch (NoSuchMethodException | IllegalAccessException e) {

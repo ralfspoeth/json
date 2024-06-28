@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
@@ -294,12 +295,11 @@ public class StandardConversions {
 
     private static Collection<?> asCollection(Class<?> collClass, Element element) {
         try {
-            var cons = collClass.getDeclaredConstructor(Collection.class);
-            var array = (Object[]) asArray(Object.class, element);
-            return (Collection<?>) cons.newInstance(Arrays.asList(array));
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
-                 IllegalAccessException e) {
-            throw new RuntimeException(e);
+            return (Collection<?>)bestHandles
+                    .computeIfAbsent(methodType(collClass, Object[].class), StandardConversions::findBestHandle)
+                    .invoke(asArray(Object.class, element));
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
     }
 

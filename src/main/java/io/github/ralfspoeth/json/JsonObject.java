@@ -6,13 +6,14 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 
 public record JsonObject(Map<String, Element> members) implements Aggregate, Function<String, Element> {
 
     public JsonObject {
-        members = Map.copyOf(members);
+        members = Map.copyOf(requireNonNullElse(members, Map.of()));
     }
 
     public static <R extends Record> JsonObject ofRecord(R r) {
@@ -58,6 +59,6 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
 
     @Override
     public Element apply(String name) {
-        return members.get(name);
+        return get(name, Element.class);
     }
 }

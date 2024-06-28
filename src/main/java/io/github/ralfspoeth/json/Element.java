@@ -10,20 +10,4 @@ public sealed interface Element permits Aggregate, Basic {
             case null, default -> Basic.of(o);
         };
     }
-
-    static Basic of(int i) {
-        return new JsonNumber(i);
-    }
-
-    static Basic of(long l) {
-        return new JsonNumber(l);
-    }
-
-    static Basic of(double d) {
-        return new JsonNumber(d);
-    }
-
-    static Basic of(boolean b) {
-        return JsonBoolean.of(b);
-    }
 }

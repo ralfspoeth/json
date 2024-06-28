@@ -5,10 +5,11 @@ import java.util.List;
 import java.util.function.IntFunction;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
+import static java.util.Objects.requireNonNullElse;
 
 public record JsonArray(List<Element> elements) implements Aggregate, IntFunction<Element> {
     public JsonArray {
-        elements = List.copyOf(elements);
+        elements = List.copyOf(requireNonNullElse(elements, List.of()));
     }
 
     public static JsonArray of(Object o) {

@@ -3,7 +3,6 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
@@ -20,6 +19,7 @@ import static java.lang.invoke.MethodHandles.publicLookup;
 import static java.lang.invoke.MethodType.methodType;
 import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
@@ -183,7 +183,7 @@ public class StandardConversions {
         if (type.equals(int.class)) {
             return intValue(elem, 0);
         } else if (type.equals(long.class)) {
-            return longValue(elem, 0l);
+            return longValue(elem, 0L);
         } else if (type.equals(double.class)) {
             return doubleValue(elem, 0d);
         } else if (type.equals(float.class)) {
@@ -228,8 +228,9 @@ public class StandardConversions {
         return booleanValue(requireNonNull(elem), false);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T as(Class<T> targetType, Element element) {
-        if(element == JsonNull.INSTANCE) {
+        if (element == JsonNull.INSTANCE) {
             return null;
         } else if (Number.class.isAssignableFrom(targetType)) {
             return (T) asNumber((Class<Number>) targetType, element);
@@ -239,8 +240,8 @@ public class StandardConversions {
             var t = targetType.getComponentType();
             return (T) asArray(t, element);
         } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
-            return (T) asCollection(targetType, element);
-        } else if(element instanceof JsonString js) {
+            return (T) asCollection((Class<Collection<?>>) targetType, element);
+        } else if (element instanceof JsonString js) {
             return as(targetType, js.value());
         } else {
             throw new IllegalArgumentException("%s cannot be converted into %s".formatted(element, targetType));
@@ -283,24 +284,23 @@ public class StandardConversions {
         }
     }
 
-    private static Object asArray(Class<?> type, Element element) {
+    private static Object[] asArray(Class<?> type, Element element) {
         if (element instanceof JsonArray ja) {
             var array = java.lang.reflect.Array.newInstance(type, ja.size());
             for (int i = 0; i < ja.size(); i++) {
                 Array.set(array, i, as(type, ja.elements().get(i)));
             }
-            return array;
+            return (Object[]) array;
         } else throw new AssertionError();
     }
 
-    private static Collection<?> asCollection(Class<?> collClass, Element element) {
-        try {
-            return (Collection<?>)bestHandles
-                    .computeIfAbsent(methodType(collClass, Object[].class), StandardConversions::findBestHandle)
-                    .invoke(asArray(Object.class, element));
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
+    private static Collection<?> asCollection(Class<Collection<?>> collClass, Element element) {
+        return ofNullable(bestHandles.computeIfAbsent(
+                        methodType(collClass, Object[].class),
+                        StandardConversions::findBestHandle))
+                .map(h -> invokeHandle(h, asArray(Object.class, element)))
+                .map(collClass::cast)
+                .orElse(null);
     }
 
     private static <T extends Number> T asNumber(Class<T> numType, Element el) {
@@ -321,6 +321,7 @@ public class StandardConversions {
         };
     }
 
+    @SuppressWarnings("unchecked")
     private static <T extends Number> T asNumType(Class<T> numType, Double val) {
         if (numType.equals(Double.class)) {
             return (T) val;
@@ -352,7 +353,16 @@ public class StandardConversions {
     @SuppressWarnings("unchecked")
     private static <T> T invokeHandle(MethodHandle handle, String text) {
         try {
-            return (T)handle.invoke(text);
+            return (T) handle.invoke(text);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T invokeHandle(MethodHandle handle, Object[] args) {
+        try {
+            return (T) handle.invoke(args);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }

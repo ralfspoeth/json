@@ -3,8 +3,11 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
@@ -76,7 +79,7 @@ public class StandardConversions {
      *
      * @param elem a JSON element
      * @return either a {@link Map}, a {@link List}
-     * or a {@code String}, {@code double}, {@code null}, or {@code boolean}
+     * or a {@code String}, {@code Double}, {@code Boolean}, or {@code null}
      */
     public static Object asObject(Element elem) {
         return switch (elem) {
@@ -262,15 +265,22 @@ public class StandardConversions {
                     if (ctype.isPrimitive()) {
                         vals[ic.index()] = primitiveValue(ctype, member);
                     }
-                    // well known classes
-                    else if (ctype.equals(String.class)) {
+                    // null case
+                    else if (member == null) {
+                        vals[ic.index()] = null;
+                    }
+                    // well known cases
+                    // string and above...
+                    else if (ctype.isAssignableFrom(CharSequence.class)) {
                         vals[ic.index()] = stringValue(member);
-                    } else if (ctype.equals(BigDecimal.class)) {
+                    }
+                    // number types in java.math
+                    else if (ctype.equals(BigDecimal.class)) {
                         vals[ic.index()] = new BigDecimal(stringValue(member));
                     } else if (ctype.equals(BigInteger.class)) {
                         vals[ic.index()] = new BigInteger(stringValue(member));
                     }
-                    // generic class case
+                    // all other classes, may fail at runtime
                     else {
                         vals[ic.index()] = as(ic.value().getType(), e.members().get(ic.value().getName()));
                     }
@@ -296,8 +306,8 @@ public class StandardConversions {
 
     private static Collection<?> asCollection(Class<Collection<?>> collClass, Element element) {
         return ofNullable(bestHandles.computeIfAbsent(
-                        methodType(collClass, Object[].class),
-                        StandardConversions::findBestHandle))
+                methodType(collClass, Object[].class),
+                StandardConversions::findBestHandle))
                 .map(h -> invokeHandle(h, asArray(Object.class, element)))
                 .map(collClass::cast)
                 .orElse(null);
@@ -385,7 +395,7 @@ public class StandardConversions {
 
     private static MethodHandle toConstructorHandle(MethodType mt, Class<?> type) {
         try {
-            return publicLookup().findConstructor(type, mt);
+            return MethodHandles.privateLookupIn(type, MethodHandles.publicLookup()).findConstructor(type, mt);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

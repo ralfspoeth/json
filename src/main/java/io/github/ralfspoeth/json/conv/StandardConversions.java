@@ -3,7 +3,6 @@ package io.github.ralfspoeth.json.conv;
 import io.github.ralfspoeth.json.*;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
@@ -256,6 +255,8 @@ public class StandardConversions {
             return (T) asArray(t, element);
         } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
             return (T) asCollection((Class<Collection<?>>) targetType, element);
+        } else if(Map.class.isAssignableFrom(targetType) && element instanceof JsonObject) {
+            return (T) asMap(element);
         } else if (element instanceof JsonString js) {
             return as(targetType, js.value());
         } else {
@@ -407,7 +408,7 @@ public class StandardConversions {
 
     private static MethodHandle toConstructorHandle(MethodType mt, Class<?> type) {
         try {
-            return MethodHandles.privateLookupIn(type, MethodHandles.publicLookup()).findConstructor(type, mt);
+            return publicLookup().findConstructor(type, mt);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

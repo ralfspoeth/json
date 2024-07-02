@@ -304,7 +304,7 @@ class StandardConversionsTest {
     }
 
     @Test
-    void testJsonNullToObject() {
+    void testJsonNullToValue() {
         assertAll(
                 () -> assertNull(as(Object.class, JsonNull.INSTANCE)),
                 () -> assertNull(as(Record.class, JsonNull.INSTANCE))

@@ -46,7 +46,7 @@ taught me another series of important things,
 the most striking being Rich Hickey's keynote about
 [The Value of Values](https://www.youtube.com/watch?v=-6BsiVyC1kM)
 at the Jaxconf 2012 in San Francisco.
-Treating values as immutable things changes the mental
+Treating values as immutable data changes the mental
 model of programming at least if you're coming 
 from the object-oriented world.
 
@@ -57,6 +57,22 @@ intermediate mutable objects hopefully hidden beneath
 the facade of the parser. We finally managed to use 
 mutable builders throughout the parsing phase and
 to return immutable instances in the end.
+
+## Current Status
+
+The current version 1.1.5 is mature and stable and
+will not be changed with respect to the hierarchy of classes
+and interfaces in package `io.github.ralfspoeth.json` and
+the parser implemented through `JsonReader` in package
+`io.github.ralfspoeth.json.io`; the `JsonWriter` serializer
+class in the same package has not been battle-tested thus far 
+but satisfies our needs.
+
+The `Path` API in package `io.github.ralfspoeth.json.query` is
+experimental; the same is true for the non-trivial parts of 
+the static methods of `StandardConversions`
+in package `io.github.ralfspoeth.json.conv`, most notably the
+`as(Class, Element)` method is very immature.
 
 ## Getting Started
 
@@ -72,16 +88,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.0.9</version>
+        <version>1.1.5</version>
     </dependency>
 
 or, when using Gradle (Groovy)
 
-    implementation 'io.github.ralfspoeth:json:1.0.9'
+    implementation 'io.github.ralfspoeth:json:1.1.5'
 
 or, with Gradle (Kotlin), put 
 
-    implementation("io.github.ralfspoeth:json:1.0.9")
+    implementation("io.github.ralfspoeth:json:1.1.5")
 
 in your build file.
 
@@ -94,21 +110,21 @@ If you are using JPMS modules with a `module-info.java` file, add
 
 ### Basic Usage
 
-The module `io.github.ralfspoeth.json` exports two packages that you 
+The module `io.github.ralfspoeth.json` exports four packages that you 
 may use in your application:
 
-    import io.github.ralfspoeth.json.*;
-    import io.github.ralfspoeth.json.io.*;
-    import io.github.ralfspoeth.json.conv.*;
+    import io.github.ralfspoeth.json.*;       // class hierarchy
+    import io.github.ralfspoeth.json.io.*;    // reader and writer
+    import io.github.ralfspoeth.json.conv.*;  // standard conversions
+    import io.github.ralfspoeth.json.query.*; // Path API
 
 The first package contains the data types (`Element` and its descendants)
 and the second contains the `JsonReader` and `JsonWriter` classes.
-The last package contains the `StandardConversions` class with static 
-conversion functions.
+The last two packages contain the `StandardConversions` class with static 
+conversion functions and the query API both of which are not considered to mature enough
+for general use.
 
-The package `io.github.ralfspoeth.json.query` is immature and not exported.
-It is nevertheless available when you don't define a `module-info` with your 
-application; note that the package may be changed or even deleted.
+PLEASE EXPECT THAT THESE PACKAGES MAY CHANGE OR EVEN DISAPPEAR.
 
 In your code you'll typically write something like this 
 when your want to start with 
@@ -116,15 +132,17 @@ when your want to start with
     Reader r = ...;
     try(var rdr = new JsonReader(r)) { // auto-closeable
         Element elem = rdr.readElement(); 
-        
-        // use it, e.g. by converting it...
-        MyRecord rcd = StandardConversions.asInstance(MyRecord.class, elem); 
-        
-        // or easily switch over elem
+        // switch over elem
         double dbl = switch(elem) {
             case JsonNumber(double d) -> d;
             null, default -> throw new IllegalArgumentException("...");
         }
+
+        // often, you may easily convert the element into a simple record
+        MyRecord rcd = StandardConversions.as(MyRecord.class, elem); 
+        
+        // or you may want to query some leaves in the JSON structure 
+        Path.of("[1..3]/a/#x.*y/c").apply(elem).forEach(...);
     }
 
 Writing data into a JSON stream works either through the builders
@@ -143,14 +161,14 @@ or through standard conversions from an object of a `Record` subclass
     Writer out = ...;
     record Rec(boolean x, double y) {}
     Rec r = new Rec(true, 5d);
-    JsonObject jo = StandardConversions.asJsonObject(r);
+    Element jo = Element.of(r);
     try(var w = JsonWriter.createDefaultWriter(out)) {
-        w.write(jo);
+        w.write(jo); // {"x": true, "y": "5.0"}
     }
 
 The entire API is designed such that it never returns
-`null` as an `Element` reference nor accepts `null`
-for any `Element` typed parameters.
+`null` as an `Element` reference, but is, however, resilient
+towards `null` as an argument wherever reasonable.
 
 ## JSON
 
@@ -317,7 +335,7 @@ between numerical data types -- which is enormously
 limiting, and that we use the primitive Java type
 because `null` values or not acceptable either way.
 
-## Modelling `Array` as Record of an Immutable List
+## Modelling `Array` as Record of an Immutable `List`
 
 As with strings we need to wrap the array in some
 container - a final class or a record - plus
@@ -339,7 +357,7 @@ This method also makes sure no actual `null` instance
 is passed in within the list of elements.
 (`JsonNull`s are acceptable of course.)
 
-## Modelling `Object` as Record of an Immutable Map
+## Modelling `Object` as Record of an Immutable `Map`
 
 The same is true for `JsonObject`s. We model the properties 
 or attributes or members as a map of `String`s (not `JsonString`s since
@@ -567,7 +585,7 @@ Here is a link to a video from Rich Hickey:
 In order to use this Java library, include this in your `deps.edn` file:
 
     {:deps {
-        io.github.ralfspoeth/json {:mvn/version "1.0.9"}
+        io.github.ralfspoeth/json {:mvn/version "1.1.5"}
         }}
 
 Import the `Element` and IO classes into your namespace like this

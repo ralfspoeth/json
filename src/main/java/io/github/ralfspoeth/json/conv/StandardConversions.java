@@ -93,7 +93,7 @@ public class StandardConversions {
      * that it allows {@code null} as parameter 1.
      *
      * @param elem a JSON element, may be null
-     * @param def the default value if {@code elem} is {@code null}
+     * @param def  the default value if {@code elem} is {@code null}
      * @return as in {@link #value(Element)}
      */
     public static Object value(Element elem, Object def) {
@@ -255,7 +255,7 @@ public class StandardConversions {
             return (T) asArray(t, element);
         } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
             return (T) asCollection((Class<Collection<?>>) targetType, element);
-        } else if(Map.class.isAssignableFrom(targetType) && element instanceof JsonObject) {
+        } else if (Map.class.isAssignableFrom(targetType) && element instanceof JsonObject) {
             return (T) asMap(element);
         } else if (element instanceof JsonString js) {
             return as(targetType, js.value());
@@ -307,21 +307,22 @@ public class StandardConversions {
         }
     }
 
-    private static Object[] asArray(Class<?> type, Element element) {
+    private static Object asArray(Class<?> type, Element element) {
         if (element instanceof JsonArray ja) {
             var array = java.lang.reflect.Array.newInstance(type, ja.size());
             for (int i = 0; i < ja.size(); i++) {
                 Array.set(array, i, as(type, ja.elements().get(i)));
             }
-            return (Object[]) array;
+            return array;
         } else throw new AssertionError();
     }
 
     private static Collection<?> asCollection(Class<Collection<?>> collClass, Element element) {
         return ofNullable(bestHandles.computeIfAbsent(
                 methodType(collClass, Object[].class),
-                StandardConversions::findBestHandle))
-                .map(h -> invokeHandle(h, asArray(Object.class, element)))
+                StandardConversions::findBestHandle)
+        )
+                .map(h -> invokeHandle(h, (Object[]) asArray(Object.class, element)))
                 .map(collClass::cast)
                 .orElse(null);
     }

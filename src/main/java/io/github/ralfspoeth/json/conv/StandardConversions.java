@@ -259,7 +259,10 @@ public class StandardConversions {
             return (T) asMap(element);
         } else if (element instanceof JsonString js) {
             return as(targetType, js.value());
-        } else {
+        } else if(element instanceof Basic<?> b) {
+            return (T)b.value();
+        }
+        else {
             throw new IllegalArgumentException("%s cannot be converted into %s".formatted(element, targetType));
         }
     }

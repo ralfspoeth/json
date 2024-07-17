@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
@@ -335,5 +336,22 @@ class StandardConversionsTest {
     @Test
     void testValueDef() {
         assertEquals("hello", value(null, "hello"));
+    }
+
+
+    @Test
+    void testLists() {
+        assertAll(
+                () -> assertEquals(List.of(), as(List.class, ofDoubles())),
+                () -> assertEquals(List.of(1d, 2d), as(List.class, ofDoubles(1, 2)))
+        );
+    }
+
+    private static JsonArray ofDoubles(double... d) {
+        return new JsonArray(DoubleStream.of(d)
+                .mapToObj(Basic::of)
+                .map(Element.class::cast)
+                .toList()
+        );
     }
 }

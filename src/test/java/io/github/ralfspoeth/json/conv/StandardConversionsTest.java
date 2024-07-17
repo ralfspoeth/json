@@ -304,10 +304,36 @@ class StandardConversionsTest {
     }
 
     @Test
-    void testJsonNullToObject() {
+    void testJsonNullToValue() {
         assertAll(
                 () -> assertNull(as(Object.class, JsonNull.INSTANCE)),
                 () -> assertNull(as(Record.class, JsonNull.INSTANCE))
         );
+    }
+
+    @Test
+    void testValue() {
+        var src = """
+                {"a": 1
+                , "b": true
+                , "c": false
+                , "d": null
+                , "e": [1, 2, 3]
+                }""";
+        var jo = JsonReader.readElement(src);
+        assertAll(
+                () -> assertInstanceOf(Map.class, value(jo)),
+                () -> assertInstanceOf(Double.class, ((Map)value(jo)).get("a")),
+                () -> assertInstanceOf(Boolean.class, ((Map)value(jo)).get("b")),
+                () -> assertInstanceOf(Boolean.class, ((Map)value(jo)).get("c")),
+                () -> assertNull(((Map)value(jo)).get("d")),
+                () -> assertInstanceOf(List.class, ((Map)value(jo)).get("e")),
+                () -> assertThrows(NullPointerException.class, () -> value(null))
+        );
+    }
+
+    @Test
+    void testValueDef() {
+        assertEquals("hello", value(null, "hello"));
     }
 }

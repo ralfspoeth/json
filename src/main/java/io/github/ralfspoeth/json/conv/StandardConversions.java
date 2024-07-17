@@ -4,7 +4,9 @@ import io.github.ralfspoeth.json.*;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
@@ -37,7 +39,7 @@ public class StandardConversions {
                     .entrySet()
                     .stream()
                     .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
-                    .collect(toMap(Map.Entry::getKey, e -> asObject(e.getValue())));
+                    .collect(toMap(Map.Entry::getKey, e -> value(e.getValue())));
             case null, default -> throw new IllegalArgumentException(elem + " is not a JSON Object");
         };
     }
@@ -56,7 +58,7 @@ public class StandardConversions {
             case JsonArray ar -> ar.elements()
                     .stream()
                     .filter(not(eq(JsonNull.INSTANCE, identity())))
-                    .map(StandardConversions::asObject)
+                    .map(StandardConversions::value)
                     .toList();
             case null, default -> throw new IllegalArgumentException(elem + " is not a JSON array");
         };
@@ -74,16 +76,28 @@ public class StandardConversions {
      * All other {@link Basic} elements are converted using the basic's
      * {@link Basic#value()} function.
      *
-     * @param elem a JSON element
+     * @param elem a JSON element, may not be {@code null}
      * @return either a {@link Map}, a {@link List}
-     * or a {@code String}, {@code double}, {@code null}, or {@code boolean}
+     * or a {@code String}, {@code Double}, {@code Boolean}, or {@code null}
      */
-    public static Object asObject(Element elem) {
-        return switch (elem) {
+    public static Object value(Element elem) {
+        return switch (requireNonNull(elem)) {
             case JsonObject jo -> asMap(jo);
             case JsonArray ja -> asList(ja);
             case Basic<?> basic -> asBasic(basic);
         };
+    }
+
+    /**
+     * Exactly the same as {@link #value(Element)} except
+     * that it allows {@code null} as parameter 1.
+     *
+     * @param elem a JSON element, may be null
+     * @param def  the default value if {@code elem} is {@code null}
+     * @return as in {@link #value(Element)}
+     */
+    public static Object value(Element elem, Object def) {
+        return ofNullable(elem).map(StandardConversions::value).orElse(def);
     }
 
 
@@ -241,6 +255,8 @@ public class StandardConversions {
             return (T) asArray(t, element);
         } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
             return (T) asCollection((Class<Collection<?>>) targetType, element);
+        } else if (Map.class.isAssignableFrom(targetType) && element instanceof JsonObject) {
+            return (T) asMap(element);
         } else if (element instanceof JsonString js) {
             return as(targetType, js.value());
         } else {
@@ -262,15 +278,22 @@ public class StandardConversions {
                     if (ctype.isPrimitive()) {
                         vals[ic.index()] = primitiveValue(ctype, member);
                     }
-                    // well known classes
-                    else if (ctype.equals(String.class)) {
+                    // null case
+                    else if (member == null) {
+                        vals[ic.index()] = null;
+                    }
+                    // well known cases
+                    // string and above...
+                    else if (ctype.isAssignableFrom(CharSequence.class)) {
                         vals[ic.index()] = stringValue(member);
-                    } else if (ctype.equals(BigDecimal.class)) {
+                    }
+                    // number types in java.math
+                    else if (ctype.equals(BigDecimal.class)) {
                         vals[ic.index()] = new BigDecimal(stringValue(member));
                     } else if (ctype.equals(BigInteger.class)) {
                         vals[ic.index()] = new BigInteger(stringValue(member));
                     }
-                    // generic class case
+                    // all other classes, may fail at runtime
                     else {
                         vals[ic.index()] = as(ic.value().getType(), e.members().get(ic.value().getName()));
                     }
@@ -284,21 +307,22 @@ public class StandardConversions {
         }
     }
 
-    private static Object[] asArray(Class<?> type, Element element) {
+    private static Object asArray(Class<?> type, Element element) {
         if (element instanceof JsonArray ja) {
             var array = java.lang.reflect.Array.newInstance(type, ja.size());
             for (int i = 0; i < ja.size(); i++) {
                 Array.set(array, i, as(type, ja.elements().get(i)));
             }
-            return (Object[]) array;
+            return array;
         } else throw new AssertionError();
     }
 
     private static Collection<?> asCollection(Class<Collection<?>> collClass, Element element) {
         return ofNullable(bestHandles.computeIfAbsent(
-                        methodType(collClass, Object[].class),
-                        StandardConversions::findBestHandle))
-                .map(h -> invokeHandle(h, asArray(Object.class, element)))
+                methodType(collClass, Object[].class),
+                StandardConversions::findBestHandle)
+        )
+                .map(h -> invokeHandle(h, (Object[]) asArray(Object.class, element)))
                 .map(collClass::cast)
                 .orElse(null);
     }

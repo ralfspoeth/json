@@ -4,11 +4,11 @@ import io.github.ralfspoeth.json.*;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -100,6 +100,33 @@ public class StandardConversions {
         return ofNullable(elem).map(StandardConversions::value).orElse(def);
     }
 
+    /**
+     * If the {@link Element} passed in is a {@link JsonObject} then
+     * return its {@link JsonObject#members() members}, otherwise an empty {@link Map}.
+     *
+     * @param elem an element, may be {@code null}.
+     * @return the members of a JsonObject, or an empty map
+     */
+    public static Map<String, Element> members(Element elem) {
+        return switch(elem) {
+            case JsonObject jo -> jo.members();
+            case null, default -> Map.of();
+        };
+    }
+
+    /**
+     * If the {@link Element} passed in is a {@link JsonArray} then
+     * return its {@link JsonArray#elements() elements}, otherwise an empty {@link List}.
+     *
+     * @param elem an element, may be {@code null}
+     * @return the elements of a JsonArray, or an empty list
+     */
+    public static List<Element> elements(Element elem) {
+        return switch (elem) {
+            case JsonArray ja -> ja.elements();
+            case null, default -> List.of();
+        };
+    }
 
     /**
      * Converts an {@link Element element} to {@code int}.
@@ -242,6 +269,15 @@ public class StandardConversions {
         return booleanValue(requireNonNull(elem), false);
     }
 
+    /**
+     * Being considered the jewel of the library at first, this method has a number of drawbacks;
+     * first of all, the methods requires deep reflection and at least may circumvent the
+     * integrity by default approach; second it is full of assumptions and provides a lot of magic;
+     * and then everytime we test it we find some more <em>standard</em> cases which we might want to add.
+     *
+     *
+     */
+    @Deprecated(forRemoval = true)
     @SuppressWarnings("unchecked")
     public static <T> T as(Class<T> targetType, Element element) {
         if (element == JsonNull.INSTANCE) {
@@ -249,37 +285,46 @@ public class StandardConversions {
         } else if (Number.class.isAssignableFrom(targetType)) {
             return (T) asNumber((Class<Number>) targetType, element);
         } else if (targetType.isRecord() && element instanceof JsonObject jo) {
-            return (T) asRecord((Class<Record>) targetType, jo);
-        } else if (targetType.isArray() && element instanceof JsonArray) {
-            var t = targetType.getComponentType();
-            return (T) asArray(t, element);
-        } else if (Collection.class.isAssignableFrom(targetType) && element instanceof JsonArray) {
-            return (T) asCollection((Class<Collection<?>>) targetType, element);
-        } else if (Map.class.isAssignableFrom(targetType) && element instanceof JsonObject) {
+            return (T) asRecord(targetType, jo);
+        } else if (targetType.isArray() && element instanceof JsonArray ja) {
+            return (T) asArray(targetType, ja);
+        } /*else if (Collection.class.isAssignableFrom(targetType.getClass()) && targetType instanceof ParameterizedType rt  && element instanceof JsonArray ja) {
+            return (T) asCollection(rt, ja);
+        } */ else if (Map.class.isAssignableFrom(targetType) && element instanceof JsonObject) {
             return (T) asMap(element);
         } else if (element instanceof JsonString js) {
-            return as(targetType, js.value());
-        } else if(element instanceof Basic<?> b) {
-            return (T)b.value();
-        }
-        else {
+            if (targetType.equals(String.class)) {
+                return (T) js.value();
+            } else if (targetType.equals(LocalDate.class)) {
+                return (T) LocalDate.parse(js.value());
+            } else if (targetType.equals(LocalDateTime.class)) {
+                return (T) LocalDateTime.parse(js.value());
+            } else {
+                return as(targetType, js.value());
+            }
+        } else if (element instanceof Basic<?> b) {
+            return (T) b.value();
+        } else {
             throw new IllegalArgumentException("%s cannot be converted into %s".formatted(element, targetType));
         }
     }
 
-    private static <R extends Record> R asRecord(Class<R> type, JsonObject e) {
-        assert type.isRecord();
-        var comps = type.getRecordComponents();
-        var compTypes = new Class<?>[comps.length];
+    private static Object asRecord(Type type, JsonObject e) {
+        assert type.getClass().isRecord();
+        var comps = type.getClass().getRecordComponents();
+        var compTypes = new Type[comps.length];
         var vals = new Object[comps.length];
         stream(comps)
                 .map(indexed(0))
                 .forEach(ic -> {
-                    var ctype = ic.value().getType();
+                    var ctype = ic.value().getGenericType();
                     var member = e.members().get(ic.value().getName());
-                    compTypes[ic.index()] = ctype;
-                    if (ctype.isPrimitive()) {
-                        vals[ic.index()] = primitiveValue(ctype, member);
+                    compTypes[ic.index()] = switch (ctype) {
+                        case ParameterizedType pt -> pt.getRawType();
+                        default -> ic.value().getClass();
+                    };
+                    if (ctype.getClass().isPrimitive()) {
+                        vals[ic.index()] = primitiveValue(ctype.getClass(), member);
                     }
                     // null case
                     else if (member == null) {
@@ -287,13 +332,13 @@ public class StandardConversions {
                     }
                     // well known cases
                     // string and above...
-                    else if (ctype.isAssignableFrom(CharSequence.class)) {
+                    else if (ctype.getClass().isAssignableFrom(CharSequence.class)) {
                         vals[ic.index()] = stringValue(member);
                     }
                     // number types in java.math
-                    else if (ctype.equals(BigDecimal.class)) {
+                    else if (ctype.getClass().equals(BigDecimal.class)) {
                         vals[ic.index()] = new BigDecimal(stringValue(member));
-                    } else if (ctype.equals(BigInteger.class)) {
+                    } else if (ctype.getClass().equals(BigInteger.class)) {
                         vals[ic.index()] = new BigInteger(stringValue(member));
                     }
                     // all other classes, may fail at runtime
@@ -302,7 +347,11 @@ public class StandardConversions {
                     }
                 });
         try {
-            var constructor = type.getDeclaredConstructor(compTypes);
+            var compClasses = new Class<?>[compTypes.length];
+            for (int i = 0; i < compClasses.length; i++) {
+                compClasses[i] = compTypes[i].getClass();
+            }
+            var constructor = type.getClass().getDeclaredConstructor(compClasses);
             return constructor.newInstance(vals);
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException ex) {
@@ -310,25 +359,57 @@ public class StandardConversions {
         }
     }
 
-    private static Object asArray(Class<?> type, Element element) {
-        if (element instanceof JsonArray ja) {
-            var array = java.lang.reflect.Array.newInstance(type, ja.size());
-            for (int i = 0; i < ja.size(); i++) {
-                Array.set(array, i, as(type, ja.elements().get(i)));
+    private static Object asArray(Class<?> type, JsonArray ja) {
+        if (type.isArray()) {
+            var ct = type.getComponentType();
+            if (type.getComponentType().isPrimitive()) {
+                if (ct.equals(boolean.class)) {
+                    return booleanArray(ja);
+                } else if (ct.equals(short.class)) {
+                    return shortArray(ja);
+                } else if (ct.equals(char.class)) {
+                    return charArray(ja);
+                } else if (ct.equals(byte.class)) {
+                    return byteArray(ja);
+                } else if (ct.equals(int.class)) {
+                    return intArray(ja);
+                } else if (ct.equals(long.class)) {
+                    return longArray(ja);
+                } else if (ct.equals(double.class)) {
+                    return doubleArray(ja);
+                } else if (ct.equals(float.class)) {
+                    return floatArray(ja);
+                } else {
+                    throw new AssertionError();
+                }
+            } else {
+                var array = java.lang.reflect.Array.newInstance(ct, ja.size());
+                for (int i = 0; i < ja.size(); i++) {
+                    Array.set(array, i, as(ct, ja.elements().get(i)));
+                }
+                return array;
             }
-            return array;
-        } else throw new AssertionError();
+        } else {
+            throw new IllegalArgumentException(type + " is not an array type");
+        }
     }
 
-    private static Collection<?> asCollection(Class<Collection<?>> collClass, Element element) {
-        return ofNullable(bestHandles.computeIfAbsent(
-                methodType(collClass, Object[].class),
-                StandardConversions::findBestHandle)
-        )
-                .map(h -> invokeHandle(h, (Object[]) asArray(Object.class, element)))
-                .map(collClass::cast)
-                .orElse(null);
-    }
+    /*
+    private static <T> Collection<T> asCollection(ParameterizedType pt, JsonArray ja) {
+        Type collClass = pt.getRawType();
+        Type elemType = pt.getActualTypeArguments()[0];
+
+        var tmpList = (List<T>) ja.elements()
+                .stream()
+                .map(e -> as(elemType, e))
+                .toList();
+
+        if (Set.class.isAssignableFrom(collClass.getClass())) {
+            return new TreeSet<>(tmpList);
+        } else {
+            return new LinkedList<>(tmpList);
+        }
+    }*/
 
     private static <T extends Number> T asNumber(Class<T> numType, Element el) {
         return switch (el) {
@@ -376,6 +457,71 @@ public class StandardConversions {
                 text
         );
     }
+
+    private static int[] intArray(JsonArray ja) {
+        var tmp = new int[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = intValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    private static long[] longArray(JsonArray ja) {
+        var tmp = new long[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = longValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    private static char[] charArray(JsonArray ja) {
+        var tmp = new char[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = (char) intValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    private static short[] shortArray(JsonArray ja) {
+        var tmp = new short[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = (short) intValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    private static byte[] byteArray(JsonArray ja) {
+        var tmp = new byte[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = (byte) intValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    private static double[] doubleArray(JsonArray ja) {
+        var tmp = new double[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = doubleValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    private static float[] floatArray(JsonArray ja) {
+        var tmp = new float[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = (float) doubleValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    private static boolean[] booleanArray(JsonArray ja) {
+        var tmp = new boolean[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = booleanValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
 
     @SuppressWarnings("unchecked")
     private static <T> T invokeHandle(MethodHandle handle, String text) {

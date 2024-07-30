@@ -13,7 +13,19 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-
+/**
+ * {@code Path}s are inspired by the {@code XPath} querying
+ * facility invented with and for XML.
+ * Instances are created through the factory method
+ * {@link Path#of(String)} where the argument is a pattern
+ * of the following form:
+ * <ul>
+ *     <li></li>
+ *     <li></li>
+ *     <li></li>
+ * </ul>
+ *
+ */
 public sealed abstract class Path implements Function<Element, Stream<Element>> {
 
     private static final class MemberPath extends Path {

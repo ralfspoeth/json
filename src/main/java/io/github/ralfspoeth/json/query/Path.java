@@ -17,14 +17,38 @@ import static java.util.Objects.requireNonNull;
  * {@code Path}s are inspired by the {@code XPath} querying
  * facility invented with and for XML.
  * Instances are created through the factory method
- * {@link Path#of(String)} where the argument is a pattern
+ * {@link Path#of(String)} where the argument is first split into components using the slash {@code /}
+ * as separator and each component matches a pattern
  * of the following form:
  * <ul>
- *     <li></li>
- *     <li></li>
- *     <li></li>
+ *     <li>{@code [a..b]} where {@code a} is non-negative and {@code b} an integer;
+ *         resolve to the range from a to b exclusively and may be applied to JSON arrays.
+ *         A negative value of {@code b} is interpreted unbound; that is: {@code [0..-1]} matches all
+ *         elements of a JSON array
+ *     </li>
+ *     <li>{@code #regex} where {@code regex} is a regular expression; the slash may not be included in this
+ *         expression. The path matches every member of a JSON object the name part of which matches the given
+ *         regular expression.
+ *     </li>
+ *     <li>{@code name} where {@code name} is just the literal member name of JSON object</li>
  * </ul>
+ * Example:
+ * {@snippet :
+ * import io.github.ralfspoeth.json.JsonBoolean;import io.github.ralfspoeth.json.JsonNumber;import io.github.ralfspoeth.json.io.JsonReader;
+ * import java.util.List;
  *
+ * var given = """
+ * [1, 2, {"ab": true, "ab": 2}, {"ac": 3}]
+ * """;
+ * var elem = JsonReader.readElement(given);
+ * // then:
+ * Path p = Path.of("[2, -1]/#a.*");
+ * List<Element> result = p.apply(given).toList();
+ * assert result.size() == 3;
+ * assert result.get(0) == JsonBoolean.TRUE;
+ * assert result.get(1).equals(new JsonNumber(2));
+ * assert result.get(2).equals(new JsonNumber(3));
+ *}
  */
 public sealed abstract class Path implements Function<Element, Stream<Element>> {
 

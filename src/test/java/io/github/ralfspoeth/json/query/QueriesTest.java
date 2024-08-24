@@ -62,6 +62,7 @@ class QueriesTest {
                 () -> assertEquals("true", stringValue(JsonBoolean.TRUE, null)),
                 () -> assertEquals("false", stringValue(JsonBoolean.FALSE, null)),
                 () -> assertEquals("null", stringValue(JsonNull.INSTANCE, null)),
+                () -> assertEquals("one", stringValue(new JsonString("one"))),
                 () -> assertThrows(NullPointerException.class, () -> stringValue(null))
         );
     }
@@ -121,11 +122,11 @@ class QueriesTest {
     void testRec1() {
         record R(String s, boolean b, double d, Object o) {}
         var src = """
-                { 
+                {
                     "s": "a string",
                     "b": true,
                     "d": 5.1,
-                    "o": null                
+                    "o": null
                 }
                 """;
         var jo = JsonReader.readElement(src);
@@ -169,11 +170,11 @@ class QueriesTest {
         var jo = JsonReader.readElement(src);
         assertAll(
                 () -> assertInstanceOf(Map.class, value(jo)),
-                () -> assertInstanceOf(Double.class, ((Map) value(jo)).get("a")),
-                () -> assertInstanceOf(Boolean.class, ((Map) value(jo)).get("b")),
-                () -> assertInstanceOf(Boolean.class, ((Map) value(jo)).get("c")),
-                () -> assertNull(((Map) value(jo)).get("d")),
-                () -> assertInstanceOf(List.class, ((Map) value(jo)).get("e")),
+                () -> assertInstanceOf(Double.class, ((Map<String, ?>) value(jo)).get("a")),
+                () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) value(jo)).get("b")),
+                () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) value(jo)).get("c")),
+                () -> assertNull(((Map<String, ?>) value(jo)).get("d")),
+                () -> assertInstanceOf(List.class, ((Map<String, ?>) value(jo)).get("e")),
                 () -> assertThrows(NullPointerException.class, () -> value(null))
         );
     }

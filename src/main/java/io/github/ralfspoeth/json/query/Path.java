@@ -107,10 +107,16 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
     }
 
     private static final class RegexPath extends Path {
+
         private final Pattern regex;
+
         private RegexPath(String regex, Path parent) {
+            this(Pattern.compile(regex), parent);
+        }
+
+        private RegexPath(Pattern regex, Path parent) {
             super(parent);
-            this.regex = Pattern.compile(regex);
+            this.regex = regex;
         }
 
         @Override

@@ -150,7 +150,7 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
 
     abstract Stream<Element> evalThis(Element elem);
 
-    private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)\\]");
+    private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)]");
 
     public static Path of(String pattern) {
         var parts = requireNonNull(pattern).split("/");

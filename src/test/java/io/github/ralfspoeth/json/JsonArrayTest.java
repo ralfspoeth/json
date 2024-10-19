@@ -31,7 +31,7 @@ class JsonArrayTest {
         var ja = new JsonArray(elems);
         assertAll(
                 () -> assertEquals(elems.size(), ja.elements().size()),
-                () -> IntStream.range(0, elems.size()).mapToObj(ja).toList().equals(elems)
+                () -> assertEquals(elems, IntStream.range(0, elems.size()).mapToObj(ja).toList())
         );
     }
 

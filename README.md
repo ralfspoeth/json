@@ -8,12 +8,6 @@ The library contains some standard query functions
 which are to be used to transform JSON elements
 into objects of arbitrary classes.
 
-Beta versions provided support for the direct conversion
-of JSON objects into `record`s, JSON arrays into `List`s or arrays and
-more, but these efforts were getting increasingly complex
-and not utterly sufficient. Search for Brian Goetz on 
-the topic of serialization in youtube...
-
 ## Motivation
 
 Having read a number of articles around data oriented
@@ -63,7 +57,7 @@ to return immutable instances in the end.
 
 ## Current Status
 
-The current version 1.1.6 is mature and stable and
+The current version 1.1.7 is mature and stable and
 will not be changed with respect to the hierarchy of classes
 and interfaces in package `io.github.ralfspoeth.json` and
 the parser implemented through `JsonReader` in package
@@ -71,11 +65,9 @@ the parser implemented through `JsonReader` in package
 class in the same package has not been battle-tested thus far 
 but satisfies our needs.
 
-The `Path` API in package `io.github.ralfspoeth.json.query` is
-experimental; the same is true for the non-trivial parts of 
-the static methods of `StandardConversions`
-in package `io.github.ralfspoeth.json.conv`, most notably the
-`as(Class, Element)` method is very immature.
+The `Path` and `Queries` classes in package
+`io.github.ralfspoeth.json.query` are still in development
+yet prove to be useful. 
 
 ## Getting Started
 
@@ -91,16 +83,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.1.6</version>
+        <version>1.1.7</version>
     </dependency>
 
 or, when using Gradle (Groovy)
 
-    implementation 'io.github.ralfspoeth:json:1.1.6'
+    implementation 'io.github.ralfspoeth:json:1.1.7'
 
 or, with Gradle (Kotlin), put 
 
-    implementation("io.github.ralfspoeth:json:1.1.6")
+    implementation("io.github.ralfspoeth:json:1.1.7")
 
 in your build file.
 
@@ -113,7 +105,7 @@ If you are using JPMS modules with a `module-info.java` file, add
 
 ### Basic Usage
 
-The module `io.github.ralfspoeth.json` exports four packages that you 
+The module `io.github.ralfspoeth.json` exports three packages that you 
 may use in your application:
 
     import io.github.ralfspoeth.json.*;       // class hierarchy
@@ -122,11 +114,9 @@ may use in your application:
 
 The first package contains the data types (`Element` and its descendants)
 and the second contains the `JsonReader` and `JsonWriter` classes.
-The last two packages contain the `Queries` class with static 
-query functions and the path API both of which are not considered to mature enough
-for general use.
-
-PLEASE EXPECT THAT THESE PACKAGES MAY CHANGE OR EVEN DISAPPEAR.
+The last package contain the `Queries` class with static 
+query functions and the `Path` API, both of which are under active 
+development.
 
 In your code you'll typically write something like this 
 when your want to start with 
@@ -228,8 +218,8 @@ allows for the specification of document type definitions
 [DTDs](https://www.w3.org/TR/xml/#sec-prolog-dtd) or XML schema definitions ([XSD](https://www.w3.org/TR/xmlschema/)).
 XML, once hyped as the next big thing and with numerous 
 applications still widely in use, has been surpassed by JSON 
-according to Google trends
-(try Google Trends: JSON vs. XML);![img.png](img.png)
+according to
+[Google Trends: JSON vs. XML](https://trends.google.de/trends/explore?date=today%205-y&q=XML,JSON&hl=EN)
 
 ### Remarks
 
@@ -322,25 +312,23 @@ records with a single component of type string.
 But in order to make JSON strings part of the sealed
 hierarchy we have to do so:
 
-    public record JsonString(String value) implements Element {
-    }
+    public record JsonString(String value) implements Element {}
 
 This comes in handy once we deal with aggregate
 types like arrays of `Element` rather than 
-arrays of `Element` UNION `String` which we 
+arrays of `Element` &bigcup; `String` which we 
 cannot express in Java.
 
 ## Modelling `Number` as Record of `double`
 
 With the same reasoning we model numbers like this:
 
-    public record JsonNumber(double value) implements Element {
-    }
+    public record JsonNumber(double value) implements Element {}
 
 Note that JavaScript doesn't cater for differences
-between numerical data types -- which is enormously
-limiting, and that we use the primitive Java type
-because `null` values or not acceptable either way.
+between numerical data types &ndash; which is enormously
+limiting &ndash; and that we use the primitive Java type
+because `null` values are invalid.
 
 ## Modelling `Array` as Record of an Immutable `List`
 
@@ -356,9 +344,9 @@ we want to make sure the contents is immutable:
 
 The canonical constructor is overridden such that 
 it uses a copy of the list provided; 
-that method is clever enough NOT to copy the list
+that method is clever enough _not_ to copy the list
 parameter if it can be sure that that parameter
-is already an immutable instance -- most notably if 
+is already an immutable instance &ndash; most notably if 
 it has been instantiated using `List.of(...)`.
 This method also makes sure no actual `null` instance
 is passed in within the list of elements.
@@ -523,7 +511,7 @@ The `JsonWriter` provides the static method
 `minimize` which removes whitespace safely from 
 a given input stream.
 
-# Querying (Experimental)
+# Querying Data
 
 The package `query` provides simple utilities
 for querying data based on some root element.
@@ -583,50 +571,7 @@ yields the stream of `true` and `false`.
 Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
 the stream of `5d`.
 
-# Use in Clojure
-
-Clojure uses maps to aggregate data and prefers keywords as keys in these maps.
-Here is a link to a video from Rich Hickey:
-[Just use maps](https://youtu.be/aSEQfqNYNAc?si=tkFy1CMS8fWN7bP-)
-
-In order to use this Java library, include this in your `deps.edn` file:
-
-    {:deps {
-        io.github.ralfspoeth/json {:mvn/version "1.1.6"}
-        }}
-
-Import the `Element` and IO classes into your namespace like this
-
-    (ns your.name.space
-        (:import (io.github.ralfspoeth.json Element Basic JsonNull JsonArray JsonObject)
-        (java.io Reader)
-        (io.github.ralfspoeth.json.io JsonReader))
-        (:require [clojure.java.io :as io]))
-
-
-Use this function in order to read JSON data from some 
-`java.io.Reader`
-
-    (defn read-elem [^Reader rdr]
-        (with-open [jsrd (JsonReader. rdr)]
-        (.readElement jsrd)))
-
-and then, in order to turn the resulting `Element` into
-a clojure map
-
-    (defn map-json ([^Element elem]
-        (cond
-          (instance? JsonNull elem) nil,
-          (instance? Basic elem) (.value elem)
-          (instance? JsonArray elem) (mapv map-json (.elements elem))
-          (instance? JsonObject elem) (zipmap
-                                        (map keyword (->> elem (.members) (.keySet))),
-                                        (map map-json (->> elem (.members) (.values)))))))
-
-
-
-
-# Queries
+## The `Queries`
 
 The package `io.github.ralfspoeth.json.query` 
 contains the utility class `Queries`
@@ -661,9 +606,9 @@ So, a nested JSON structure like
         "x": [1, 2, null, true], "y": false, "z": null
     }}
 
-is converted by `StandardConversions.asObject` into 
+is converted by `Queries.value` into 
 
-    Map.of( // "a" to null binding is cut out
+    Map.of( // "a" to null binding is cut out, cf. Map#of
         "b", Boolean.TRUE, // note the primitive wrapper
         "c", Map.of(
             "x", List.of(1, 2, true), // null element is cut out 
@@ -672,11 +617,11 @@ is converted by `StandardConversions.asObject` into
     )
 
 Things to note: maps and lists accept `null` values in principle,
-yet the newer factory methods `List.of` or `Map.of` do not accept null values
+yet the factory methods `List.of` and `Map.of` do not accept `null` values
 or `null` bindings; so, `JsonNull` instances are filtered out of aggregates.
 That said, always consider the maps and lists regardless of the depth of the structure immutable.
 
-## Numerical Conversions
+### Numerical Conversions
 
 The methods `intValue`, `longValue` and `doubleValue` utilize the 
 `parse<Type>` methods of the respective `Integer`, `Long` and `Double` 
@@ -691,18 +636,18 @@ the method fails with `IllegalArgumentException` for `Aggregate`s. The companion
 There is no direct support for `byte`, `char`, `short` and `float` 
 which is very much in line with the choices of Java's functions and stream design.
 
-## String Conversion
+### String Conversion
 
 The `stringValue` conversion uses natural conversions for all
 `Basic` types, and the `toString` methods applied on the contained 
 `list`s and `map`s of the `Aggregate` types.
 
-## Boolean Conversion
+### Boolean Conversion
 
 The `booleanValue` conversion does the obvious conversions for `JsonBoolean`
 and `JsonString`.
 
-## Enum Conversion
+### Enum Conversion
 
 The `enumValue...` methods takes two arguments: a class declared with the `enum` 
 keyword, and the `Element` which must be of type `JsonString`. 
@@ -710,8 +655,50 @@ While `enumValue` uses the `Enum::valueOf` method, the `enumValueIgnoreCase`
 converts the value and all the constants' names defined in the enum class 
 to uppercase strings before selecting the enum constant.
 
-## JsonArray to Primitive Array
+### JsonArray to Primitive Array
 
 A `JsonArray` can be converted into an array of primitives; 
 all elements are converted using `Queries.{int|long|double|...}Array(Element)`.
+
+
+# Usage in Clojure
+
+Clojure uses maps to aggregate data and prefers keywords as keys in these maps.
+Here is a link to a video from Rich Hickey:
+[Just use maps](https://youtu.be/aSEQfqNYNAc?si=tkFy1CMS8fWN7bP-)
+
+In order to use this Java library, include this in your `deps.edn` file:
+
+    {:deps {
+        io.github.ralfspoeth/json {:mvn/version "1.1.7"}
+        }}
+
+Import the `Element` and IO classes into your namespace like this
+
+    (ns your.name.space
+        (:import (io.github.ralfspoeth.json Element Basic JsonNull JsonArray JsonObject)
+        (java.io Reader)
+        (io.github.ralfspoeth.json.io JsonReader))
+        (:require [clojure.java.io :as io]))
+
+
+Use this function in order to read JSON data from some
+`java.io.Reader`
+
+    (defn read-elem [^Reader rdr]
+        (with-open [jsrd (JsonReader. rdr)]
+        (.readElement jsrd)))
+
+and then, in order to turn the resulting `Element` into
+a clojure map
+
+    (defn map-json ([^Element elem]
+        (cond
+          (instance? JsonNull elem) nil,
+          (instance? Basic elem) (.value elem)
+          (instance? JsonArray elem) (mapv map-json (.elements elem))
+          (instance? JsonObject elem) (zipmap
+                                        (map keyword (->> elem (.members) (.keySet))),
+                                        (map map-json (->> elem (.members) (.values)))))))
+
 

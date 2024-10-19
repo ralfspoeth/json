@@ -41,8 +41,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
     final class JsonObjectBuilder implements Builder<JsonObject> {
 
-        private JsonObjectBuilder() {
-        }
+        private JsonObjectBuilder() {}
 
         private final Map<String, Element> data = new HashMap<>();
 
@@ -116,8 +115,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
     }
 
     final class JsonArrayBuilder implements Builder<JsonArray> {
-        private JsonArrayBuilder() {
-        }
+        private JsonArrayBuilder() {}
 
         public int size() {
             return data.size();

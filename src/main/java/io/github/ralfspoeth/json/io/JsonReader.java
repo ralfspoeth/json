@@ -44,8 +44,7 @@ public class JsonReader implements AutoCloseable {
 
         enum Char implements Elem {colon, comma}
 
-        record Root(Element elem) implements Elem {
-        }
+        record Root(Element elem) implements Elem {}
     }
 
     private final Stack<Elem> stack = new Stack<>();

@@ -1,8 +1,5 @@
 package io.github.ralfspoeth.json;
 
-import java.util.Optional;
-import java.util.stream.Stream;
-
 public sealed interface Element permits Aggregate, Basic {
 
     static Element of(Object o) {

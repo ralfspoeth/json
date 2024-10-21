@@ -133,7 +133,8 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         private final List<Element> data = new ArrayList<>();
 
         public JsonArrayBuilder item(Element elem) {
-            if(data.add(requireNonNull(elem))) return this; else throw new AssertionError();
+            data.add(requireNonNull(elem));
+            return this;
         }
 
         public JsonArrayBuilder basic(Object o) {

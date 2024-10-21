@@ -84,13 +84,14 @@ class QueriesTest {
     @Test
     void testEnumValue() {
         enum E {ONE, TWO}
-        var obj = objectBuilder().named("e", new JsonString("onet")).build();
-        Function<Element, String> extr = elem -> switch (elem) {
-            case JsonObject jo -> stringValue(jo.members().get("e"), null)
-                    .substring(0, 3)
-                    .toUpperCase();
-            default -> throw new IllegalArgumentException("failed");
-        }; // extracts the member named "e", first three letters of the value, then to upper case
+        var obj = objectBuilder()
+                .named("e", new JsonString("onet"))
+                .build();
+
+        // extracts the member named "e", first three letters of the value, then to upper case
+        Function<Element, String> extr = elem -> elem instanceof JsonObject jo
+                ? stringValue(jo.members().get("e"), null).substring(0, 3).toUpperCase()
+                : null;
 
         assertAll(
                 () -> assertEquals(E.ONE, enumValue(E.class, new JsonString("ONE"))),
@@ -158,6 +159,7 @@ class QueriesTest {
         assertEquals(List.of(new R(5), new R(6), new R(7)), result);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void testValue() {
         var src = """

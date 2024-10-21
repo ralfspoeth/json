@@ -166,12 +166,8 @@ class JsonReaderTest {
     @Test
     void testParseLarge() throws Exception {
         try (var src = largeFile(); var rdr = new JsonReader(src)) {
-            try {
-                var result = rdr.readElement();
-                assertNotNull(result);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            var result = rdr.readElement();
+            assertNotNull(result);
         }
     }
 

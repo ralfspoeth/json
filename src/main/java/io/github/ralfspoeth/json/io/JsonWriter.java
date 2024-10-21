@@ -61,7 +61,7 @@ public class JsonWriter implements AutoCloseable {
                 }
                 out.print(']');
             }
-            case Basic b -> out.print(b.json());
+            case Basic<?> b -> out.print(b.json());
         }
     }
 

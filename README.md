@@ -463,7 +463,7 @@ The object builder is not so different:
     }
 
 Both builders are instantiable through static methods in the 
-`Element` interface only:
+`Element` interface exclusively:
 
     JsonObjectBuilder objectBuilder();
     JsonArrayBuilder arrayBuilder();
@@ -490,7 +490,7 @@ meant to be used in try-with-resources statements like so:
 It uses a `Lexer` internally which tokenizes a character stream
 into tokens like braces, brackets, comma, colon, number literals, 
 string literals, and `null`, `true`, and `false`.
-The parser uses a stack of nodes wich encapsulate builders, special tokens, or an element. 
+The parser uses a stack of nodes which encapsulate builders, special tokens, or an element. 
 It utilizes an inner sealed interface to cater for this limited set of stack elements.
 
 ## JsonWriter

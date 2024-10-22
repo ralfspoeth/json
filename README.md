@@ -680,9 +680,10 @@ In order to use this Java library, include this in your `deps.edn` file:
 Import the `Element` and IO classes into your namespace like this
 
     (ns your.name.space
-        (:import (io.github.ralfspoeth.json Element Basic JsonNull JsonArray JsonObject)
-        (java.io Reader)
-        (io.github.ralfspoeth.json.io JsonReader))
+        (:import 
+            (io.github.ralfspoeth.json Element Basic JsonNull JsonArray JsonObject)
+            (java.io Reader)
+            (io.github.ralfspoeth.json.io JsonReader))
         (:require [clojure.java.io :as io]))
 
 

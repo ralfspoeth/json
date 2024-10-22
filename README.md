@@ -405,6 +405,7 @@ an `int` index:
     IntFunction<Element> ifun = arr; // legal
 
 That said, the hierarchy of the data classes is this:
+
 ![Hierarchy](hierarchy.png "Data Classes Hierarchy")
 
 # Builders

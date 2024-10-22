@@ -219,7 +219,7 @@ allows for the specification of document type definitions
 XML, once hyped as the next big thing and with numerous 
 applications still widely in use, has been surpassed by JSON 
 according to
-[Google Trends: JSON vs. XML](https://trends.google.de/trends/explore?date=today%205-y&q=XML,JSON&hl=EN)
+[Google Trends: JSON vs. XML](https://trends.google.de/trends/explore?date=all&q=XML,JSON&hl=EN)
 
 ### Remarks
 
@@ -403,6 +403,9 @@ an `int` index:
     List<Element> lst; // given
     var arr = new JsonArray(lst);
     IntFunction<Element> ifun = arr; // legal
+
+That said, the hierarchy of the data classes is this:
+![Hierarchy](hierarchy.png "Data Classes Hierarchy")
 
 # Builders
 

@@ -1,7 +1,7 @@
 package io.github.ralfspoeth.json;
 
 public enum JsonBoolean implements Basic<Boolean> {
-    TRUE{
+    TRUE {
         @Override
         public String json() {
             return "true";
@@ -11,7 +11,7 @@ public enum JsonBoolean implements Basic<Boolean> {
         public Boolean value() {
             return Boolean.TRUE;
         }
-    }, FALSE{
+    }, FALSE {
         @Override
         public String json() {
             return "false";
@@ -24,6 +24,6 @@ public enum JsonBoolean implements Basic<Boolean> {
     };
 
     public static JsonBoolean of(boolean b) {
-        return b?TRUE:FALSE;
+        return b ? TRUE : FALSE;
     }
 }

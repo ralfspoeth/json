@@ -4,6 +4,7 @@ package io.github.ralfspoeth.json.io;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -109,6 +110,13 @@ class LexerTest {
             assertTrue(lexer.hasNext());
             assertEquals(Lexer.TokenType.CLOSING_BRACE, lexer.next().type());
             assertFalse(lexer.hasNext());
+        }
+    }
+
+    @Test
+    void testIllegalSQuote() throws Exception {
+        try(var lexer = new Lexer(new StringReader("'"))) {
+            assertThrows(IOException.class, lexer::hasNext);
         }
     }
 

@@ -129,6 +129,8 @@ class Lexer implements AutoCloseable {
                     case '\'' -> {
                         if (state == State.DQUOTE) {
                             buffer.append(c);
+                        } else {
+                            ioex("Illegal character \"'\"");
                         }
                     }
                     case '\"' -> {

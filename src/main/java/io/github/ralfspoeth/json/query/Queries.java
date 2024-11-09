@@ -104,6 +104,18 @@ public class Queries {
     }
 
     /**
+     * Shortcut to {@link #members(Element)} followed by
+     * {@link Map#get(Object)} with the non-null member name.
+     *
+     * @param elem an arbitrary JSON element, maybe {@code null}
+     * @param name a member name, may not be {@code null}
+     * @return the member of the element given it is a {@link JsonObject}
+     */
+    public static Element get(Element elem, String name) {
+        return members(elem).get(requireNonNull(name));
+    }
+
+    /**
      * If the {@link Element} passed in is a {@link JsonArray} then
      * return its {@link JsonArray#elements() elements}, otherwise an empty {@link List}.
      *

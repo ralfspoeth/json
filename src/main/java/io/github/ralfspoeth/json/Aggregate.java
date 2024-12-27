@@ -27,8 +27,6 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
     int size();
 
-    int depth();
-
     sealed interface Builder<T extends Aggregate> {
         int size();
 

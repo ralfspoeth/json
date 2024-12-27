@@ -3,6 +3,8 @@ package io.github.ralfspoeth.json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -53,6 +55,36 @@ class BuilderTest {
                 .named("a", Basic.of(false))
                 .build();
         Assertions.assertEquals(JsonBoolean.FALSE, aIsFalse.get("a", JsonBoolean.class));
+    }
+
+    @Test
+    void testInsertIntoEmpty() {
+        // given
+        JsonObject jo = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE));
+        // then
+        assertAll(
+                () -> assertEquals(jo, objectBuilder().insert(jo).build()),
+                () -> assertEquals(jo, objectBuilder().insert(jo).insert(jo).build()),
+                () -> assertEquals(jo, objectBuilder().insert(jo.members()).build()),
+                () -> assertEquals(jo, objectBuilder().insert(jo.members()).insert(jo.members()).build())
+        );
+    }
+
+    @Test
+    void testInsertInto() {
+        // given
+        JsonObject jo = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE));
+        JsonObject simple = new JsonObject(Map.of("x", JsonNull.INSTANCE));
+        JsonObject built = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE, "x", JsonNull.INSTANCE));
+        // then
+        assertAll(
+                () -> assertEquals(built, objectBuilder(simple).insert(jo).build()),
+                () -> assertEquals(built, objectBuilder(jo).insert(simple).build()),
+                () -> assertEquals(built, objectBuilder(built).insert(simple).build()),
+                () -> assertEquals(built, objectBuilder(built).insert(jo).build()),
+                () -> assertEquals(built, objectBuilder(built).insert(simple).insert(jo).build()),
+                () -> assertEquals(built, objectBuilder(built).insert(jo).insert(simple).build())
+        );
     }
 
     @Test

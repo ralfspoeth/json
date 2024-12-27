@@ -5,6 +5,11 @@ public sealed interface Basic<T> extends Element permits JsonBoolean, JsonNull, 
     String json();
     T value();
 
+    @Override
+    default int depth() {
+        return 1;
+    }
+
     static Basic<?> of(Object o) {
         return switch(o) {
             case null -> JsonNull.INSTANCE;

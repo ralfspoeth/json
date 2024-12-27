@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static java.util.Objects.requireNonNullElse;
@@ -46,9 +47,12 @@ public record JsonArray(List<Element> elements) implements Aggregate, IntFunctio
 
     @Override
     public int depth() {
-        return 1;
+        return elements.stream().mapToInt(Element::depth).max().orElse(0) + 1;
     }
 
+    public Stream<Element> stream() {
+        return elements.stream();
+    }
 
     @Override
     public Element apply(int index) {

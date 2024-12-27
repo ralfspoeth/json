@@ -2,6 +2,8 @@ package io.github.ralfspoeth.json;
 
 public sealed interface Element permits Aggregate, Basic {
 
+    int depth();
+
     static Element of(Object o) {
         return switch(o) {
             case Record r -> JsonObject.ofRecord(r);
@@ -10,4 +12,10 @@ public sealed interface Element permits Aggregate, Basic {
             case null, default -> Basic.of(o);
         };
     }
+
+    @Override
+    int hashCode();
+
+    @Override
+    boolean equals(Object o);
 }

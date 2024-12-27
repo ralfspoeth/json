@@ -31,6 +31,7 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
         return ob.build();
     }
 
+    @Deprecated(forRemoval = true)
     public static JsonObject asJsonObject(Map<?, ?> map) {
         var members = map.entrySet()
                 .stream()
@@ -46,11 +47,11 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
     @Override
     public int depth() {
         return members.values().stream().mapToInt(v ->
-            switch (v) {
-                case Aggregate a -> a.depth();
-                case Basic<?> ignored -> 1;
-            }
-        ).max().orElse(0)+1;
+                switch (v) {
+                    case Aggregate a -> a.depth();
+                    case Basic<?> ignored -> 1;
+                }
+        ).max().orElse(0) + 1;
     }
 
     public <T extends Element> T get(String name, Class<T> cls) {

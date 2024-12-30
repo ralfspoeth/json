@@ -16,6 +16,10 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
         members = Map.copyOf(requireNonNullElse(members, Map.of()));
     }
 
+    public JsonObject() {
+        this(Map.of());
+    }
+
     public static <R extends Record> JsonObject ofRecord(R r) {
         var rc = r.getClass().getRecordComponents();
         var ob = objectBuilder();
@@ -46,12 +50,11 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
 
     @Override
     public int depth() {
-        return members.values().stream().mapToInt(v ->
-                switch (v) {
-                    case Aggregate a -> a.depth();
-                    case Basic<?> ignored -> 1;
-                }
-        ).max().orElse(0) + 1;
+        return members.values()
+                .stream()
+                .mapToInt(Element::depth)
+                .max()
+                .orElse(0) + 1;
     }
 
     public <T extends Element> T get(String name, Class<T> cls) {

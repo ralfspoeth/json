@@ -13,6 +13,10 @@ public record JsonArray(List<Element> elements) implements Aggregate, IntFunctio
         elements = List.copyOf(requireNonNullElse(elements, List.of()));
     }
 
+    public JsonArray() {
+        this(List.of());
+    }
+
     public static JsonArray of(Object o) {
         return switch(o) {
             case Iterable<?> it -> ofIterable(it);

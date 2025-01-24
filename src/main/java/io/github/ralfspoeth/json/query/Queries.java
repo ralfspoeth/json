@@ -103,6 +103,10 @@ public class Queries {
         };
     }
 
+    public static Optional<Element> member(Element elem, String key) {
+        return ofNullable(members(elem).get(requireNonNull(key)));
+    }
+
     /**
      * Shortcut to {@link #members(Element)} followed by
      * {@link Map#get(Object)} with the non-null member name.
@@ -205,10 +209,10 @@ public class Queries {
     }
 
     public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, Element elem) {
-        if (elem instanceof JsonString js) {
+        if (elem instanceof JsonString(String value)) {
             return stream(enumClass.getEnumConstants())
                     .collect(toMap(c -> c.name().toUpperCase(), identity()))
-                    .get(js.value().toUpperCase());
+                    .get(value.toUpperCase());
         } else {
             throw new IllegalArgumentException("cannot convert to enum: " + elem);
         }
@@ -371,6 +375,21 @@ public class Queries {
         return switch(elem) {
             case JsonArray ja -> booleanArray(ja);
             case null, default -> new boolean[0];
+        };
+    }
+
+    private static String[] stringArray(JsonArray ja) {
+        var tmp = new String[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = stringValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    public static String[] stringArray(Element elem) {
+        return switch(elem) {
+            case JsonArray ja -> stringArray(ja);
+            case null, default -> new String[0];
         };
     }
 

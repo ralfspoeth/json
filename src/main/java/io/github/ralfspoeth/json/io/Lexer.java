@@ -1,6 +1,9 @@
 package io.github.ralfspoeth.json.io;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PushbackReader;
+import java.io.Reader;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -123,14 +126,14 @@ class Lexer implements AutoCloseable {
                     if (state == State.DQUOTE) {
                         buffer.append(nc);
                     } else {
-                        ioex("Illegal character sequence \\" + c);
+                        unexpectedCharacter(c);
                     }
                 } else switch (c) {
                     case '\'' -> {
                         if (state == State.DQUOTE) {
                             buffer.append(c);
                         } else {
-                            ioex("Illegal character \"'\"");
+                            unexpectedCharacter(c);
                         }
                     }
                     case '\"' -> {
@@ -146,7 +149,7 @@ class Lexer implements AutoCloseable {
                         if (state == State.DQUOTE) { // within string
                             escaped = true;
                         } else {
-                            ioex("unexpected character \\");
+                            unexpectedCharacter(c);
                         }
                     }
                     case ',', ':', '[', '{', ']', '}' -> {
@@ -176,7 +179,7 @@ class Lexer implements AutoCloseable {
                                     buffer.append(c);
                                     state = State.LIT;
                                 } else if (!Character.isWhitespace(c)) {
-                                    ioex("Unexpected character " + c);
+                                    unexpectedCharacter(c);
                                 }
                             }
                             case LIT -> {
@@ -186,15 +189,19 @@ class Lexer implements AutoCloseable {
                                 } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
                                     buffer.append(c);
                                 } else {
-                                    ioex("Unexpected character " + c);
+                                    unexpectedCharacter(c);
                                 }
                             }
-                            default -> ioex("Unexpected character " + c);
+                            default -> unexpectedCharacter(c);
                         }
                     }
                 }
             }
         }
+    }
+
+    private void unexpectedCharacter(char c) throws IOException {
+        ioex("Unexpected character '" + c + "'");
     }
 
     private void literal() {

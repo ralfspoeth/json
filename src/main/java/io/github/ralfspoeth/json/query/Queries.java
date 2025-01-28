@@ -160,10 +160,17 @@ public class Queries {
         };
     }
 
+    /**
+     * Same as {@link #intValue(Element, int)} with a default value of 0.
+     */
     public static int intValue(Element elem) {
         return intValue(requireNonNull(elem), 0);
     }
 
+    /**
+     * Same as {@link #intValue(Element, int)} except that it converts the result to
+     * {code long}.
+     */
     public static long longValue(Element elem, long def) {
         return switch (elem) {
             case null -> def;
@@ -176,10 +183,18 @@ public class Queries {
         };
     }
 
+    /**
+     * Same as {@link #longValue(Element, long)}
+     * with a default value of 0L.
+     */
     public static long longValue(Element elem) {
         return longValue(requireNonNull(elem), 0);
     }
 
+    /**
+     * Same as {@link #intValue(Element, int)} except that it converts
+     * the result to {@code double} and strings are parsed using {@link Double#parseDouble(String)}.
+     */
     public static double doubleValue(Element elem, double def) {
         return switch (elem) {
             case null -> def;
@@ -192,22 +207,57 @@ public class Queries {
         };
     }
 
+    /**
+     * {@link #doubleValue(Element, double)} with a default value of 0d.
+     */
     public static double doubleValue(Element elem) {
         return doubleValue(requireNonNull(elem), 0d);
     }
 
+    /**
+     * Converts {@link JsonString}s to enum values using
+     * {@link Enum#valueOf(Class, String)}.
+     *
+     * @param enumClass the parameterized enum class
+     * @param elem      the element to convert, may be {@code null}
+     * @param def       the default value
+     * @return the enum value
+     * @param <E> the enum type
+     * @throws IllegalArgumentException if elem not a {@link JsonString} or {@link JsonNull}.
+     */
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem, E def) {
         return switch (elem) {
             case null -> def;
+            case JsonNull ignored -> def;
             case JsonString js -> Enum.valueOf(enumClass, js.value());
             default -> throw new IllegalArgumentException("cannot convert to enum: " + elem);
         };
     }
 
+    /**
+     * {@link #enumValue(Class, Element, E)} with default value of {code null}.
+     */
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem) {
         return enumValue(enumClass, elem, (E) null);
     }
 
+    /**
+     * Converts a {@link JsonString} to an {@link Enum} value ignore the case of the value
+     * of the string.
+     * {@snippet :
+     * // given
+     * enum E{a, b}
+     * // when
+     * var s = new JsonString("A");
+     * // then
+     * assert enumValueIgnoreCase(E.class, s) == E.a;
+     * }
+     *
+     * @param enumClass the parameterized enum class
+     * @param elem the element to convert
+     * @return the enum value
+     * @param <E> the enum type
+     */
     public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, Element elem) {
         if (elem instanceof JsonString(String value)) {
             return stream(enumClass.getEnumConstants())
@@ -218,6 +268,16 @@ public class Queries {
         }
     }
 
+    /**
+     * Converts an {@link Element} to an {@link Enum} instance by first extracting
+     * a string value using the {@code extractor} function and then through {@link Enum#valueOf(Class, String)}.
+     *
+     * @param enumClass the parameterized enum class
+     * @param elem the element to convert
+     * @param extractor an extractor function
+     * @return the enum value
+     * @param <E> the enum type
+     */
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element
             elem, Function<Element, String> extractor) {
         return extractor
@@ -225,6 +285,22 @@ public class Queries {
                 .apply(elem);
     }
 
+    /**
+     * Convert an {link Element} to a {@link String} value.
+     * Conversion rules:
+     * <ul>
+     *     <li>JsonString: {@link JsonString#value()}</li>
+     *     <li>JsonNull: "null"</li>
+     *     <li>JsonNumber: {@link Double#toString(double)}</li>
+     *     <li>JsonBoolean: {@link Boolean#toString(boolean)}</li>
+     *     <li>JsonArray: {@snippet : new JsonArray(List.of()).elements().toString()}</li>
+     *     <li>JsonObject: {@snippet : new JsonObject(Map.of()).members().toString()}</li>*
+     * </ul>
+     *
+     * @param elem the element to convert
+     * @param def the default value
+     * @return the string value
+     */
     public static String stringValue(Element elem, String def) {
         return switch (elem) {
             case null -> def;
@@ -237,20 +313,36 @@ public class Queries {
         };
     }
 
+    /**
+     * {@link #stringValue(Element, String)} with a default value of {@code null}.
+     */
     public static String stringValue(Element elem) {
         return stringValue(requireNonNull(elem), null);
     }
 
+    /**
+     * Convert an {link Element} to a {@code boolean} value.
+     * String values are parsed using {link Boolean#parseBoolean(String)},
+     * numbers are compared to 0d (where 0d is false) and {@link JsonBoolean} as converted
+     * naturally.
+     *
+     * @param elem the element to convert
+     * @param def the default value
+     * @return the boolean value
+     */
     public static boolean booleanValue(Element elem, boolean def) {
         return switch (elem) {
             case null -> def;
             case JsonBoolean b -> b == TRUE;
-            case JsonString js -> Boolean.parseBoolean(js.value());
+            case JsonString(String value) -> Boolean.parseBoolean(value);
             case JsonNumber jn -> Double.compare(0, jn.numVal()) != 0;
             default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);
         };
     }
 
+    /**
+     * {@link #booleanValue(Element, boolean)} with a default value of {@code false}.
+     */
     public static boolean booleanValue(Element elem) {
         return booleanValue(requireNonNull(elem), false);
     }

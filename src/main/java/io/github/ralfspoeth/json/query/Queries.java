@@ -235,7 +235,7 @@ public class Queries {
     }
 
     /**
-     * {@link #enumValue(Class, Element, E)} with default value of {code null}.
+     * Same as {@code enumValue} with a default value of {@code null}.
      */
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, Element elem) {
         return enumValue(enumClass, elem, (E) null);
@@ -293,8 +293,8 @@ public class Queries {
      *     <li>JsonNull: "null"</li>
      *     <li>JsonNumber: {@link Double#toString(double)}</li>
      *     <li>JsonBoolean: {@link Boolean#toString(boolean)}</li>
-     *     <li>JsonArray: {@snippet : new JsonArray(List.of()).elements().toString()}</li>
-     *     <li>JsonObject: {@snippet : new JsonObject(Map.of()).members().toString()}</li>*
+     *     <li>JsonArray: {@link JsonArray#elements()}</li>
+     *     <li>JsonObject: {@link JsonObject#members()}</li>
      * </ul>
      *
      * @param elem the element to convert

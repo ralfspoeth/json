@@ -355,6 +355,10 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #doubleArray(Element)} but using
+     * {@link #intValue(Element)} to convert the elements.
+     */
     public static int[] intArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> intArray(ja);
@@ -370,6 +374,10 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #doubleArray(Element)} but using
+     * {@link #longValue(Element)} to convert the elements.
+     */
     public static long[] longArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> longArray(ja);
@@ -385,6 +393,10 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #intArray(Element)} but casting the elements
+     * to {@code char}.
+     */
     public static char[] charArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> charArray(ja);
@@ -400,6 +412,10 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #intArray(Element)} but casting the elements
+     * to {@code short}.
+     */
     public static short[] shortArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> shortArray(ja);
@@ -416,6 +432,10 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #intArray(Element)} but casting the elements
+     * to {@code byte}.
+     */
     public static byte[] byteArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> byteArray(ja);
@@ -431,6 +451,11 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #stringArray(JsonArray)} except
+     * that it uses {@link #doubleValue(Element)} to convert the
+     * member elements.
+     */
     public static double[] doubleArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> doubleArray(ja);
@@ -447,6 +472,10 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #doubleArray(Element)} but its array
+     * elements are cast to {@code float}.
+     */
     public static float[] floatArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> floatArray(ja);
@@ -463,6 +492,10 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Same as {@link #stringArray(Element)} except that
+     * it utilizes {@link #booleanValue(Element)}.
+     */
     public static boolean[] booleanArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> booleanArray(ja);
@@ -478,6 +511,14 @@ public class Queries {
         return tmp;
     }
 
+    /**
+     * Convert a {@link JsonArray} into an array of strings
+     * applying {@link #stringValue(Element)} to each of its elements,
+     * and an empty array for all other elements.
+     *
+     * @param elem an element, may be {@code null}
+     * @return a potentially empty array of strings, never {@code null}
+     */
     public static String[] stringArray(Element elem) {
         return switch(elem) {
             case JsonArray ja -> stringArray(ja);

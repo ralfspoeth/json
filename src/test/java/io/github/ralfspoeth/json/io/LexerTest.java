@@ -51,7 +51,7 @@ class LexerTest {
     void testNullFalseTrueLiterals() throws Exception {
         // note that this is not legal json syntax
         String source = "true false null";
-        try(var lexer = new Lexer(new StringReader(source))) {
+        try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             assertEquals(Lexer.TokenType.TRUE, lexer.next().type());
             assertTrue(lexer.hasNext());
@@ -66,11 +66,11 @@ class LexerTest {
     void testNullFalseTrueLiteralsWithMoreWS() throws Exception {
         // note that this is not legal json syntax
         String source = """
-            true    false
-            
-            
-            null""";
-        try(var lexer = new Lexer(new StringReader(source))) {
+                true    false
+                
+                
+                null""";
+        try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             assertEquals(Lexer.TokenType.TRUE, lexer.next().type());
             assertTrue(lexer.hasNext());
@@ -82,9 +82,9 @@ class LexerTest {
     }
 
     @Test
-    void testEmptyObject() throws Exception{
+    void testEmptyObject() throws Exception {
         var source = "{}";
-        try(var lexer = new Lexer(new StringReader(source))) {
+        try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             assertEquals(Lexer.TokenType.OPENING_BRACE, lexer.next().type());
             assertTrue(lexer.hasNext());
@@ -92,15 +92,16 @@ class LexerTest {
             assertFalse(lexer.hasNext());
         }
     }
+
     @Test
-    void testEmptyObjectWithWS() throws Exception{
+    void testEmptyObjectWithWS() throws Exception {
         var source = """
                    {
                   ,
                   :
                  }
                 """;
-        try(var lexer = new Lexer(new StringReader(source))) {
+        try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             assertEquals(Lexer.TokenType.OPENING_BRACE, lexer.next().type());
             assertTrue(lexer.hasNext());
@@ -115,20 +116,19 @@ class LexerTest {
 
     @Test
     void testIllegalSQuote() throws Exception {
-        try(var lexer = new Lexer(new StringReader("'"))) {
+        try (var lexer = new Lexer(new StringReader("'"))) {
             assertThrows(IOException.class, lexer::hasNext);
         }
     }
 
     @Test
     void testParseLarge() throws Exception {
-        try(var src = new BufferedReader(new InputStreamReader(
+        try (var src = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(getClass().getResourceAsStream("/large-file.json")),
                 StandardCharsets.UTF_8
-        )); var lxr = new Lexer(src))
-        {
+        )); var lxr = new Lexer(src)) {
             var tmp = new ArrayList<Lexer.Token>();
-            while(lxr.hasNext()) {
+            while (lxr.hasNext()) {
                 tmp.add(lxr.next());
             }
             var grp = tmp.stream().collect(Collectors.groupingBy(Lexer.Token::type, Collectors.counting()));
@@ -139,5 +139,18 @@ class LexerTest {
         }
     }
 
-
+    @Test
+    void testTwo() throws IOException {
+        var list = new ArrayList<Lexer.Token>();
+        try (var lexer = new Lexer(new StringReader("1[2]"))) {
+            while (lexer.hasNext()) {
+                list.add(lexer.next());
+            }
+        }
+        assertAll(
+                () -> assertEquals(4, list.size()),
+                () -> assertEquals("1", list.getFirst().value()),
+                () -> assertEquals("2", list.get(2).value())
+        );
+    }
 }

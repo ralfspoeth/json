@@ -11,10 +11,30 @@ import java.util.Objects;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
 
+/**
+ * Instances parse character streams into JSON {@link Element}s.
+ * The class implements {@link AutoCloseable} and is meant to
+ * be used in try-with-resources statements like this:
+ * {@snippet :
+ * // given
+ * Reader r = new StringReader(); // @replace substring="new StringReader();" replacement="..."
+ * try(var jr = new JsonReader(r)) {
+ *     return jr.readElement();
+ * }
+ * }
+ * The class supports strict adherence to the JSON specification
+ * exclusively; there is no support for the sloppy variant.
+ */
 public class JsonReader implements AutoCloseable {
 
     private final Lexer lexer;
 
+    /**
+     * Instantiate this class on top of a {@link Reader}.
+     * The source will be closed together with {@code this}.
+     *
+     * @param src the character source
+     */
     public JsonReader(Reader src) {
         this.lexer = new Lexer(src);
     }
@@ -49,6 +69,14 @@ public class JsonReader implements AutoCloseable {
 
     private final Stack<Elem> stack = new Stack<>();
 
+    /**
+     * Parses a fixed string.
+     * Uses a {@link StringReader} internally which is passed
+     * to a fresh instance of this class.
+     *
+     * @param s the source string
+     * @return the element representing the source string
+     */
     public static Element readElement(String s) {
         try (var rdr = new JsonReader(new StringReader(s))) {
             return rdr.readElement();
@@ -57,6 +85,12 @@ public class JsonReader implements AutoCloseable {
         }
     }
 
+    /**
+     * Reads the first and only JSON element from the source.
+     *
+     * @return the JSON element
+     * @throws IOException whenever the underlying source throws
+     */
     public Element readElement() throws IOException {
         while (lexer.hasNext()) {
             var tkn = lexer.next();
@@ -97,8 +131,8 @@ public class JsonReader implements AutoCloseable {
                         case Elem.ObjBuilderElem ignored -> stack.push(comma);
                         case Elem.NameValuePair nvp when nvp.elem != null -> {
                             stack.pop();
-                            if (stack.top() instanceof Elem.ObjBuilderElem be) {
-                                be.builder.named(nvp.name, nvp.elem);
+                            if (stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
+                                builder.named(nvp.name, nvp.elem);
                                 stack.push(comma);
                             } else {
                                 throw new AssertionError();
@@ -137,10 +171,10 @@ public class JsonReader implements AutoCloseable {
                     var obj = switch (stack.top()) {
                         case Elem.NameValuePair nvp when nvp.elem != null -> {
                             stack.pop(); // remove nvp from top
-                            if (stack.top() instanceof Elem.ObjBuilderElem obe) {
+                            if (stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
                                 stack.pop();
-                                obe.builder.named(nvp.name, nvp.elem);
-                                yield obe.builder.build();
+                                builder.named(nvp.name, nvp.elem);
+                                yield builder.build();
 
                             } else {
                                 throw new AssertionError();
@@ -156,8 +190,8 @@ public class JsonReader implements AutoCloseable {
                 }
                 case CLOSING_BRACKET -> {
                     var top = stack.pop();
-                    if (top instanceof Elem.ArrBuilderElem abe) {
-                        var jsonArray = abe.builder.build();
+                    if (top instanceof Elem.ArrBuilderElem(var builder)) {
+                        var jsonArray = builder.build();
                         handle(tkn.value(), jsonArray);
                     } else {
                         throw new AssertionError();
@@ -167,8 +201,8 @@ public class JsonReader implements AutoCloseable {
         }
 
         var top = stack.pop();
-        if (stack.isEmpty() && top instanceof Elem.Root r) {
-            return r.elem;
+        if (stack.isEmpty() && top instanceof Elem.Root(var elem)) {
+            return elem;
         } else {
             throw new IOException("stack not empty or top-most element not a JsonElement");
         }
@@ -189,15 +223,15 @@ public class JsonReader implements AutoCloseable {
                     }
                     case comma -> {
                         stack.pop(); // pop comma
-                        if (Objects.requireNonNull(stack.top()) instanceof Elem.ArrBuilderElem abe) {
-                            abe.builder.item(v);
+                        if (Objects.requireNonNull(stack.top()) instanceof Elem.ArrBuilderElem(var builder)) {
+                            builder.item(v);
                         } else {
                             ioex("unexpected token " + token, lexer.coordinates());
                         }
                     }
                 }
             }
-            case Elem.ArrBuilderElem abe -> abe.builder.item(v);
+            case Elem.ArrBuilderElem(var builder) -> builder.item(v);
             default -> ioex("unexpected token " + token, lexer.coordinates());
         }
     }

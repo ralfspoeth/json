@@ -104,7 +104,7 @@ public class JsonReader implements AutoCloseable {
                         case Elem.Char nc -> {
                             stack.pop();
                             switch (nc) {
-                                case colon -> stack.push(Elem.NameValuePair.class.cast(stack.pop()).withElem(str));
+                                case colon -> stack.push(((Elem.NameValuePair) stack.pop()).withElem(str));
                                 case comma -> {
                                     switch (stack.top()) {
                                         case Elem.ObjBuilderElem ignored ->
@@ -219,7 +219,7 @@ public class JsonReader implements AutoCloseable {
                 switch (nc) {
                     case colon -> {
                         stack.pop(); // pop colon, topmost element must be an NVP
-                        stack.push(Elem.NameValuePair.class.cast(stack.pop()).withElem(v));
+                        stack.push(((Elem.NameValuePair) stack.pop()).withElem(v));
                     }
                     case comma -> {
                         stack.pop(); // pop comma

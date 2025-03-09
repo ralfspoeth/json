@@ -30,7 +30,12 @@ class NullsTest {
     void objectsNeverContainNulls() {
         assertAll(
                 () -> assertThrows(NullPointerException.class, () -> objectBuilder().named(null, JsonNull.INSTANCE)),
-                () -> assertThrows(NullPointerException.class, () -> objectBuilder().named("nix", null))
+                () -> assertThrows(NullPointerException.class, () -> objectBuilder().named("nix", null)),
+                () -> assertEquals(JsonNull.INSTANCE, objectBuilder().basic("nix", null)
+                        .build()
+                        .get("nix", Basic.class)
+                ),
+                () -> {}
         );
     }
 

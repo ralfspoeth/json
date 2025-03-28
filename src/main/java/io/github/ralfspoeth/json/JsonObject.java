@@ -35,8 +35,7 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
         return ob.build();
     }
 
-    @Deprecated(forRemoval = true)
-    public static JsonObject asJsonObject(Map<?, ?> map) {
+    public static JsonObject ofMap(Map<?, ?> map) {
         var members = map.entrySet()
                 .stream()
                 .collect(toMap(String::valueOf, Element::of));

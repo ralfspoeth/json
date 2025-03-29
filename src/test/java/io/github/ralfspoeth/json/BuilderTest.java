@@ -35,7 +35,7 @@ class BuilderTest {
                 .basic("sex", true)
                 .named("seven", new JsonString("murks"))
                 .basic("nix", null)
-                .named("adr", Aggregate.arrayBuilder()
+                .named("adr", arrayBuilder()
                         .element(5)
                         .item(objectBuilder().basic("sowat", "nix").build())
                         .element(true)
@@ -91,7 +91,7 @@ class BuilderTest {
 
     @Test
     void testArrayBuilder() {
-        var array = Aggregate.arrayBuilder()
+        var array = arrayBuilder()
                 .item(JsonBoolean.TRUE)
                 .item(JsonNull.INSTANCE)
                 .item(JsonBoolean.FALSE)

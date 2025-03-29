@@ -48,6 +48,10 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return this;
         }
 
+        public JsonObjectBuilder named(String name, Builder<?> bldr) {
+            return named(name, bldr.build());
+        }
+
         public JsonObjectBuilder basic(String name, Object o) {
             return named(name, Basic.of(o));
         }
@@ -110,6 +114,10 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         public int size() {
             return data.size();
         }
+
+        public JsonObjectBuilder namedNull(String name) {
+            return named(name, JsonNull.INSTANCE);
+        }
     }
 
     final class JsonArrayBuilder implements Builder<JsonArray> {
@@ -133,6 +141,10 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         public JsonArrayBuilder item(Element elem) {
             data.add(requireNonNull(elem));
             return this;
+        }
+
+        public JsonArrayBuilder item(Builder<?> bldr) {
+            return item(bldr.build());
         }
 
         public JsonArrayBuilder basic(Object o) {

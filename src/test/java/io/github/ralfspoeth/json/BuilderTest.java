@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
+import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BuilderTest {
@@ -107,6 +109,19 @@ class BuilderTest {
                 () -> assertTrue(array.elements().contains(JsonNull.INSTANCE)),
                 () -> assertTrue(array.elements().contains(new JsonNumber(1))),
                 () -> assertTrue(array.elements().contains(new JsonString("hallo")))
+        );
+    }
+
+    @Test
+    void testArrayBuilderItem() {
+        var array = arrayBuilder()
+                .item(objectBuilder().namedNull("a"))
+                .item(arrayBuilder().basic(1))
+                .build();
+        assertAll(
+                () -> assertEquals(2, array.elements().size()),
+                () -> assertEquals(JsonNull.INSTANCE, members(array.elements().getFirst()).get("a")),
+                () -> assertEquals(1,  intValue(elements(array.elements().getLast()).getFirst()))
         );
     }
 

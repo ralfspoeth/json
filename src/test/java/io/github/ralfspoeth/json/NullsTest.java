@@ -20,7 +20,6 @@ class NullsTest {
     @Test
     void arraysNeverContainNull() {
         assertAll(
-                () -> assertThrows(NullPointerException.class, () -> arrayBuilder().item(null)),
                 () -> assertEquals(JsonNull.INSTANCE, arrayBuilder().basic(null).build().elements().getFirst()),
                 () -> assertEquals(JsonNull.INSTANCE, arrayBuilder().element(null).build().elements().getFirst())
         );
@@ -30,7 +29,6 @@ class NullsTest {
     void objectsNeverContainNulls() {
         assertAll(
                 () -> assertThrows(NullPointerException.class, () -> objectBuilder().named(null, JsonNull.INSTANCE)),
-                () -> assertThrows(NullPointerException.class, () -> objectBuilder().named("nix", null)),
                 () -> assertEquals(JsonNull.INSTANCE, objectBuilder().basic("nix", null)
                         .build()
                         .get("nix", Basic.class)

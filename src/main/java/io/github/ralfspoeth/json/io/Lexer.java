@@ -8,7 +8,8 @@ import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+
+import static java.util.stream.StreamSupport.stream;
 
 class Lexer implements AutoCloseable {
 
@@ -40,7 +41,7 @@ class Lexer implements AutoCloseable {
     }
 
     static Stream<Token> tokenStream(Reader rdr) {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new Iterator<>() {
+        return stream(Spliterators.spliteratorUnknownSize(new Iterator<>() {
             private final Lexer lxr = new Lexer(rdr);
 
             @Override

@@ -26,4 +26,9 @@ public enum JsonBoolean implements Basic<Boolean> {
     public static JsonBoolean of(boolean b) {
         return b ? TRUE : FALSE;
     }
+
+    @Override
+    public boolean test(Boolean aBoolean) {
+        return aBoolean == value();
+    }
 }

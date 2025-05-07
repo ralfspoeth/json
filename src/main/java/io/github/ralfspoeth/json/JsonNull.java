@@ -17,4 +17,9 @@ public final class JsonNull implements Basic<Object> {
     public String toString() {
         return getClass().getSimpleName() + "[value=null]";
     }
+
+    @Override
+    public boolean test(Object o) {
+        return o==null;
+    }
 }

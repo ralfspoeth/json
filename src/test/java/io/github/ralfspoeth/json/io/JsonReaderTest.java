@@ -22,7 +22,7 @@ class JsonReaderTest {
             var result = parser.readElement();
             assertAll(
                     () -> assertNotNull(result),
-                    () -> assertTrue(result instanceof JsonObject o && o.members().isEmpty())
+                    () -> assertTrue(result instanceof JsonObject(var members) && members.isEmpty())
             );
         }
     }
@@ -35,7 +35,7 @@ class JsonReaderTest {
             var result = parser.readElement();
             assertAll(
                     () -> assertNotNull(result),
-                    () -> assertTrue(result instanceof JsonArray a && a.elements().isEmpty())
+                    () -> assertTrue(result instanceof JsonArray(var elements) && elements.isEmpty())
             );
         }
     }
@@ -62,7 +62,7 @@ class JsonReaderTest {
                 var result = parser.readElement();
                 assertAll(
                         () -> assertNotNull(result),
-                        () -> assertTrue(result instanceof JsonArray a && a.elements().size() == 1)
+                        () -> assertTrue(result instanceof JsonArray(var elements) && elements.size() == 1)
                 );
             } catch (IOException ioex) {
                 assertNull(ioex);
@@ -76,7 +76,7 @@ class JsonReaderTest {
         try (var r = new JsonReader(new StringReader(source))) {
             var o = r.readElement();
             assertAll(() -> assertInstanceOf(JsonObject.class, o),
-                    () -> assertEquals(1, o instanceof JsonObject jo ? jo.members().size() : -1),
+                    () -> assertEquals(1, o instanceof JsonObject(var members) ? members.size() : -1),
                     () -> Assertions.assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
             );
         }
@@ -97,8 +97,8 @@ class JsonReaderTest {
             var a = p.readElement();
             assertAll(
                     () -> assertInstanceOf(JsonArray.class, a),
-                    () -> assertEquals(7, a instanceof JsonArray ja ? ja.elements().size() : -1),
-                    () -> assertTrue(a instanceof JsonArray ja && ja.elements().contains(new JsonString("str")))
+                    () -> assertEquals(7, a instanceof JsonArray(var elements) ? elements.size() : -1),
+                    () -> assertTrue(a instanceof JsonArray(var elements) && elements.contains(new JsonString("str")))
             );
         }
     }
@@ -138,16 +138,16 @@ class JsonReaderTest {
         String source = "{\"a\":{\"b\":[]}}";
         try (var p = new JsonReader(new StringReader(source))) {
             var e = p.readElement();
-            if (e instanceof JsonObject o0) {
+            if (e instanceof JsonObject(var members)) {
                 assertAll(
-                        () -> assertEquals(1, o0.members().size()),
-                        () -> assertTrue(o0.members().containsKey("a"))
+                        () -> assertEquals(1, members.size()),
+                        () -> assertTrue(members.containsKey("a"))
                 );
-                if (o0.members().get("a") instanceof JsonObject o1) {
+                if (members.get("a") instanceof JsonObject(var membersa)) {
                     assertAll(
-                            () -> assertEquals(1, o1.members().size()),
-                            () -> assertTrue(o1.members().containsKey("b")),
-                            () -> assertEquals(new JsonArray(List.of()), o1.members().get("b"))
+                            () -> assertEquals(1, membersa.size()),
+                            () -> assertTrue(membersa.containsKey("b")),
+                            () -> assertEquals(new JsonArray(List.of()), membersa.get("b"))
                     );
                 } else {
                     fail("not a JsonObject");
@@ -168,6 +168,15 @@ class JsonReaderTest {
         try (var src = largeFile(); var rdr = new JsonReader(src)) {
             var result = rdr.readElement();
             assertNotNull(result);
+        }
+    }
+
+    @Test
+    void testIterator() throws IOException {
+        try (var src = new StringReader("1 2 3"); var jdr = new JsonReader(src)) {
+            while(jdr.hasNext()) {
+                System.out.println(jdr.next());
+            }
         }
     }
 

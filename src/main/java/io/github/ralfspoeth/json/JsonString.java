@@ -11,4 +11,9 @@ public record JsonString(String value) implements Basic<String> {
     public String json() {
         return "\"%s\"".formatted(value);
     }
+
+    @Override
+    public boolean test(String s) {
+        return value().equals(s);
+    }
 }

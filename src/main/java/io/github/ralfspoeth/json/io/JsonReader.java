@@ -2,10 +2,13 @@ package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.basix.coll.Stack;
 import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.Aggregate.JsonArrayBuilder;
+import io.github.ralfspoeth.json.Aggregate.JsonObjectBuilder;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Iterator;
 import java.util.Objects;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
@@ -25,7 +28,7 @@ import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
  * The class supports strict adherence to the JSON specification
  * exclusively; there is no support for the sloppy variant.
  */
-public class JsonReader implements AutoCloseable {
+public class JsonReader implements AutoCloseable, Iterator<Element> {
 
     private final Lexer lexer;
 
@@ -40,13 +43,13 @@ public class JsonReader implements AutoCloseable {
     }
 
     sealed interface Elem {
-        record ObjBuilderElem(Aggregate.JsonObjectBuilder builder) implements Elem {
+        record ObjBuilderElem(JsonObjectBuilder builder) implements Elem {
             static ObjBuilderElem empty() {
                 return new ObjBuilderElem(Aggregate.objectBuilder());
             }
         }
 
-        record ArrBuilderElem(Aggregate.JsonArrayBuilder builder) implements Elem {
+        record ArrBuilderElem(JsonArrayBuilder builder) implements Elem {
             static ArrBuilderElem empty() {
                 return new ArrBuilderElem(Aggregate.arrayBuilder());
             }
@@ -92,7 +95,7 @@ public class JsonReader implements AutoCloseable {
      * @throws IOException whenever the underlying source throws
      */
     public Element readElement() throws IOException {
-        while (lexer.hasNext()) {
+        while (lexer.hasNext() && (stack.isEmpty() || !stack.top().getClass().equals(Elem.Root.class))) {
             var tkn = lexer.next();
             switch (tkn.type()) {
                 case STRING -> {
@@ -200,8 +203,9 @@ public class JsonReader implements AutoCloseable {
             }
         }
 
-        var top = stack.pop();
-        if (stack.isEmpty() && top instanceof Elem.Root(var elem)) {
+        if(stack.isEmpty()){
+            return null;
+        } else if(stack.pop() instanceof Elem.Root(var elem)) {
             return elem;
         } else {
             throw new IOException("stack not empty or top-most element not a JsonElement");
@@ -249,6 +253,24 @@ public class JsonReader implements AutoCloseable {
 
     private static void ioex(String msg, Lexer.Coordinates coordinates) throws IOException {
         throw new IOException("%s at row: %d, column: %d".formatted(msg, coordinates.row(), coordinates.column()));
+    }
+
+    private Element next = null;
+
+    @Override
+    public boolean hasNext() {
+        try {
+            return (next = readElement())!=null;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Element next() {
+        var ret = next;
+        next = null;
+        return ret;
     }
 
     @Override

@@ -126,6 +126,9 @@ class Lexer implements AutoCloseable {
                     };
                     escaped = false;
                     if (state == State.DQUOTE) {
+                        if(Character.isISOControl(r)) {
+                            ioex("Unescaped control character: " + c);
+                        }
                         buffer.append(nc);
                     } else {
                         unexpectedCharacter(c);

@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.util.stream.StreamSupport.stream;
@@ -205,22 +206,29 @@ class Lexer implements AutoCloseable {
         ioex("Unexpected character '" + c + "'");
     }
 
-    private void literal() {
+    private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|(?:[1-9]|[0-9]*))(?:\\.[0-9]+)?(?:[eE]?[-+]?[0-9]+)?");
+
+    private static boolean jsonNumber(String s) {
+        return JSON_NUMBER.matcher(s).matches();
+    }
+
+
+    private void literal() throws IOException {
         var text = buffer.toString();
         buffer.delete(0, buffer.capacity());
         nextToken = switch (text) {
             case "null" -> Token.NULL;
             case "true" -> Token.TRUE;
             case "false" -> Token.FALSE;
-            default -> {
-                double ignored = Double.parseDouble(text);
-                yield new Token(TokenType.NUMBER, text);
-            }
+            default -> jsonNumber(text)
+                    ? new Token(TokenType.NUMBER, text)
+                    : ioex("cannot parse %s as double".formatted(text));
+
         };
         state = State.INITIAL;
     }
 
-    private void ioex(String message) throws IOException {
+    private Token ioex(String message) throws IOException {
         throw new IOException("%s at row: %d, col: %d".formatted(message, row, column));
     }
 

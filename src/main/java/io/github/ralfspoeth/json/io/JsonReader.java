@@ -99,34 +99,6 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
         while (lexer.hasNext() && (stack.isEmpty() || !stack.top().getClass().equals(Elem.Root.class))) {
             var tkn = lexer.next();
             switch (tkn.type()) {
-                /*case STRING -> {
-                    var str = token2Value(tkn);
-                    switch (stack.top()) {
-                        case null -> stack.push(new Elem.Root(str));
-                        case Elem.ObjBuilderElem obe when obe.builder.isEmpty() ->
-                                stack.push(new Elem.NameValuePair(tkn.value()));
-                        case Elem.ArrBuilderElem abe when abe.builder.isEmpty() -> abe.builder.item(str);
-                        case Elem.Char nc -> {
-                            stack.pop();
-                            switch (nc) {
-                                case colon -> {
-                                    if (stack.pop() instanceof Elem.NameValuePair nvp) {
-                                        stack.push(nvp.withElem(str));
-                                    } else ioex("unexpected token: " + tkn, lexer.coordinates());
-                                }
-                                case comma -> {
-                                    switch (stack.top()) {
-                                        case Elem.ObjBuilderElem ignored ->
-                                                stack.push(new Elem.NameValuePair(tkn.value()));
-                                        case Elem.ArrBuilderElem(var abe) -> abe.item(str);
-                                        default -> ioex("Unexpected value: " + stack.top(), lexer.coordinates());
-                                    }
-                                }
-                            }
-                        }
-                        default -> ioex("Unexpected value: " + stack.top(), lexer.coordinates());
-                    }
-                }*/
                 case COLON -> {
                     if (stack.top() instanceof Elem.NameValuePair nvp && nvp.elem == null) {
                         stack.push(colon);

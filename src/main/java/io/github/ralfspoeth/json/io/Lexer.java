@@ -207,7 +207,7 @@ class Lexer implements AutoCloseable {
         }
     }
 
-    private void unexpectedCharacter(char c) throws IOException {
+    private void unexpectedCharacter(char c) throws JsonParseException {
         ioex("Unexpected character '" + c + "'");
     }
 
@@ -218,7 +218,7 @@ class Lexer implements AutoCloseable {
     }
 
 
-    private void literal() throws IOException {
+    private void literal() {
         var text = buffer.toString();
         buffer.delete(0, buffer.capacity());
         nextToken = switch (text) {
@@ -233,8 +233,8 @@ class Lexer implements AutoCloseable {
         state = State.INITIAL;
     }
 
-    private Token ioex(String message) throws IOException {
-        throw new IOException("%s at row: %d, col: %d".formatted(message, row, column));
+    private Token ioex(String message) throws JsonParseException {
+        throw new JsonParseException(message, row, column);
     }
 
     private int row = 1, column = 1;

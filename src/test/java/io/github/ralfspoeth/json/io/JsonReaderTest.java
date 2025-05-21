@@ -1,7 +1,6 @@
 package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.json.*;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -18,21 +17,44 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JsonReaderTest {
 
+    record Result(Element elem, Exception ex) {}
+
+    Result parse(String text) {
+        try(var jr = new JsonReader(new StringReader(text))) {
+            return new Result(jr.readElement(), null);
+        } catch (Exception e) {
+            return new Result(null, e);
+        }
+    }
+
+    @Test
+    void testCommaAfterArrayClose() {
+        var src = "[1],";
+        var result = parse(src);
+        assertAll(
+                () -> assertNull(result.elem),
+                () -> assertInstanceOf(JsonParseException.class, result.ex)
+        );
+    }
+    @Test
+    void testCommaAfterObjectClose() throws IOException {
+        var src = "[],";
+        try(var jr = new JsonReader(new StringReader(src))) {
+            assertAll(
+                    () -> assertTrue(jr.hasNext()),
+                    () -> assertEquals(new JsonArray(List.of()), jr.next()),
+                    () -> assertThrows(JsonParseException.class, jr::hasNext)
+            );
+        }
+    }
+
     @Test
     void test1TrueNoComma() {
         var src = "[1 true]";
-        Element result = null;
-        Exception ex = null;
-        try(var rdr = new JsonReader(new StringReader(src))) {
-            result = rdr.readElement();
-        } catch (Exception e) {
-            ex = e;
-        }
-        final var tmpResult = result;
-        final var tmpEx = ex;
+        var result = parse(src);
         assertAll(
-                () -> assertNull(tmpResult),
-                () -> assertInstanceOf(IOException.class, tmpEx)
+                () -> assertNull(result.elem),
+                () -> assertInstanceOf(JsonParseException.class, result.ex)
         );
     }
 
@@ -52,7 +74,7 @@ class JsonReaderTest {
         final var tmpEx = ex;
         assertAll(
                 () -> assertNull(tmpResult),
-                () -> assertInstanceOf(IOException.class, tmpEx)
+                () -> assertInstanceOf(JsonParseException.class, tmpEx)
         );
     }
 
@@ -119,7 +141,7 @@ class JsonReaderTest {
             var o = r.readElement();
             assertAll(() -> assertInstanceOf(JsonObject.class, o),
                     () -> assertEquals(1, o instanceof JsonObject(var members) ? members.size() : -1),
-                    () -> Assertions.assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
+                    () -> assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
             );
         }
     }

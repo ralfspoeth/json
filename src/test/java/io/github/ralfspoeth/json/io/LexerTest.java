@@ -118,7 +118,7 @@ class LexerTest {
     @Test
     void testIllegalSQuote() throws Exception {
         try (var lexer = new Lexer(new StringReader("'"))) {
-            assertThrows(IOException.class, lexer::hasNext);
+            assertThrows(JsonParseException.class, lexer::hasNext);
         }
     }
 

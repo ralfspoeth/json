@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.io;
 
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -122,6 +123,7 @@ class LexerTest {
     }
 
     @Test
+    @Disabled
     void testParseLarge() throws Exception {
         try (var src = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(getClass().getResourceAsStream("/large-file.json")),

@@ -126,9 +126,6 @@ class Lexer implements AutoCloseable {
                     };
                     escaped = false;
                     if (state == State.DQUOTE) {
-                        if(Character.isISOControl(r)) {
-                            ioex("Unescaped control character: " + c);
-                        }
                         buffer.append(nc);
                     } else {
                         unexpectedCharacter(c);
@@ -178,7 +175,12 @@ class Lexer implements AutoCloseable {
                     }
                     default -> {
                         switch (state) {
-                            case DQUOTE -> buffer.append(c);
+                            case DQUOTE -> {
+                                if(Character.isISOControl(r)) {
+                                    ioex("Unescaped control character: " + c);
+                                }
+                                buffer.append(c);
+                            }
                             case INITIAL -> {
                                 if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
                                     buffer.append(c);
@@ -191,7 +193,7 @@ class Lexer implements AutoCloseable {
                                 if (Character.isWhitespace(c)) {
                                     literal();
                                     state = State.INITIAL;
-                                } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
+                                } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.' || c=='e' || c=='E') {
                                     buffer.append(c);
                                 } else {
                                     unexpectedCharacter(c);

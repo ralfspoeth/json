@@ -27,6 +27,12 @@ class JsonReaderTest {
     }
 
     @Test
+    void nume01(){
+        var result = parse("0e+1");
+        assertEquals(new JsonNumber(0), result.elem);
+    }
+
+    @Test
     void testMinus1twodots() {
         var result = parse("[-1.0.]");
         assertAll(

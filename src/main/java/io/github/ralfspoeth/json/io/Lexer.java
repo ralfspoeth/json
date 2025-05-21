@@ -11,9 +11,15 @@ import java.util.Spliterators;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.*;
 import static java.util.stream.StreamSupport.stream;
 
 class Lexer implements AutoCloseable {
+
+    private static final Set<Integer> LIT_CHARS = "0123456789nulltrefaseE-+."
+            .codePoints()
+            .boxed()
+            .collect(toSet());
 
     enum Type {
         // literal types
@@ -218,7 +224,7 @@ class Lexer implements AutoCloseable {
                                 buffer.append(c);
                             }
                             case INITIAL -> {
-                                if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
+                                if (LIT_CHARS.contains(r)) {
                                     buffer.append(c);
                                     state = State.LIT;
                                 } else if (!Character.isWhitespace(c)) {
@@ -229,7 +235,7 @@ class Lexer implements AutoCloseable {
                                 if (Character.isWhitespace(c)) {
                                     literal();
                                     state = State.INITIAL;
-                                } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.' || c=='e' || c=='E') {
+                                } else if (LIT_CHARS.contains(r)) {
                                     buffer.append(c);
                                 } else {
                                     unexpectedCharacter(c);

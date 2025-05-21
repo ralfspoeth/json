@@ -246,7 +246,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
             case TRUE -> JsonBoolean.TRUE;
             case FALSE -> JsonBoolean.FALSE;
             case STRING -> new JsonString(tkn.value());
-            case NUMBER -> new JsonNumber(Double.parseDouble(tkn.value()));
+            case NUMBER -> new JsonDouble(Double.parseDouble(tkn.value()));
             default -> throw new AssertionError();
         };
     }

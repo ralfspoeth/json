@@ -107,7 +107,7 @@ class BuilderTest {
                         .count()
                 ),
                 () -> assertTrue(array.elements().contains(JsonNull.INSTANCE)),
-                () -> assertTrue(array.elements().contains(new JsonNumber(1))),
+                () -> assertTrue(array.elements().contains(new JsonDouble(1))),
                 () -> assertTrue(array.elements().contains(new JsonString("hallo")))
         );
     }

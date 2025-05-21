@@ -1,20 +1,7 @@
 package io.github.ralfspoeth.json;
 
-public record JsonNumber(double numVal) implements Basic<Double> {
-    public static final JsonNumber ZERO = new JsonNumber(0d);
+import java.math.BigDecimal;
 
-    @Override
-    public String json() {
-        return Double.toString(numVal);
-    }
-
-    @Override
-    public Double value() {
-        return numVal;
-    }
-
-    @Override
-    public boolean test(Double aDouble) {
-        return Double.compare(aDouble, numVal) == 0;
-    }
+public sealed interface JsonNumber<T extends Number> extends Basic<T> permits JsonDouble, JsonLong, JsonBigDecimal {
+    BigDecimal decimal();
 }

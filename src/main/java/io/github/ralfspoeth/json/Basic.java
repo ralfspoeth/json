@@ -22,8 +22,8 @@ public sealed interface Basic<T> extends Element, Predicate<T> permits JsonBoole
             default -> ofString(o.toString());
         };
     }
-    private static JsonNumber ofDouble(double d) {
-        return new JsonNumber(d);
+    private static JsonDouble ofDouble(double d) {
+        return new JsonDouble(d);
     }
 
     private static JsonString ofString(String s) {

@@ -16,7 +16,7 @@ class DepthTest {
                 JsonNull.INSTANCE,
                 JsonBoolean.TRUE,
                 JsonBoolean.FALSE,
-                JsonNumber.ZERO,
+                JsonDouble.ZERO,
                 new JsonString("")
         );
         List<Element> empties = List.of(

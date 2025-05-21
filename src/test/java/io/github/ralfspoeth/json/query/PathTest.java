@@ -71,7 +71,7 @@ class PathTest {
         var path = Path.of("[0..4]");
         assertTrue(Stream.of(array)
                 .flatMap(path)
-                .allMatch(JsonNumber.class::isInstance));
+                .allMatch(JsonDouble.class::isInstance));
 
         var obj = objectBuilder()
                 .named("a",

@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
  * {@snippet :
  * import io.github.ralfspoeth.json.Element;
  * import io.github.ralfspoeth.json.JsonBoolean;
- * import io.github.ralfspoeth.json.JsonNumber;
+ * import io.github.ralfspoeth.json.JsonDouble;
  * import io.github.ralfspoeth.json.io.JsonReader;
  *
  * import java.util.List;
@@ -56,8 +56,8 @@ import static java.util.Objects.requireNonNull;
  * List<Element> result = p.apply(given).toList();
  * assert result.size() == 3; // three members of the last JSON objects start with 'a' assert
  * assert result.get(0) == JsonBoolean.TRUE;
- * assert result.get(1).equals(new JsonNumber(2));
- * assert result.get(2).equals(new JsonNumber(3));
+ * assert result.get(1).equals(new JsonDouble(2));
+ * assert result.get(2).equals(new JsonDouble(3));
  *}
  * <p>
  * The class implements {@link Function} such that it may be used in stream

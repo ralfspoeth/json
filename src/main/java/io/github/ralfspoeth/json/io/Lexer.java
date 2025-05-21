@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.util.stream.StreamSupport.stream;
@@ -102,7 +103,7 @@ class Lexer implements AutoCloseable {
             int r = source.read();
             if (r == -1) { // EOF
                 switch (state) {
-                    case LIT -> literal();
+                    case LIT -> nonStringLiteral();
                     case DQUOTE -> ioex("unexpected end of file");
                 }
                 state = State.EOF;
@@ -165,7 +166,7 @@ class Lexer implements AutoCloseable {
                                 default -> throw new AssertionError();
                             };
                             case LIT -> {
-                                literal();
+                                nonStringLiteral();
                                 source.unread(c);
                             }
                             case DQUOTE -> buffer.append(c);
@@ -185,7 +186,7 @@ class Lexer implements AutoCloseable {
                             }
                             case LIT -> {
                                 if (Character.isWhitespace(c)) {
-                                    literal();
+                                    nonStringLiteral();
                                     state = State.INITIAL;
                                 } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
                                     buffer.append(c);
@@ -205,19 +206,23 @@ class Lexer implements AutoCloseable {
         ioex("Unexpected character '" + c + "'");
     }
 
-    private void literal() {
+    private void nonStringLiteral() {
         var text = buffer.toString();
         buffer.delete(0, buffer.capacity());
         nextToken = switch (text) {
             case "null" -> Token.NULL;
             case "true" -> Token.TRUE;
             case "false" -> Token.FALSE;
-            default -> {
-                double ignored = Double.parseDouble(text);
-                yield new Token(TokenType.NUMBER, text);
-            }
+            case String s when jsonNumber(s) -> new Token(TokenType.NUMBER, s);
+            default -> throw new NumberFormatException(text);
         };
         state = State.INITIAL;
+    }
+
+    private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|(?:[1-9]|[0-9]*))(?:\\.[0-9]+)?(?:[eE]?[-+]?[0-9]+)?");
+
+    private static boolean jsonNumber(String s) {
+        return JSON_NUMBER.matcher(s).matches();
     }
 
     private void ioex(String message) throws IOException {

@@ -3,7 +3,10 @@ package io.github.ralfspoeth.json.io;
 import io.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,7 +16,7 @@ class JsonWriterTest {
     @Test
     void test1() throws Exception {
         var orig = Aggregate.objectBuilder()
-                .named("a", new JsonNumber(5))
+                .named("a", new JsonDouble(5))
                 .basic("bb", 6d)
                 .basic("fuck", null)
                 .named("arr", Aggregate.arrayBuilder()
@@ -37,7 +40,7 @@ class JsonWriterTest {
     void testBasics() throws IOException {
         try(var w = new StringWriter(); var jw = JsonWriter.createDefaultWriter(w)) {
             int len = 0;
-            jw.write(new JsonNumber(1.2));
+            jw.write(new JsonDouble(1.2));
             assertEquals("1.2", w.getBuffer().substring(len, len+=3));
             jw.write(JsonNull.INSTANCE);
             assertEquals("null", w.getBuffer().substring(len, len+=4));
@@ -54,7 +57,7 @@ class JsonWriterTest {
     void testAggregates() throws IOException {
         try(var w = new StringWriter(); var jw = JsonWriter.createDefaultWriter(w)) {
             int len = 0;
-            jw.write(new JsonNumber(1.2));
+            jw.write(new JsonDouble(1.2));
             assertEquals("1.2", w.getBuffer().substring(len, len+=3));
             jw.write(JsonNull.INSTANCE);
             assertEquals("null", w.getBuffer().substring(len, len+=4));

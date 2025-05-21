@@ -26,7 +26,7 @@ class ElementTest {
         var je = new JsonArray(
                 List.of(
                         JsonNull.INSTANCE, JsonBoolean.FALSE, JsonBoolean.TRUE,
-                        new JsonNumber(5), new JsonString("five"),
+                        new JsonDouble(5), new JsonString("five"),
                         new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", new JsonObject(Map.of())))
                 )
         );
@@ -49,11 +49,11 @@ class ElementTest {
         var str = Stream.of(
                 JsonBoolean.FALSE,
                 JsonBoolean.TRUE,
-                JsonNumber.ZERO,
+                JsonDouble.ZERO,
                 JsonNull.INSTANCE,
                 new JsonString("str"),
                 arrayBuilder()
-                        .item(JsonNumber.ZERO)
+                        .item(JsonDouble.ZERO)
                         .build(),
                 objectBuilder()
                         .named("a", JsonBoolean.TRUE)
@@ -75,7 +75,7 @@ class ElementTest {
         record R(Object x) {}
         assertAll(
                 () -> assertEquals(JsonNull.INSTANCE, Element.of(null)),
-                () -> assertEquals(new JsonNumber(5), Element.of(5)),
+                () -> assertEquals(new JsonDouble(5), Element.of(5)),
                 () -> assertEquals(new JsonObject(Map.of("x", JsonNull.INSTANCE)), Element.of(new R(null))),
                 () -> assertEquals(new JsonArray(List.of(JsonBoolean.FALSE)), Element.of(new Object[]{false}))
         );

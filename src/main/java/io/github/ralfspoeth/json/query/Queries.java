@@ -2,7 +2,9 @@ package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
@@ -138,7 +140,7 @@ public class Queries {
      * <p>
      * The result is:
      * <ul>
-     *     <li>(int){@link JsonNumber#numVal()}</li>
+     *     <li>(int){@link JsonDouble#numVal()}</li>
      *     <li>{@link JsonBoolean#TRUE}: 1</li>
      *     <li>{@link JsonBoolean#FALSE}: 0</li>
      *     <li>{@link JsonNull}: 0</li>
@@ -151,9 +153,9 @@ public class Queries {
     public static int intValue(Element elem, int def) {
         return switch (elem) {
             case null -> def;
-            case JsonNumber n -> (int) n.numVal();
             case TRUE -> 1;
             case FALSE -> 0;
+            case JsonNumber<?> n -> n.value().intValue();
             case JsonString s -> Integer.parseInt(s.value());
             case JsonNull ignored -> 0;
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to int: " + a);
@@ -174,9 +176,9 @@ public class Queries {
     public static long longValue(Element elem, long def) {
         return switch (elem) {
             case null -> def;
-            case JsonNumber n -> (long) n.numVal();
             case TRUE -> 1L;
             case FALSE -> 0L;
+            case JsonNumber<?> n -> n.value().longValue();
             case JsonString s -> Long.parseLong(s.value());
             case JsonNull ignored -> 0L;
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to long: " + a);
@@ -198,9 +200,9 @@ public class Queries {
     public static double doubleValue(Element elem, double def) {
         return switch (elem) {
             case null -> def;
-            case JsonNumber n -> n.numVal();
             case TRUE -> 1d;
             case FALSE -> 0d;
+            case JsonNumber<?> n -> n.value().doubleValue();
             case JsonString s -> Double.parseDouble(s.value());
             case JsonNull ignored -> 0d;
             case Aggregate a -> throw new IllegalArgumentException("cannot convert to double: " + a);
@@ -306,7 +308,7 @@ public class Queries {
             case null -> def;
             case JsonString s -> s.value();
             case JsonNull ignored -> "null";
-            case JsonNumber n -> Double.toString(n.numVal());
+            case JsonNumber<?> n -> n.value().toString();
             case JsonBoolean b -> Boolean.toString(b == TRUE);
             case JsonArray a -> a.elements().toString();
             case JsonObject o -> o.members().toString();
@@ -335,7 +337,7 @@ public class Queries {
             case null -> def;
             case JsonBoolean b -> b == TRUE;
             case JsonString(String value) -> Boolean.parseBoolean(value);
-            case JsonNumber jn -> Double.compare(0, jn.numVal()) != 0;
+            case JsonDouble jn -> Double.compare(0, jn.numVal()) != 0;
             default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);
         };
     }

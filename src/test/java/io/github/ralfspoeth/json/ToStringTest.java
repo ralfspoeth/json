@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ToStringTest {
     @Test
     void testToString() {
-        var basics = new Basic<?>[]{JsonNull.INSTANCE, new JsonNumber(5), new JsonString("text")};
+        var basics = new Basic<?>[]{JsonNull.INSTANCE, new JsonDouble(5), new JsonString("text")};
         assertAll(
                 () -> assertTrue(stream(basics).allMatch(b -> b.toString().startsWith(b.getClass().getSimpleName() + "["))),
                 () -> assertTrue(stream(basics).allMatch(b -> b.toString().endsWith("]"))),

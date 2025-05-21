@@ -132,11 +132,11 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                     }
                 }
                 case NULL, FALSE, TRUE, NUMBER, STRING -> {
-                    if (tkn.type() == Lexer.TokenType.STRING &&
+                    if (tkn.type() == Lexer.Type.STRING &&
                         stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
                     ) {
                         stack.push(new Elem.NameValuePair(tkn.value()));
-                    } else if (tkn.type() == Lexer.TokenType.STRING && comma.equals(stack.top())) {
+                    } else if (tkn.type() == Lexer.Type.STRING && comma.equals(stack.top())) {
                         stack.pop();
                         switch (stack.top()) {
                             case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameValuePair(tkn.value()));
@@ -151,22 +151,17 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                 case OPENING_BRACE -> {
                     switch (stack.top()) {
                         case null -> stack.push(Elem.ObjBuilderElem.empty());
-                        case Elem.ArrBuilderElem ignored -> stack.push(Elem.ObjBuilderElem.empty());
-                        case Elem.Char ignored -> {
-                            stack.pop();
-                            stack.push(Elem.ObjBuilderElem.empty());
-                        }
+                        case Elem.ArrBuilderElem(var builder)
+                                when builder.isEmpty() -> stack.push(Elem.ObjBuilderElem.empty());
+                        case Elem.Char ignored -> stack.push(Elem.ObjBuilderElem.empty());
                         default -> parseException("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
                 case OPENING_BRACKET -> {
                     switch (stack.top()) {
                         case null -> stack.push(Elem.ArrBuilderElem.empty());
-                        case Elem.Char ignored -> {
-                            stack.pop();
-                            stack.push(Elem.ArrBuilderElem.empty());
-                        }
-                        case Elem.ArrBuilderElem ignored -> stack.push(Elem.ArrBuilderElem.empty());
+                        case Elem.Char ignored -> stack.push(Elem.ArrBuilderElem.empty());
+                        case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> stack.push(Elem.ArrBuilderElem.empty());
                         default -> parseException("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
@@ -248,8 +243,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                     }
                 }
             }
-            case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ||
-                                                       v instanceof Aggregate -> builder.item(v);
+            case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> builder.item(v);
             default -> parseException("unexpected token " + token, lexer.coordinates());
         }
     }
@@ -265,7 +259,8 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
         };
     }
 
-    private static void parseException(String msg, Lexer.Coordinates coordinates) {
+    private void parseException(String msg, Lexer.Coordinates coordinates) {
+        //while(!stack.isEmpty()) System.err.println(stack.pop());
         throw new JsonParseException(msg, coordinates.row(), coordinates.column());
     }
 

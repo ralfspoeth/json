@@ -1,7 +1,6 @@
 package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.json.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -237,7 +236,6 @@ class JsonReaderTest {
     }
 
     @Test
-    @Disabled
     void testParseLarge() throws Exception {
         try (var src = largeFile(); var rdr = new JsonReader(src)) {
             var result = rdr.readElement();

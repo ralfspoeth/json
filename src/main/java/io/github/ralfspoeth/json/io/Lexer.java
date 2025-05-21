@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.regex.Pattern;
@@ -14,23 +15,58 @@ import static java.util.stream.StreamSupport.stream;
 
 class Lexer implements AutoCloseable {
 
-    enum TokenType {
-        NULL, TRUE, FALSE, STRING, NUMBER,
-        OPENING_BRACE, CLOSING_BRACE,
-        OPENING_BRACKET, CLOSING_BRACKET,
-        COMMA, COLON
+    enum Type {
+        // literal types
+        STRING, NUMBER,
+        // constants
+        NULL, TRUE, FALSE,
+        // all other single character token types
+        OPENING_BRACE, CLOSING_BRACE, // braces
+        OPENING_BRACKET, CLOSING_BRACKET, // brackets
+        COMMA, COLON // , :
     }
 
-    record Token(TokenType type, String value) {
-        final static Token COMMA = new Token(TokenType.COMMA, ",");
-        final static Token NULL = new Token(TokenType.NULL, "null");
-        final static Token TRUE = new Token(TokenType.TRUE, "true");
-        final static Token FALSE = new Token(TokenType.FALSE, "false");
-        final static Token COLON = new Token(TokenType.COLON, ":");
-        final static Token OPENING_BRACE = new Token(TokenType.OPENING_BRACE, "{");
-        final static Token CLOSING_BRACE = new Token(TokenType.CLOSING_BRACE, "}");
-        final static Token OPENING_BRACKET = new Token(TokenType.OPENING_BRACKET, "[");
-        final static Token CLOSING_BRACKET = new Token(TokenType.CLOSING_BRACKET, "]");
+    sealed interface Token permits LiteralToken, FixToken {
+        String value();
+        Type type();
+    }
+
+    record LiteralToken(Type type, String value) implements Token {
+        private static final Set<Type> LITERAL_TYPES = Set.of(Type.STRING, Type.NUMBER);
+        LiteralToken {
+            if(!LITERAL_TYPES.contains(type)) {
+                throw new IllegalArgumentException(type + " must be one of " + LITERAL_TYPES);
+            }
+        }
+    }
+
+    enum FixToken implements Token {
+        COMMA(Type.COMMA, ","),
+        NULL(Type.NULL, "null"),
+        TRUE (Type.TRUE, "true"),
+        FALSE(Type.FALSE, "false"),
+        COLON(Type.COLON, ":"),
+        OPENING_BRACE(Type.OPENING_BRACE, "{"),
+        CLOSING_BRACE(Type.CLOSING_BRACE, "}"),
+        OPENING_BRACKET(Type.OPENING_BRACKET, "["),
+        CLOSING_BRACKET(Type.CLOSING_BRACKET, "]");
+
+        private final Type type;
+        private final String value;
+
+        FixToken(Type type, String value) {
+            this.value = value;
+            this.type = type;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+        @Override
+        public String value() {
+            return value;
+        }
     }
 
     private final PushbackReader source;
@@ -141,7 +177,7 @@ class Lexer implements AutoCloseable {
                     case '\"' -> {
                         if (state == State.DQUOTE) {
                             state = State.INITIAL;
-                            nextToken = new Token(TokenType.STRING, buffer.toString());
+                            nextToken = new LiteralToken(Type.STRING, buffer.toString());
                             buffer.setLength(0);
                         } else {
                             state = State.DQUOTE;
@@ -157,12 +193,12 @@ class Lexer implements AutoCloseable {
                     case ',', ':', '[', '{', ']', '}' -> {
                         switch (state) {
                             case INITIAL -> nextToken = switch (c) {
-                                case ',' -> Token.COMMA;
-                                case ':' -> Token.COLON;
-                                case '{' -> Token.OPENING_BRACE;
-                                case '}' -> Token.CLOSING_BRACE;
-                                case '[' -> Token.OPENING_BRACKET;
-                                case ']' -> Token.CLOSING_BRACKET;
+                                case ',' -> FixToken.COMMA;
+                                case ':' -> FixToken.COLON;
+                                case '{' -> FixToken.OPENING_BRACE;
+                                case '}' -> FixToken.CLOSING_BRACE;
+                                case '[' -> FixToken.OPENING_BRACKET;
+                                case ']' -> FixToken.CLOSING_BRACKET;
                                 default -> throw new AssertionError();
                             };
                             case LIT -> {
@@ -176,7 +212,7 @@ class Lexer implements AutoCloseable {
                     default -> {
                         switch (state) {
                             case DQUOTE -> {
-                                if(Character.isISOControl(r)) {
+                                if(r <= 0x001F) {
                                     ioex("Unescaped control character: " + c);
                                 }
                                 buffer.append(c);
@@ -222,18 +258,18 @@ class Lexer implements AutoCloseable {
         var text = buffer.toString();
         buffer.delete(0, buffer.capacity());
         nextToken = switch (text) {
-            case "null" -> Token.NULL;
-            case "true" -> Token.TRUE;
-            case "false" -> Token.FALSE;
+            case "null" -> FixToken.NULL;
+            case "true" -> FixToken.TRUE;
+            case "false" -> FixToken.FALSE;
             default -> jsonNumber(text)
-                    ? new Token(TokenType.NUMBER, text)
+                    ? new LiteralToken(Type.NUMBER, text)
                     : ioex("cannot parse %s as double".formatted(text));
 
         };
         state = State.INITIAL;
     }
 
-    private Token ioex(String message) throws JsonParseException {
+    private LiteralToken ioex(String message) throws JsonParseException {
         throw new JsonParseException(message, row, column);
     }
 

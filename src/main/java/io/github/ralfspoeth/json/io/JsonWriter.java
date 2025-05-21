@@ -100,12 +100,12 @@ public class JsonWriter implements AutoCloseable {
         }
         Ref last = new Ref(null);
         var separators = Set.of(
-                Lexer.TokenType.COLON,
-                Lexer.TokenType.COMMA,
-                Lexer.TokenType.OPENING_BRACE,
-                Lexer.TokenType.CLOSING_BRACE,
-                Lexer.TokenType.OPENING_BRACKET,
-                Lexer.TokenType.CLOSING_BRACKET
+                Lexer.Type.COLON,
+                Lexer.Type.COMMA,
+                Lexer.Type.OPENING_BRACE,
+                Lexer.Type.CLOSING_BRACE,
+                Lexer.Type.OPENING_BRACKET,
+                Lexer.Type.CLOSING_BRACKET
         );
         Lexer.tokenStream(src).forEach(t -> {
             try {

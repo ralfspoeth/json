@@ -8,11 +8,52 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonReaderTest {
+
+    @Test
+    void test1TrueNoComma() {
+        var src = "[1 true]";
+        Element result = null;
+        Exception ex = null;
+        try(var rdr = new JsonReader(new StringReader(src))) {
+            result = rdr.readElement();
+        } catch (Exception e) {
+            ex = e;
+        }
+        final var tmpResult = result;
+        final var tmpEx = ex;
+        assertAll(
+                () -> assertNull(tmpResult),
+                () -> assertInstanceOf(IOException.class, tmpEx)
+        );
+    }
+
+    @Test
+    void testTwoPairNoComma() {
+        var src = """
+                {"a":5
+                 "b":6}"""; // comma missing
+        Element result = null;
+        Exception ex = null;
+        try(var rdr = new JsonReader(new StringReader(src))) {
+            result = rdr.readElement();
+        } catch (Exception e) {
+            ex = e;
+        }
+        final var tmpResult = result;
+        final var tmpEx = ex;
+        assertAll(
+                () -> assertNull(tmpResult),
+                () -> assertInstanceOf(IOException.class, tmpEx)
+        );
+    }
 
     @Test
     void testEmptyObject() throws IOException {
@@ -174,9 +215,14 @@ class JsonReaderTest {
     @Test
     void testIterator() throws IOException {
         try (var src = new StringReader("1 2 3"); var jdr = new JsonReader(src)) {
-            while(jdr.hasNext()) {
-                System.out.println(jdr.next());
-            }
+            var l = StreamSupport.stream(Spliterators.spliteratorUnknownSize(jdr, Spliterator.IMMUTABLE), false)
+                    .toList();
+            assertArrayEquals(new Object[]{
+                    new JsonNumber(1),
+                            new JsonNumber(2),
+                            new JsonNumber(3)
+                    }, l.toArray()
+            );
         }
     }
 

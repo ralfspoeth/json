@@ -24,7 +24,7 @@ import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
  * try(var jr = new JsonReader(r)) {
  *     return jr.readElement();
  * }
- * }
+ *}
  * The class supports strict adherence to the JSON specification
  * exclusively; there is no support for the sloppy variant.
  */
@@ -67,7 +67,8 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
 
         enum Char implements Elem {colon, comma}
 
-        record Root(Element elem) implements Elem {}
+        record Root(Element elem) implements Elem {
+        }
     }
 
     private final Stack<Elem> stack = new Stack<>();
@@ -98,55 +99,73 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
         while (lexer.hasNext() && (stack.isEmpty() || !stack.top().getClass().equals(Elem.Root.class))) {
             var tkn = lexer.next();
             switch (tkn.type()) {
-                case STRING -> {
+                /*case STRING -> {
                     var str = token2Value(tkn);
                     switch (stack.top()) {
                         case null -> stack.push(new Elem.Root(str));
-                        case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameValuePair(tkn.value()));
+                        case Elem.ObjBuilderElem obe when obe.builder.isEmpty() ->
+                                stack.push(new Elem.NameValuePair(tkn.value()));
                         case Elem.ArrBuilderElem abe when abe.builder.isEmpty() -> abe.builder.item(str);
                         case Elem.Char nc -> {
                             stack.pop();
                             switch (nc) {
-                                case colon -> stack.push(((Elem.NameValuePair) stack.pop()).withElem(str));
+                                case colon -> {
+                                    if (stack.pop() instanceof Elem.NameValuePair nvp) {
+                                        stack.push(nvp.withElem(str));
+                                    } else ioex("unexpected token: " + tkn, lexer.coordinates());
+                                }
                                 case comma -> {
                                     switch (stack.top()) {
                                         case Elem.ObjBuilderElem ignored ->
                                                 stack.push(new Elem.NameValuePair(tkn.value()));
                                         case Elem.ArrBuilderElem(var abe) -> abe.item(str);
-                                        default -> throw new IllegalStateException("Unexpected value: " + stack.top());
+                                        default -> ioex("Unexpected value: " + stack.top(), lexer.coordinates());
                                     }
                                 }
                             }
                         }
-                        default -> throw new IllegalStateException("Unexpected value: " + stack.top());
+                        default -> ioex("Unexpected value: " + stack.top(), lexer.coordinates());
                     }
-                }
+                }*/
                 case COLON -> {
                     if (stack.top() instanceof Elem.NameValuePair nvp && nvp.elem == null) {
                         stack.push(colon);
                     } else {
-                        ioex("unexpected token :", lexer.coordinates());
+                        ioex("unexpected token : " + tkn, lexer.coordinates());
                     }
                 }
                 case COMMA -> {
                     switch (stack.top()) {
-                        case Elem.ArrBuilderElem ignored -> stack.push(comma);
-                        case Elem.ObjBuilderElem ignored -> stack.push(comma);
+                        case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(comma);
+                        case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> stack.push(comma);
                         case Elem.NameValuePair nvp when nvp.elem != null -> {
                             stack.pop();
                             if (stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
                                 builder.named(nvp.name, nvp.elem);
                                 stack.push(comma);
                             } else {
-                                throw new AssertionError();
+                                ioex("unexpected token: " + tkn, lexer.coordinates());
                             }
                         }
-                        default -> ioex("unexpected token ,", lexer.coordinates());
+                        default -> ioex("unexpected token: " + tkn, lexer.coordinates());
                     }
                 }
-                case NULL, FALSE, TRUE, NUMBER -> {
-                    var v = token2Value(tkn);
-                    handle(tkn.value(), v);
+                case NULL, FALSE, TRUE, NUMBER, STRING -> {
+                    if (tkn.type() == Lexer.TokenType.STRING &&
+                        stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
+                    ) {
+                        stack.push(new Elem.NameValuePair(tkn.value()));
+                    } else if (tkn.type() == Lexer.TokenType.STRING && comma.equals(stack.top())) {
+                        stack.pop();
+                        switch (stack.top()) {
+                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameValuePair(tkn.value()));
+                            case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(tkn.value()));
+                            default -> ioex("Unexpected value: " + tkn, lexer.coordinates());
+                        }
+                    } else {
+                        var v = token2Value(tkn);
+                        handle(tkn.value(), v);
+                    }
                 }
                 case OPENING_BRACE -> {
                     switch (stack.top()) {
@@ -178,16 +197,19 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                                 stack.pop();
                                 builder.named(nvp.name, nvp.elem);
                                 yield builder.build();
-
                             } else {
-                                throw new AssertionError();
+                                ioex("unexpected token: " + tkn, lexer.coordinates());
+                                yield null;
                             }
                         }
                         case Elem.ObjBuilderElem obe when obe.builder.isEmpty() -> {
                             stack.pop();
                             yield obe.builder.build();
                         }
-                        case null, default -> throw new AssertionError();
+                        case null, default -> {
+                            ioex("unexpected token: " + tkn, lexer.coordinates());
+                            yield null;
+                        }
                     };
                     handle(tkn.value(), obj);
                 }
@@ -197,15 +219,15 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                         var jsonArray = builder.build();
                         handle(tkn.value(), jsonArray);
                     } else {
-                        throw new AssertionError();
+                        ioex("unexpected token: " + tkn, lexer.coordinates());
                     }
                 }
             }
         }
 
-        if(stack.isEmpty()){
+        if (stack.isEmpty()) {
             return null;
-        } else if(stack.pop() instanceof Elem.Root(var elem)) {
+        } else if (stack.pop() instanceof Elem.Root(var elem)) {
             return elem;
         } else {
             throw new IOException("stack not empty or top-most element not a JsonElement");
@@ -214,17 +236,26 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
 
     private void handle(String token, Element v) throws IOException {
         switch (stack.top()) {
+            // stack is empty
             case null -> stack.push(new Elem.Root(v));
+            // in an object builder and name-value pair on top in construction
             case Elem.NameValuePair nvp when nvp.elem == null -> {
                 stack.pop();
                 stack.push(nvp.withElem(v));
             }
+            // colon or comma at the top
             case Elem.Char nc -> {
                 switch (nc) {
+                    // colon: name-value pair is second on top
                     case colon -> {
                         stack.pop(); // pop colon, topmost element must be an NVP
-                        stack.push(((Elem.NameValuePair) stack.pop()).withElem(v));
+                        if (stack.pop() instanceof Elem.NameValuePair nvp) {
+                            stack.push(nvp.withElem(v));
+                        } else {
+                            ioex("unexpected token: " + token, lexer.coordinates());
+                        }
                     }
+                    // comma on top
                     case comma -> {
                         stack.pop(); // pop comma
                         if (Objects.requireNonNull(stack.top()) instanceof Elem.ArrBuilderElem(var builder)) {
@@ -235,7 +266,8 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                     }
                 }
             }
-            case Elem.ArrBuilderElem(var builder) -> builder.item(v);
+            case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ||
+                                                       v instanceof Aggregate -> builder.item(v);
             default -> ioex("unexpected token " + token, lexer.coordinates());
         }
     }
@@ -260,7 +292,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
     @Override
     public boolean hasNext() {
         try {
-            return (next = readElement())!=null;
+            return (next = readElement()) != null;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

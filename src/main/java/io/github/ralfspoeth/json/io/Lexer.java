@@ -174,6 +174,7 @@ class Lexer implements AutoCloseable {
                         }
                         case '\"' -> '\"';
                         case '\\' -> '\\';
+                        case '/' -> '/';
                         default -> {
                             if(r>0x001F) parseException("escaped non-control character " + c);
                             yield c;

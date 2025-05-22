@@ -33,6 +33,15 @@ class JsonReaderTest {
     }
 
     @Test
+    void numplus1(){
+        var result = parse("+1");
+        assertAll(
+                () -> assertNull(result.elem),
+                () -> assertInstanceOf(JsonParseException.class, result.ex)
+        );
+    }
+
+    @Test
     void testMinus1twodots() {
         var result = parse("[-1.0.]");
         assertAll(

@@ -253,12 +253,11 @@ class Lexer implements AutoCloseable {
         ioex("Unexpected character '" + c + "'");
     }
 
-    private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|(?:[1-9]|[0-9]*))(?:\\.[0-9]+)?(?:[eE]?[-+]?[0-9]+)?");
+    private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
 
     private static boolean jsonNumber(String s) {
         return JSON_NUMBER.matcher(s).matches();
     }
-
 
     private void literal() {
         var text = buffer.toString();

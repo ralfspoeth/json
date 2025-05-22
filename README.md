@@ -66,9 +66,10 @@ class in the same package has not been battle-tested thus far
 but satisfies our needs.
 
 Beginning with version 1.1.25 we've added a number of tests
-from the JSON test suite which revealed some issues 
+from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite) 
+which revealed some issues 
 parsing especially non-well-formed JSON documents; current progress
-improves upon the current stability. The API surface however doesn't change.
+improves upon the current stability. The API surface, however, doesn't change.
 
 The `Path` and `Queries` classes in package
 `io.github.ralfspoeth.json.query` are still in development

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
+import java.nio.CharBuffer;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Spliterator;
@@ -123,6 +124,7 @@ class Lexer implements AutoCloseable {
     private Token nextToken;
     private State state = State.INITIAL;
     private final StringBuilder buffer = new StringBuilder();
+    private final CharBuffer unicodeSequence = CharBuffer.allocate(4);
 
     boolean hasNext() throws IOException {
         readNextToken();
@@ -141,6 +143,7 @@ class Lexer implements AutoCloseable {
 
     private void readNextToken() throws IOException {
         boolean escaped = false;
+        boolean uc = false;
         while (state != State.EOF && nextToken == null) {
             int r = source.read();
             if (r == -1) { // EOF
@@ -164,15 +167,35 @@ class Lexer implements AutoCloseable {
                         case 't' -> '\t';
                         case 'b' -> '\b';
                         case 'f' -> '\f';
-                        default -> c;
+                        case 'u' -> {
+                            unicodeSequence.rewind();
+                            uc = true;
+                            yield '\u0000';
+                        }
+                        case '\"' -> '\"';
+                        case '\\' -> '\\';
+                        default -> {
+                            if(r>0x001F) parseException("escaped non-control character " + c);
+                            yield c;
+                        }
                     };
                     escaped = false;
                     if (state == State.DQUOTE) {
-                        buffer.append(nc);
+                        if(nc!='\u0000') buffer.append(nc);
                     } else {
                         unexpectedCharacter(c);
                     }
-                } else switch (c) {
+                } else if(uc) {
+                    unicodeSequence.put(c);
+                    if (unicodeSequence.position() == unicodeSequence.capacity()) {
+                        uc = false;
+                        char[] chars = new char[unicodeSequence.capacity()];
+                        unicodeSequence.flip().get(chars);
+                        var value = Integer.parseInt(String.valueOf(chars), 16);
+                        buffer.appendCodePoint(value);
+                    }
+                }
+                else switch (c) {
                     case '\'' -> {
                         if (state == State.DQUOTE) {
                             buffer.append(c);

@@ -17,6 +17,26 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LexerTest {
 
+
+    @Test
+    void testuc() throws IOException {
+        var source = new StringBuilder()
+                .append('"')
+                .append('\\')
+                .append('u')
+                .append('a')
+                .append('b')
+                .append('c')
+                .append('d')
+                .append('"')
+                .toString();
+        try (var lexer = new Lexer(new StringReader(source))) {
+            assertTrue(lexer.hasNext());
+            var token = lexer.next();
+            assertEquals(Lexer.Type.STRING, token.type());
+            assertEquals("\uabcd", token.value());
+        }
+    }
     @Test
     void testNullLiteral() throws Exception {
         String source = "null";

@@ -11,7 +11,7 @@ import java.util.Spliterators;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 
 class Lexer implements AutoCloseable {
@@ -146,7 +146,7 @@ class Lexer implements AutoCloseable {
             if (r == -1) { // EOF
                 switch (state) {
                     case LIT -> literal();
-                    case DQUOTE -> ioex("unexpected end of file");
+                    case DQUOTE -> parseException("unexpected end of file");
                 }
                 state = State.EOF;
             } else {
@@ -212,14 +212,14 @@ class Lexer implements AutoCloseable {
                                 source.unread(c);
                             }
                             case DQUOTE -> buffer.append(c);
-                            default -> ioex("unexpected " + c + " after " + buffer);
+                            default -> parseException("unexpected " + c + " after " + buffer);
                         }
                     }
                     default -> {
                         switch (state) {
                             case DQUOTE -> {
                                 if(r <= 0x001F) {
-                                    ioex("Unescaped control character: " + c);
+                                    parseException("Unescaped control character: " + c);
                                 }
                                 buffer.append(c);
                             }
@@ -250,7 +250,7 @@ class Lexer implements AutoCloseable {
     }
 
     private void unexpectedCharacter(char c) throws JsonParseException {
-        ioex("Unexpected character '" + c + "'");
+        parseException("Unexpected character '" + c + "'");
     }
 
     private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
@@ -268,13 +268,12 @@ class Lexer implements AutoCloseable {
             case "false" -> FixToken.FALSE;
             default -> jsonNumber(text)
                     ? new LiteralToken(Type.NUMBER, text)
-                    : ioex("cannot parse %s as double".formatted(text));
-
+                    : parseException("cannot parse %s as double".formatted(text));
         };
         state = State.INITIAL;
     }
 
-    private LiteralToken ioex(String message) throws JsonParseException {
+    private Token parseException(String message) throws JsonParseException {
         throw new JsonParseException(message, row, column);
     }
 

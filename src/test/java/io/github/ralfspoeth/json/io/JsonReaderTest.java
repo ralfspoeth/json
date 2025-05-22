@@ -27,6 +27,12 @@ class JsonReaderTest {
     }
 
     @Test
+    void testTrailingBackslash() {
+        var result = parse("[\"\\u0102\\u\"]");
+        assertInstanceOf(JsonParseException.class, result.ex);
+    }
+
+    @Test
     void nume01(){
         var result = parse("0e+1");
         assertEquals(new JsonNumber(0), result.elem);

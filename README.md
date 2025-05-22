@@ -224,7 +224,9 @@ JSON is schema-less, that is, you cannot prescribe the structure
 of a JSON document using some kind of schema.
 This sets JSON apart from [XML](https://www.w3.org/TR/xml/) which
 allows for the specification of document type definitions
-[DTDs](https://www.w3.org/TR/xml/#sec-prolog-dtd) or XML schema definitions ([XSD](https://www.w3.org/TR/xmlschema/)).
+([DTDs](https://www.w3.org/TR/xml/#sec-prolog-dtd)) 
+or XML schema definitions 
+([XSD](https://www.w3.org/TR/xmlschema/)).
 XML, once hyped as the next big thing and with numerous 
 applications still widely in use, has been surpassed by JSON 
 according to

@@ -215,11 +215,6 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
         switch (stack.top()) {
             // stack is empty
             case null -> stack.push(new Elem.Root(v));
-            // in an object builder and name-value pair on top in construction
-            case Elem.NameValuePair nvp when nvp.elem == null -> {
-                stack.pop();
-                stack.push(nvp.withElem(v));
-            }
             // colon or comma at the top
             case Elem.Char nc -> {
                 switch (nc) {

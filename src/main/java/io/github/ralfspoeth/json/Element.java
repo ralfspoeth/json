@@ -4,6 +4,8 @@ import java.util.Map;
 
 public sealed interface Element permits Aggregate, Basic {
 
+    String json();
+
     int depth();
 
     static Element of(Object o) {

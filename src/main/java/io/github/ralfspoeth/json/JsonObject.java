@@ -8,6 +8,7 @@ import java.util.function.Function;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
 public record JsonObject(Map<String, Element> members) implements Aggregate, Function<String, Element> {
@@ -58,6 +59,13 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
 
     public <T extends Element> T get(String name, Class<T> cls) {
         return ofNullable(members.get(name)).map(cls::cast).orElse(null);
+    }
+
+    @Override
+    public String json() {
+        return members.entrySet().stream()
+                .map(e -> "\"" + e.getKey() + "\":" + e.getValue().json())
+                .collect(joining(", ", "{", "}"));
     }
 
     @Override

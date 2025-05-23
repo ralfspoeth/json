@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
@@ -42,6 +43,13 @@ public record JsonArray(List<Element> elements) implements Aggregate, IntFunctio
             ab.item(Element.of(Array.get(o, i)));
         }
         return ab.build();
+    }
+
+    @Override
+    public String json() {
+        return elements.stream()
+                .map(Element::json)
+                .collect(Collectors.joining(",", "[", "]"));
     }
 
     @Override

@@ -105,9 +105,16 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
     }
 
     private Element readNextElement() throws IOException {
+        // repeat to take the next token while the lexer has more tokens available
+        // and either the stack is empty or,
+        // in case we expect to read more than one JSON element from the potentially unbounded source,
+        // the top element is not a root element
         while (lexer.hasNext() && (stack.isEmpty() || !stack.top().getClass().equals(Elem.Root.class))) {
             var tkn = lexer.next();
+            // we switch over the type of the token as the primary level compound state
             switch (tkn.type()) {
+                // a colon is acceptable if and only if the current element at the
+                // top of the stack is a name-value-pair
                 case COLON -> {
                     if (stack.top() instanceof Elem.NameValuePair nvp && nvp.elem == null) {
                         stack.push(colon);
@@ -115,6 +122,9 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                         parseException("unexpected token : " + tkn, lexer.coordinates());
                     }
                 }
+                // a comma separates elements in an aggregate,
+                // that is, the top of the stack must be a non-empty
+                // aggregate element
                 case COMMA -> {
                     switch (stack.top()) {
                         case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(comma);

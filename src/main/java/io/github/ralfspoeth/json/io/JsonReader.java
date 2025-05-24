@@ -54,11 +54,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
             }
         }
 
-        record NameValuePair(String name, Element elem) implements Elem {
-            NameValuePair(String name) {
-                this(name, null);
-            }
-        }
+        record NameElem(String name) implements Elem {}
 
         enum Char implements Elem {colon, comma}
 
@@ -111,7 +107,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                 // a colon is acceptable if and only if the current element at the
                 // top of the stack is a name-value-pair
                 case COLON -> {
-                    if (stack.top() instanceof Elem.NameValuePair nvp && nvp.elem == null) {
+                    if (stack.top() instanceof Elem.NameElem) {
                         stack.push(colon);
                     } else {
                         parseException("unexpected token : " + tkn, lexer.coordinates());
@@ -124,15 +120,6 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                     switch (stack.top()) {
                         case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(comma);
                         case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> stack.push(comma);
-                        case Elem.NameValuePair nvp when nvp.elem != null -> {
-                            stack.pop();
-                            if (stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
-                                builder.named(nvp.name, nvp.elem);
-                                stack.push(comma);
-                            } else {
-                                parseException("unexpected token: " + tkn, lexer.coordinates());
-                            }
-                        }
                         case null, default -> parseException("unexpected token: " + tkn, lexer.coordinates());
                     }
                 }
@@ -190,11 +177,11 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                     if (tkn.type() == Lexer.Type.STRING &&
                             stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
                     ) {
-                        stack.push(new Elem.NameValuePair(tkn.value()));
+                        stack.push(new Elem.NameElem(tkn.value()));
                     } else if (tkn.type() == Lexer.Type.STRING && comma.equals(stack.top())) {
                         stack.pop();
                         switch (stack.top()) {
-                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameValuePair(tkn.value()));
+                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(tkn.value()));
                             case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(tkn.value()));
                             case null, default -> parseException("Unexpected value: " + tkn, lexer.coordinates());
                         }
@@ -236,8 +223,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                         // the topmost element must be an NVP with a null element,
                         // and the next stack element must be an object builder
                         if (!stack.isEmpty()
-                                && stack.pop() instanceof Elem.NameValuePair(String name, Element elem)
-                                && elem == null
+                                && stack.pop() instanceof Elem.NameElem(String name)
                                 && stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
                             // add name-value-pair to the object builder
                             builder.named(name, v);

@@ -141,23 +141,9 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                         case null, default -> parseException("unexpected token: " + tkn, lexer.coordinates());
                     }
                 }
-                case NULL, FALSE, TRUE, NUMBER, STRING -> {
-                    if (tkn.type() == Lexer.Type.STRING &&
-                        stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
-                    ) {
-                        stack.push(new Elem.NameValuePair(tkn.value()));
-                    } else if (tkn.type() == Lexer.Type.STRING && comma.equals(stack.top())) {
-                        stack.pop();
-                        switch (stack.top()) {
-                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameValuePair(tkn.value()));
-                            case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(tkn.value()));
-                            case null, default -> parseException("Unexpected value: " + tkn, lexer.coordinates());
-                        }
-                    } else {
-                        var v = token2Value(tkn);
-                        handle(tkn.value(), v);
-                    }
-                }
+                // opening braces (as well as opening brackets, see below)
+                // start json aggregate which an appear wherever a value may appear,
+                // that is, at the start, in an empty array, and after a colon or a comma.
                 case OPENING_BRACE -> {
                     switch (stack.top()) {
                         case null -> stack.push(Elem.ObjBuilderElem.empty());
@@ -167,6 +153,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                         default -> parseException("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
+                // opens an array, otherwise like a brace
                 case OPENING_BRACKET -> {
                     switch (stack.top()) {
                         case null -> stack.push(Elem.ArrBuilderElem.empty());
@@ -206,6 +193,23 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                         handle(tkn.value(), jsonArray);
                     } else {
                         parseException("unexpected token: " + tkn, lexer.coordinates());
+                    }
+                }
+                case NULL, FALSE, TRUE, NUMBER, STRING -> {
+                    if (tkn.type() == Lexer.Type.STRING &&
+                            stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
+                    ) {
+                        stack.push(new Elem.NameValuePair(tkn.value()));
+                    } else if (tkn.type() == Lexer.Type.STRING && comma.equals(stack.top())) {
+                        stack.pop();
+                        switch (stack.top()) {
+                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameValuePair(tkn.value()));
+                            case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(tkn.value()));
+                            case null, default -> parseException("Unexpected value: " + tkn, lexer.coordinates());
+                        }
+                    } else {
+                        var v = token2Value(tkn);
+                        handle(tkn.value(), v);
                     }
                 }
             }

@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Iterator;
-import java.util.Objects;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
@@ -59,10 +58,6 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
             NameValuePair(String name) {
                 this(name, null);
             }
-
-            NameValuePair withElem(Element e) {
-                return new NameValuePair(this.name, e);
-            }
         }
 
         enum Char implements Elem {colon, comma}
@@ -97,7 +92,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
      */
     public Element readElement() throws IOException {
         var result = readNextElement();
-        if(lexer.hasNext()) {
+        if (lexer.hasNext()) {
             throw new JsonParseException("Input contains tokens after the first element", lexer.coordinates().row(), lexer.coordinates().column());
         } else {
             return result;
@@ -158,24 +153,16 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                     switch (stack.top()) {
                         case null -> stack.push(Elem.ArrBuilderElem.empty());
                         case Elem.Char ignored -> stack.push(Elem.ArrBuilderElem.empty());
-                        case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> stack.push(Elem.ArrBuilderElem.empty());
+                        case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ->
+                                stack.push(Elem.ArrBuilderElem.empty());
                         default -> parseException("unexpected token " + tkn.value(), lexer.coordinates());
                     }
                 }
+                // closes a json object
+                // there should be an object builder on top of the stack
                 case CLOSING_BRACE -> {
                     var obj = switch (stack.top()) {
-                        case Elem.NameValuePair nvp when nvp.elem != null -> {
-                            stack.pop(); // remove nvp from top
-                            if (stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
-                                stack.pop();
-                                builder.named(nvp.name, nvp.elem);
-                                yield builder.build();
-                            } else {
-                                parseException("unexpected token: " + tkn, lexer.coordinates());
-                                yield null;
-                            }
-                        }
-                        case Elem.ObjBuilderElem obe when obe.builder.isEmpty() -> {
+                        case Elem.ObjBuilderElem obe -> {
                             stack.pop();
                             yield obe.builder.build();
                         }
@@ -186,15 +173,19 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                     };
                     handle(tkn.value(), obj);
                 }
+                // closing a JSON array
+                // the array builder should be on top of the stack
                 case CLOSING_BRACKET -> {
-                    var top = stack.pop();
-                    if (top instanceof Elem.ArrBuilderElem(var builder)) {
+                    if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
+                        stack.pop();
                         var jsonArray = builder.build();
                         handle(tkn.value(), jsonArray);
                     } else {
                         parseException("unexpected token: " + tkn, lexer.coordinates());
                     }
                 }
+                // literal tokens including null, true, false, number, string
+                // where string is a special case because it can be the name part of a name-value-pair
                 case NULL, FALSE, TRUE, NUMBER, STRING -> {
                     if (tkn.type() == Lexer.Type.STRING &&
                             stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
@@ -215,16 +206,22 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
             }
         }
 
+        // an empty stack is okay, signalling
+        // that the input stream contains nothing but whitespace
         if (stack.isEmpty()) {
             return null;
         } else if (stack.pop() instanceof Elem.Root(var elem)) {
+            // standard case: stack contains a single element at its top
             return elem;
         } else {
+            // otherwise, something went wrong
             parseException("stack not empty or top-most element not a JsonElement", lexer.coordinates());
             return null;
         }
     }
 
+    // handle tokens UNLESS these are element names
+    // in a JSON object
     private void handle(String token, Element v) {
         switch (stack.top()) {
             // stack is empty
@@ -232,19 +229,26 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
             // colon or comma at the top
             case Elem.Char nc -> {
                 switch (nc) {
-                    // colon: name-value pair is second on top
+                    // colon: name-value-pair is second on top
                     case colon -> {
-                        stack.pop(); // pop colon, topmost element must be an NVP
-                        if (stack.pop() instanceof Elem.NameValuePair nvp) {
-                            stack.push(nvp.withElem(v));
+                        // pop colon
+                        stack.pop();
+                        // the topmost element must be an NVP with a null element,
+                        // and the next stack element must be an object builder
+                        if (!stack.isEmpty()
+                                && stack.pop() instanceof Elem.NameValuePair(String name, Element elem)
+                                && elem == null
+                                && stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
+                            // add name-value-pair to the object builder
+                            builder.named(name, v);
                         } else {
                             parseException("unexpected token: " + token, lexer.coordinates());
-                        }
+                        } // in every other case, something went wrong
                     }
                     // comma on top
                     case comma -> {
                         stack.pop(); // pop comma
-                        if (Objects.requireNonNull(stack.top()) instanceof Elem.ArrBuilderElem(var builder)) {
+                        if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
                             builder.item(v);
                         } else {
                             parseException("unexpected token " + token, lexer.coordinates());

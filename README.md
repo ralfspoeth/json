@@ -251,51 +251,7 @@ attributes are equal. Arrays may contain any combination
 of instances, including both primitive and structured 
 types as in `[null, true, false, 1, {"x":5}, [2, 3, 4]]`
 
-# Modelling the data in Java
-
-## First Attempt
-
-The first attempt can be easily copied from 
-the sources cited above. Let's define a sealed 
-interface
-
-    package json;
-    sealed interface Element permits ...;
-
-and provide implementations very much like
-
-    package json;
-    final class Boolean implements Element{...}
-    final class Number implements Element{...}
-    final class Null implements Element{...}
-    final class String implements Element{...}
-    final class Array implements Element{...}
-    final class Object implements Element{...}
-
-The problem is that while possible almost
-all the names collide with class names in the 
-core package `java.lang`; once we consider modelling
-the `String` class as `record` with single
-component of class `java.lang.String` things 
-start to get clumsy. We therefore decided to 
-prefix the class names with `Json` or `JSON`. 
-
-While `JSON` is clearly closer to the JSON specification,
-it's more difficult to read than `Json`; since
-following the spec was not so much a goal as 
-the ease of use we decided to go with `Json` instead 
-of `JSON` as the prefix for the concrete types; we left
-the `Element` interface unchanged.
-
-At the top of the hierarchy we then had
-
-    public sealed interface Element {}
-
-All implementations must be `final` or `non-sealed`
-in order to comply with the contract for sealed
-interfaces; since we don't design for further 
-inheritance we will implement `final` classes only.
-
+# Modeling the Data
 
 ## Modelling `Boolean` as Enum
 

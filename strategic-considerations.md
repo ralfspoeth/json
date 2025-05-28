@@ -182,7 +182,7 @@ or even better
 
     var wa = MAGIC.convert(WorkAdress.class, person, "addresses[type=work]");
 
-That magic is very dissatisfying. 
+That magic is dissatisfying. 
 
 ### Conversions to Records
 

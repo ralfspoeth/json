@@ -5,14 +5,11 @@ import io.github.ralfspoeth.json.Element;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.io.Writer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 public class JsonWriter implements AutoCloseable {
 
@@ -89,38 +86,5 @@ public class JsonWriter implements AutoCloseable {
     @Override
     public void close() {
         out.close();
-    }
-
-    public static void minimize(Reader src, Writer target) {
-        class Ref {
-            Lexer.Token token;
-            Ref(Lexer.Token tkn) {
-                this.token = tkn;
-            }
-        }
-        Ref last = new Ref(null);
-        var separators = Set.of(
-                Lexer.Type.COLON,
-                Lexer.Type.COMMA,
-                Lexer.Type.OPENING_BRACE,
-                Lexer.Type.CLOSING_BRACE,
-                Lexer.Type.OPENING_BRACKET,
-                Lexer.Type.CLOSING_BRACKET
-        );
-        Lexer.tokenStream(src).forEach(t -> {
-            try {
-                if(last.token!=null && !separators.contains(last.token.type()) && !separators.contains(t.type())){
-                    target.write(' ');
-                }
-                target.write(switch (t.type()) {
-                    case STRING -> '\"' + t.value() + '\"';
-                    case NUMBER -> Double.toString(Double.parseDouble(t.value()));
-                    default -> t.value();
-                });
-                last.token = t;
-            } catch (IOException ioex) {
-                throw new RuntimeException(ioex);
-            }
-        });
     }
 }

@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.*;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class JsonWriterTest {
@@ -46,7 +45,7 @@ class JsonWriterTest {
             jw.write(JsonBoolean.FALSE);
             assertEquals("false", w.getBuffer().substring(len, len+=5));
             jw.write(new JsonString("a"));
-            assertEquals("\"a\"", w.getBuffer().substring(len, len+=3));
+            assertEquals("\"a\"", w.getBuffer().substring(len, len+3));
         }
     }
 
@@ -63,32 +62,7 @@ class JsonWriterTest {
             jw.write(JsonBoolean.FALSE);
             assertEquals("false", w.getBuffer().substring(len, len+=5));
             jw.write(new JsonString("a"));
-            assertEquals("\"a\"", w.getBuffer().substring(len, len+=3));
+            assertEquals("\"a\"", w.getBuffer().substring(len, len+3));
         }
-    }
-
-
-
-    @Test
-    void minimize() {
-        String src = """
-                {[],:}{
-                ,
-                : "   asdf   ", 5.0000,
-                null
-                        true
-                                    false
-                                    [  ]
-                } 1 2 3
-                """;
-        String tgt = "{[],:}{,:\"   asdf   \",5.0,null true false[]}1.0 2.0 3.0";
-        var wrt = new StringWriter();
-        JsonWriter.minimize(new StringReader(src), wrt);
-        var wrtOrig = new StringWriter();
-        JsonWriter.minimize(new StringReader(tgt), wrtOrig);
-        assertAll(
-                () -> assertEquals(tgt, wrt.getBuffer().toString()),
-                () -> assertEquals(tgt, wrtOrig.getBuffer().toString())
-        );
     }
 }

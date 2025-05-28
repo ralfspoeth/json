@@ -12,6 +12,8 @@ import java.util.Iterator;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
+import static io.github.ralfspoeth.json.io.Lexer.FixToken.*;
+import static io.github.ralfspoeth.json.io.Lexer.Type.*;
 
 /**
  * Instances parse character streams into JSON {@link Element}s.
@@ -103,7 +105,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
         while (lexer.hasNext() && (stack.isEmpty() || !stack.top().getClass().equals(Elem.Root.class))) {
             var tkn = lexer.next();
             // we switch over the type of the token as the primary level compound state
-            switch (tkn.type()) {
+            switch (tkn) {
                 // a colon is acceptable if and only if the current element at the
                 // top of the stack is a name-value-pair
                 case COLON -> {
@@ -173,21 +175,21 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
                 }
                 // literal tokens including null, true, false, number, string
                 // where string is a special case because it can be the name part of a name-value-pair
-                case NULL, FALSE, TRUE, NUMBER, STRING -> {
-                    if (tkn.type() == Lexer.Type.STRING &&
+                case Lexer.LiteralToken(var type, var val) -> {
+                    if (type == STRING &&
                             stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
                     ) {
-                        stack.push(new Elem.NameElem(tkn.value()));
-                    } else if (tkn.type() == Lexer.Type.STRING && comma.equals(stack.top())) {
+                        stack.push(new Elem.NameElem(val));
+                    } else if (type == STRING && comma.equals(stack.top())) {
                         stack.pop();
                         switch (stack.top()) {
-                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(tkn.value()));
-                            case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(tkn.value()));
-                            case null, default -> parseException("Unexpected value: " + tkn, lexer.coordinates());
+                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(val));
+                            case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(val));
+                            case null, default -> parseException("Unexpected value: " + val, lexer.coordinates());
                         }
                     } else {
-                        var v = token2Value(tkn);
-                        handle(tkn.value(), v);
+                        var literalToken = token2Value(tkn);
+                        handle(val, literalToken);
                     }
                 }
             }
@@ -248,13 +250,16 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
     }
 
     private static Basic<?> token2Value(Lexer.Token tkn) {
-        return switch (tkn.type()) {
-            case NULL -> JsonNull.INSTANCE;
-            case TRUE -> JsonBoolean.TRUE;
-            case FALSE -> JsonBoolean.FALSE;
-            case STRING -> new JsonString(tkn.value());
-            case NUMBER -> new JsonNumber(Double.parseDouble(tkn.value()));
-            default -> throw new AssertionError("unexpected token " + tkn);
+        return switch (tkn) {
+            case Lexer.LiteralToken(var type, var val) ->
+                switch(type) {
+                    case NULL -> JsonNull.INSTANCE;
+                    case TRUE -> JsonBoolean.TRUE;
+                    case FALSE -> JsonBoolean.FALSE;
+                    case STRING -> new JsonString(val);
+                    case NUMBER -> new JsonNumber(Double.parseDouble(val));
+                };
+            case Lexer.FixToken ignored -> throw new AssertionError();
         };
     }
 

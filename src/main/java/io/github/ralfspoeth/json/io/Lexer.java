@@ -6,70 +6,40 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.nio.CharBuffer;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
+import static java.lang.Character.isWhitespace;
 import static java.util.stream.StreamSupport.stream;
 
 class Lexer implements AutoCloseable {
 
-    private static final Set<Integer> LIT_CHARS = "0123456789nulltrefaseE-+."
-            .codePoints()
-            .boxed()
-            .collect(toSet());
-
-    enum Type {
-        // literal types
-        STRING, NUMBER,
-        // constants
-        NULL, TRUE, FALSE,
-        // all other single character token types
-        OPENING_BRACE, CLOSING_BRACE, // braces
-        OPENING_BRACKET, CLOSING_BRACKET, // brackets
-        COMMA, COLON // , :
-    }
-
     sealed interface Token permits LiteralToken, FixToken {
         String value();
-        Type type();
     }
 
-    record LiteralToken(Type type, String value) implements Token {
-        private static final Set<Type> LITERAL_TYPES = Set.of(Type.STRING, Type.NUMBER);
-        LiteralToken {
-            if(!LITERAL_TYPES.contains(type)) {
-                throw new IllegalArgumentException(type + " must be one of " + LITERAL_TYPES);
-            }
-        }
+    enum Type {
+        STRING, NUMBER, NULL, TRUE, FALSE
     }
+
+    record LiteralToken(Type type, String value) implements Token {}
 
     enum FixToken implements Token {
-        COMMA(Type.COMMA, ","),
-        NULL(Type.NULL, "null"),
-        TRUE (Type.TRUE, "true"),
-        FALSE(Type.FALSE, "false"),
-        COLON(Type.COLON, ":"),
-        OPENING_BRACE(Type.OPENING_BRACE, "{"),
-        CLOSING_BRACE(Type.CLOSING_BRACE, "}"),
-        OPENING_BRACKET(Type.OPENING_BRACKET, "["),
-        CLOSING_BRACKET(Type.CLOSING_BRACKET, "]");
+        COMMA(","),
+        COLON(":"),
+        OPENING_BRACE("{"),
+        CLOSING_BRACE("}"),
+        OPENING_BRACKET("["),
+        CLOSING_BRACKET("]");
 
-        private final Type type;
         private final String value;
 
-        FixToken(Type type, String value) {
+        FixToken(String value) {
             this.value = value;
-            this.type = type;
         }
 
-        @Override
-        public Type type() {
-            return type;
-        }
         @Override
         public String value() {
             return value;
@@ -118,7 +88,10 @@ class Lexer implements AutoCloseable {
     }
 
     private enum State {
-        INITIAL, DQUOTE, LIT, EOF
+        INITIAL,
+        STRLIT, STRLIT_ESC, STRLIT_UC,
+        NUM_LIT, CONST_LIT,
+        EOF
     }
 
     private Token nextToken;
@@ -142,139 +115,154 @@ class Lexer implements AutoCloseable {
     }
 
     private void readNextToken() throws IOException {
-        boolean escaped = false;
-        boolean uc = false;
         while (state != State.EOF && nextToken == null) {
             int r = source.read();
+            // special case -1 (EOF)
             if (r == -1) { // EOF
-                switch (state) {
-                    case LIT -> literal();
-                    case DQUOTE -> parseException("unexpected end of file");
-                }
-                state = State.EOF;
+                state = switch (state) {
+                    case NUM_LIT, CONST_LIT -> literal();
+                    case STRLIT, STRLIT_ESC, STRLIT_UC ->
+                            throw new JsonParseException("unexpected end of file in string literal " + buffer, row, column);
+                    default -> State.EOF;
+                };
             } else {
+                // char value for codepoint
                 char c = (char) r;
+                // row/column accounting
                 if (c == '\n') {
                     row++;
                     column = 1;
                 } else {
                     column++;
                 }
-                if (escaped) {
-                    var nc = switch (c) {
-                        case 'n' -> '\n';
-                        case 'r' -> '\r';
-                        case 't' -> '\t';
-                        case 'b' -> '\b';
-                        case 'f' -> '\f';
-                        case 'u' -> {
-                            unicodeSequence.rewind();
-                            uc = true;
-                            yield '\u0000';
-                        }
-                        case '\"' -> '\"';
-                        case '\\' -> '\\';
-                        case '/' -> '/';
-                        default -> {
-                            if(r>0x001F) parseException("escaped non-control character " + c);
-                            yield c;
-                        }
-                    };
-                    escaped = false;
-                    if (state == State.DQUOTE) {
-                        if(nc!='\u0000') buffer.append(nc);
-                    } else {
-                        unexpectedCharacter(c);
-                    }
-                } else if(uc) {
-                    unicodeSequence.put(c);
-                    if (unicodeSequence.position() == unicodeSequence.capacity()) {
-                        uc = false;
-                        char[] chars = new char[unicodeSequence.capacity()];
-                        unicodeSequence.flip().get(chars);
-                        var value = Integer.parseInt(String.valueOf(chars), 16);
-                        buffer.appendCodePoint(value);
-                    }
-                }
-                else switch (c) {
-                    case '\'' -> {
-                        if (state == State.DQUOTE) {
+                state = switch (state) {
+                    case INITIAL -> switch (c) {
+                        case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
                             buffer.append(c);
-                        } else {
-                            unexpectedCharacter(c);
+                            yield State.NUM_LIT;
                         }
-                    }
-                    case '\"' -> {
-                        if (state == State.DQUOTE) {
-                            state = State.INITIAL;
-                            nextToken = new LiteralToken(Type.STRING, buffer.toString());
-                            buffer.setLength(0);
-                        } else {
-                            state = State.DQUOTE;
+                        case '\"' -> State.STRLIT;
+                        case 'n', 't', 'f' -> {
+                            buffer.append(c);
+                            yield State.CONST_LIT;
                         }
-                    }
-                    case '\\' -> {
-                        if (state == State.DQUOTE) { // within string
-                            escaped = true;
-                        } else {
-                            unexpectedCharacter(c);
-                        }
-                    }
-                    case ',', ':', '[', '{', ']', '}' -> {
-                        switch (state) {
-                            case INITIAL -> nextToken = switch (c) {
-                                case ',' -> FixToken.COMMA;
-                                case ':' -> FixToken.COLON;
+                        case '{', '}', '[', ']', ':', ',' -> {
+                            nextToken = switch (c) {
                                 case '{' -> FixToken.OPENING_BRACE;
                                 case '}' -> FixToken.CLOSING_BRACE;
                                 case '[' -> FixToken.OPENING_BRACKET;
                                 case ']' -> FixToken.CLOSING_BRACKET;
+                                case ':' -> FixToken.COLON;
+                                case ',' -> FixToken.COMMA;
                                 default -> throw new AssertionError();
                             };
-                            case LIT -> {
-                                literal();
-                                source.unread(c);
-                            }
-                            case DQUOTE -> buffer.append(c);
-                            default -> parseException("unexpected " + c + " after " + buffer);
+                            yield State.INITIAL;
                         }
-                    }
-                    default -> {
-                        switch (state) {
-                            case DQUOTE -> {
-                                if(r <= 0x001F) {
-                                    parseException("Unescaped control character: " + c);
-                                }
+                        default -> {
+                            if (!isWhitespace(c))
+                                throw new JsonParseException("Unexpected character: " + c, row, column);
+                            yield State.INITIAL;
+                        }
+                    };
+
+                    case NUM_LIT -> switch (c) {
+                        case '.', 'e', 'E', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
+                            buffer.append(c);
+                            yield State.NUM_LIT;
+                        }
+                        case 'n', 't', 'f', 'u', 'r', 'a', 'l', 's', ',', ':', '}', ']', '\"', '{', '[' -> {
+                            source.unread(c);
+                            yield literal();
+                        }
+                        default -> {
+                            if (isWhitespace(c)) {
+                                yield literal();
+                            } else {
+                                throw new JsonParseException("Unexpected character: " + c + " in number literal", row, column);
+                            }
+                        }
+                    };
+
+                    case CONST_LIT -> switch(c) {
+                        case 'a', 'l', 's', 'e', 't', 'r', 'u' -> {
+                            buffer.append(c);
+                            yield State.CONST_LIT;
+                        }
+                        case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
+                            source.unread(c);
+                            yield literal();
+                        }
+                        default -> {
+                            if (isWhitespace(c)) {
+                                yield literal();
+                            }
+                            else throw new JsonParseException("Misspelled literal: " + buffer.append(c), row, column);
+                        }
+                    };
+
+                    case STRLIT -> switch (c) {
+                        case '\"' -> stringLiteral();
+                        case '\\' -> State.STRLIT_ESC;
+                        default -> {
+                            if (r <= 0x001F)
+                                throw new JsonParseException("Unexpected control character " + c, row, column);
+                            else {
                                 buffer.append(c);
+                                yield State.STRLIT;
                             }
-                            case INITIAL -> {
-                                if (LIT_CHARS.contains(r)) {
-                                    buffer.append(c);
-                                    state = State.LIT;
-                                } else if (!Character.isWhitespace(c)) {
-                                    unexpectedCharacter(c);
-                                }
+                        }
+                    };
+
+                    case STRLIT_ESC -> switch (c) {
+                        case 'u' -> {
+                            unicodeSequence.clear();
+                            yield State.STRLIT_UC;
+                        }
+                        case 'n' -> {
+                            buffer.append('\n');
+                            yield State.STRLIT;
+                        }
+                        case 'r' -> {
+                            buffer.append('\r');
+                            yield State.STRLIT;
+                        }
+                        case 't' -> {
+                            buffer.append('\t');
+                            yield State.STRLIT;
+                        }
+                        case '\\' -> {
+                            buffer.append('\\');
+                            yield State.STRLIT;
+                        }
+                        case '"' -> {
+                            buffer.append('\"');
+                            yield State.STRLIT;
+                        }
+                        default -> {
+                            if (r > 0x001F) {
+                                throw new JsonParseException("escaped non-control character " + c, row, column);
                             }
-                            case LIT -> {
-                                if (Character.isWhitespace(c)) {
-                                    literal();
-                                    state = State.INITIAL;
-                                } else if (LIT_CHARS.contains(r)) {
-                                    buffer.append(c);
-                                } else {
-                                    unexpectedCharacter(c);
-                                }
-                            }
-                            default -> unexpectedCharacter(c);
+                            buffer.append(c);
+                            yield State.STRLIT;
+                        }
+                    };
+
+                    case STRLIT_UC -> {
+                        unicodeSequence.put(c);
+                        if (unicodeSequence.position() == unicodeSequence.capacity()) {
+                            char[] chars = new char[unicodeSequence.capacity()];
+                            unicodeSequence.flip().get(chars);
+                            var value = Integer.parseInt(String.valueOf(chars), 16);
+                            buffer.appendCodePoint(value);
+                            yield State.STRLIT;
+                        } else {
+                            yield State.STRLIT_UC;
                         }
                     }
-                }
+                    case EOF -> throw new JsonParseException("character " + c + " after end of file", row, column);
+                };
             }
         }
-    }
-
-    private void unexpectedCharacter(char c) throws JsonParseException {
-        parseException("Unexpected character '" + c + "'");
     }
 
     private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
@@ -283,22 +271,26 @@ class Lexer implements AutoCloseable {
         return JSON_NUMBER.matcher(s).matches();
     }
 
-    private void literal() {
+    private Lexer.State stringLiteral() {
+        var text = buffer.toString();
+        buffer.delete(0, buffer.capacity());
+        nextToken = new LiteralToken(Type.STRING, text);
+        return State.INITIAL;
+    }
+
+    private Lexer.State literal() {
         var text = buffer.toString();
         buffer.delete(0, buffer.capacity());
         nextToken = switch (text) {
-            case "null" -> FixToken.NULL;
-            case "true" -> FixToken.TRUE;
-            case "false" -> FixToken.FALSE;
-            default -> jsonNumber(text)
-                    ? new LiteralToken(Type.NUMBER, text)
-                    : parseException("cannot parse %s as double".formatted(text));
+            case "null" -> new LiteralToken(Type.NULL, text);
+            case "true" -> new LiteralToken(Type.TRUE, text);
+            case "false" -> new LiteralToken(Type.FALSE, text);
+            default -> {
+                if (jsonNumber(text)) yield new LiteralToken(Type.NUMBER, text);
+                else throw new JsonParseException("cannot parse %s as double".formatted(text), row, column);
+            }
         };
-        state = State.INITIAL;
-    }
-
-    private Token parseException(String message) throws JsonParseException {
-        throw new JsonParseException(message, row, column);
+        return State.INITIAL;
     }
 
     private int row = 1, column = 1;

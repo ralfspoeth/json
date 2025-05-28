@@ -259,11 +259,7 @@ class Lexer implements AutoCloseable {
                                 char[] chars = new char[unicodeSequence.capacity()];
                                 unicodeSequence.flip().get(chars);
                                 int value = Integer.parseInt(String.valueOf(chars), 16);
-                                if(value > 0) {
-                                    buffer.appendCodePoint(value);
-                                } else {
-                                    throw new JsonParseException("illegal unicode sequence " + unicodeSequence.flip(), row, column);
-                                }
+                                buffer.append(value);
                                 yield State.STRLIT;
                             } else {
                                 yield State.STRLIT_UC;

@@ -239,6 +239,8 @@ class Lexer implements AutoCloseable {
                             buffer.append('\b');
                             yield State.STRLIT;
                         }
+                        case '\t', '\r', '\n', ' ', '\f' ->
+                                throw new JsonParseException("control character after escape " + c, row, column);
                         default -> {
                             if (r > 0x001F) {
                                 throw new JsonParseException("escaped non-control character " + c, row, column);
@@ -257,7 +259,11 @@ class Lexer implements AutoCloseable {
                                 char[] chars = new char[unicodeSequence.capacity()];
                                 unicodeSequence.flip().get(chars);
                                 int value = Integer.parseInt(String.valueOf(chars), 16);
-                                buffer.appendCodePoint(value);
+                                if(value > 0) {
+                                    buffer.appendCodePoint(value);
+                                } else {
+                                    throw new JsonParseException("illegal unicode sequence " + unicodeSequence.flip(), row, column);
+                                }
                                 yield State.STRLIT;
                             } else {
                                 yield State.STRLIT_UC;

@@ -19,6 +19,14 @@ class LexerTest {
 
 
     @Test
+    void testbacks00() throws Exception {
+        var src = "\"" + '\\' + 'u' + '0' + '0' + '0' + '0' + '"';
+        try (var lexer = new Lexer(new StringReader(src))) {
+            assertThrows(JsonParseException.class, lexer::hasNext);
+        }
+    }
+
+    @Test
     void testuc() throws IOException {
         var source = "\"" +
                 '\\' +
@@ -31,17 +39,18 @@ class LexerTest {
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             var token = lexer.next();
-            assertEquals(Lexer.Type.STRING, token instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.STRING, token instanceof Lexer.LiteralToken(var type, var ignored) ? type : null);
             assertEquals("\uabcd", token.value());
         }
     }
+
     @Test
     void testNullLiteral() throws Exception {
         String source = "null";
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             var token = lexer.next();
-            assertEquals(Lexer.Type.NULL, token instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.NULL, token instanceof Lexer.LiteralToken(var type, var ignored) ? type : null);
             assertFalse(lexer.hasNext());
         }
     }
@@ -52,7 +61,7 @@ class LexerTest {
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             var token = lexer.next();
-            assertEquals(Lexer.Type.TRUE, token instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.TRUE, token instanceof Lexer.LiteralToken(var type, var ignored) ? type : null);
             assertFalse(lexer.hasNext());
         }
     }
@@ -63,7 +72,7 @@ class LexerTest {
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
             var token = lexer.next();
-            assertEquals(Lexer.Type.FALSE, token instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.FALSE, token instanceof Lexer.LiteralToken(var type, var ignored) ? type : null);
             assertFalse(lexer.hasNext());
         }
     }
@@ -74,11 +83,17 @@ class LexerTest {
         String source = "true false null";
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
-            assertEquals(Lexer.Type.TRUE, lexer.next() instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.TRUE, lexer.next() instanceof Lexer.LiteralToken(
+                    var type, var ignored
+            ) ? type : null);
             assertTrue(lexer.hasNext());
-            assertEquals(Lexer.Type.FALSE, lexer.next() instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.FALSE, lexer.next() instanceof Lexer.LiteralToken(
+                    var type, var ignored
+            ) ? type : null);
             assertTrue(lexer.hasNext());
-            assertEquals(Lexer.Type.NULL, lexer.next() instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.NULL, lexer.next() instanceof Lexer.LiteralToken(
+                    var type, var ignored
+            ) ? type : null);
             assertFalse(lexer.hasNext());
         }
     }
@@ -93,11 +108,17 @@ class LexerTest {
                 null""";
         try (var lexer = new Lexer(new StringReader(source))) {
             assertTrue(lexer.hasNext());
-            assertEquals(Lexer.Type.TRUE, lexer.next() instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.TRUE, lexer.next() instanceof Lexer.LiteralToken(
+                    var type, var ignored
+            ) ? type : null);
             assertTrue(lexer.hasNext());
-            assertEquals(Lexer.Type.FALSE, lexer.next() instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.FALSE, lexer.next() instanceof Lexer.LiteralToken(
+                    var type, var ignored
+            ) ? type : null);
             assertTrue(lexer.hasNext());
-            assertEquals(Lexer.Type.NULL, lexer.next() instanceof Lexer.LiteralToken(var type, var ignored)? type : null);
+            assertEquals(Lexer.Type.NULL, lexer.next() instanceof Lexer.LiteralToken(
+                    var type, var ignored
+            ) ? type : null);
             assertFalse(lexer.hasNext());
         }
     }

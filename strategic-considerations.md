@@ -82,7 +82,7 @@ when modeling JSON data. We found two separate interfaces useful:
 The aggregate types should provide builders for their construction;
 we want to keep the data immutable for __all__ elements.
 
-### Number—Variants?
+### Numbers are Doubles — Or Variants?
 
 The JSON grammar allows for numbers that are beyond the scope of IEEE754 doubles.
 BUT we think that since most JSON data starts or ends in `JavaScript` applications
@@ -101,6 +101,88 @@ Therefore, numbers are `record JsonNumber(double value)...` instance which use
 
 ### Traversal of Structures
 
+Consider this not utterly complex example of
+a data structure which resembles some personal data
+in a CRM or similar system:
+
+    {
+        "id": 12341234,
+        "ssn": "123-45-678",
+        "addresses": [
+            {"address": "10 Downing Street", 
+             "city":    "London",
+             "code": "SW1A 2AA"
+             "country": {"ISO": "GB", "name":"UK"},
+             "type": "work"},
+            {"address": "Hauptstrasse 1234",
+             "city": "Frankfurt",
+             "country": {"ISO": "DE", "name": ""},
+             "type": "home"}],
+        "name": {"first": "John", "last": "Doe"}
+    }
+
+The representation in Java after parsing is this
+
+    var person = new JsonObject(Map.of(
+        "id", new JsonNumber(12341234),
+        "ssn", new JsonString("123-45-678"),
+        "addresses", new JsonArray(List.of(
+            new JsonObject(Map.of(
+                "address", "10 Downing Street",
+                "city", "London",
+                "code", "SW1A 2AA", 
+                "country", new JsonObject(Map.of(
+                    "ISO", "GB",
+                    "name", "UK"
+                )),
+                "type", "work"
+            )),
+            new JsonObject(Map.of(
+                "address": "Hauptstrasse 1234",
+                "city": "Frankfurt",
+                "country": new JsonObject(Map.of(
+                    "ISO", "DE",
+                    "name": ""
+                )),
+                "type": "home"
+            ))
+        )),
+        "name", new JsonObject(Map.of(
+            "first": "John",
+            "last": "Doe"
+        ))
+    ));
+
+Nice... or isn't it? Well... Let's see. First of all, the Java use site construction
+of the person is lengthier than the JSON representation-one of the reasons why
+JSON is so attractive.
+
+We want to have the work address of John Doe.
+The standard approach would be
+
+    record WorkAddress(String city, String address) {}
+
+    var wa = person.members()
+        .get("addresses") // a JSON array
+        .stream()
+        .filter(e -> e instanceof JsonObject(m) && "work".equals(m.get("type"))) // that with type 'work'
+        .map(e -> e instanceof JsonObject(m) ? new WorkAddress(m.get("address"), m.get("city")))
+        .findFirst()
+        .orElseThrow();
+
+That's not exactly what we want.
+Instead, we'd rather do something like
+
+    var wa = new WorkAddress(
+        MAGIC.get("addresses[type=work]", "address"),
+        MAGIC.get("addresses[type=work]", "city")
+    );
+
+or even better
+
+    var wa = MAGIC.convert(WorkAdress.class, person, "addresses[type=work]");
+
+That magic is very dissatisfying. 
 
 ### Conversions to Records
 

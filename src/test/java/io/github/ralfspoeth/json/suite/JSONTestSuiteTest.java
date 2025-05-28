@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.suite;
 
 import io.github.ralfspoeth.json.Element;
+import io.github.ralfspoeth.json.io.JsonParseException;
 import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
@@ -15,8 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JSONTestSuiteTest {
 
@@ -28,8 +28,69 @@ class JSONTestSuiteTest {
     private final List<Result> acceptedIs = new ArrayList<>();
     private final List<Result> rejectedIs = new ArrayList<>();
 
+    private static final Path RESOURCES = Path.of("src/test/resources");
+
+    @Test
+    void i_structure_UTF8_BOM_empty_object() throws IOException {
+        var srcFile = RESOURCES.resolve("i_structure_UTF-8_BOM_empty_object.json");
+        try (var rdr = new JsonReader(Files.newBufferedReader(srcFile, StandardCharsets.UTF_8))) {
+            assertThrows(JsonParseException.class, rdr::readElement);
+        }
+    }
+
+    @Test
+    void n_string_backslash_00() throws Exception {
+        var srcFile = RESOURCES.resolve("n_string_backslash_00.json");
+        try (var rdr = new JsonReader(Files.newBufferedReader(srcFile, StandardCharsets.UTF_8))) {
+            assertThrows(JsonParseException.class, rdr::readElement);
+        }
+    }
+
+
+    @Test
+    void testAllFiles() throws Exception {
+        collectNs();
+        collectYs();
+        collectIs();
+        try {
+            assertAll(
+                    () -> assertEquals(0, acceptedNs.size(), "Ns"),
+                    () -> assertEquals(0, rejectedYs.size(), "Ys"),
+                    () -> assertEquals(0, rejectedIs.size(), "iNs"),
+                    () -> assertEquals(0, acceptedIs.size(), "iYs")
+            );
+        } catch (MultipleFailuresError mfe) {
+            int critical = 0;
+            System.out.println("Path\tShould accept\tDid accept\tElement\tException");
+            for (var f : mfe.getFailures()) {
+                switch (f) {
+                    case AssertionFailedError afe -> {
+                        if (afe.getMessage().startsWith("Ns")) {
+                            critical++;
+                            listResults(acceptedNs, "no", "yes");
+                        } else if (afe.getMessage().startsWith("Ys")) {
+                            critical++;
+                            listResults(rejectedYs, "yes", "no");
+                        } else if (afe.getMessage().startsWith("iNs")) {
+                            listResults(rejectedIs, "may", "no");
+                        } else if (afe.getMessage().startsWith("iYs")) {
+                            listResults(acceptedIs, "may", "yes");
+                        } else {
+                            throw new AssertionError();
+                        }
+                    }
+                    case Throwable t -> System.out.println(t.getMessage());
+                }
+            }
+            if(critical>0) throw mfe;
+        }
+
+    }
+
+
+
     // parse a single JSON file
-    Result parse(Path p) {
+    private Result parse(Path p) {
         try (var rdr = new JsonReader(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
             return new Result(p.getFileName(), rdr.readElement(), null);
         } catch (Throwable t) {
@@ -37,31 +98,31 @@ class JSONTestSuiteTest {
         }
     }
 
-    Predicate<Path> fileNameFilter(FileSystem fs, String pattern) {
+    private Predicate<Path> fileNameFilter(FileSystem fs, String pattern) {
         return p -> fs.getPathMatcher("glob:" + pattern).matches(p.getFileName());
     }
 
-    void collectYs(Path resourceDir) throws IOException {
-        try (var files = Files.list(resourceDir)) {
-            files.filter(fileNameFilter(resourceDir.getFileSystem(), "y*.json"))
+    private void collectYs() throws IOException {
+        try (var files = Files.list(RESOURCES)) {
+            files.filter(fileNameFilter(RESOURCES.getFileSystem(), "y*.json"))
                     .map(this::parse)
                     .filter(r -> r.exception != null)
                     .forEach(rejectedYs::add);
         }
     }
 
-    void collectNs(Path resourceDir) throws IOException {
-        try (var files = Files.list(resourceDir)) {
-            files.filter(fileNameFilter(resourceDir.getFileSystem(), "n*.json"))
+    void collectNs() throws IOException {
+        try (var files = Files.list(RESOURCES)) {
+            files.filter(fileNameFilter(RESOURCES.getFileSystem(), "n*.json"))
                     .map(this::parse)
                     .filter(r -> r.exception == null && r.element != null)
                     .forEach(acceptedNs::add);
         }
     }
 
-    void collectIs(Path resourceDir) throws IOException {
-        try (var files = Files.list(resourceDir)) {
-            files.filter(fileNameFilter(resourceDir.getFileSystem(), "i*.json"))
+    void collectIs() throws IOException {
+        try (var files = Files.list(RESOURCES)) {
+            files.filter(fileNameFilter(RESOURCES.getFileSystem(), "i*.json"))
                     .map(this::parse)
                     .forEach(r -> {
                         if (r.exception == null) {
@@ -73,54 +134,15 @@ class JSONTestSuiteTest {
         }
     }
 
-    @Test
-    void testAllFiles() throws Exception {
-        var resourcesDir = Path.of("src/test/resources");
-        collectNs(resourcesDir);
-        collectYs(resourcesDir);
-        collectIs(resourcesDir);
-        try {
-            assertAll(
-                    () -> assertEquals(0, acceptedNs.size(), "Ns"),
-                    () -> assertEquals(0, rejectedYs.size(), "Ys"),
-                    () -> assertEquals(0, rejectedIs.size(), "iNs"),
-                    () -> assertEquals(0, acceptedIs.size(), "iYs")
-            );
-        } catch (MultipleFailuresError mfe) {
-            for (var f : mfe.getFailures()) {
-                System.out.println("Path\tShould accept\tDid accept\tElement\tException");
-                switch (f) {
-                    case AssertionFailedError afe -> {
-                        if (afe.getMessage().startsWith("Ns")) {
-                            listResults(acceptedNs, "no", "yes");
-                        } else if (afe.getMessage().startsWith("Ys")) {
-                            listResults(rejectedYs, "yes", "no");
-                        } else if (afe.getMessage().startsWith("iNs")) {
-                            mfe.addSuppressed(afe);
-                            listResults(rejectedIs, "may", "no");
-                        } else if (afe.getMessage().startsWith("iYs")) {
-                            mfe.addSuppressed(afe);
-                            listResults(acceptedIs, "may", "no");
-                        } else {
-                            throw new AssertionError();
-                        }
-                    }
-                    case Throwable t -> System.out.println(t.getMessage());
-                }
-            }
-            throw mfe;
-        }
-
-    }
-
-    String maxLength(String s, int max) {
-        return max > s.length() ? s : s.substring(0, max - 3) + "...";
+    String maxLength40(String s) {
+        return 40 > s.length() ? s : s.substring(0, 37) + "...";
     }
 
     String formatJson(String json) {
-        return maxLength(json.replace("\n", "\\n")
+        return maxLength40(json.replace("\n", "\\n")
                 .replace("\r", "\\r")
-                .replace("\t", "\\t"), 40);
+                .replace("\t", "\\t")
+        );
     }
 
     void listResults(List<Result> results, String should, String did) {

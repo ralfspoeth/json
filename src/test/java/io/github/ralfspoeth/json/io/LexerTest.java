@@ -1,6 +1,5 @@
 package io.github.ralfspoeth.json.io;
 
-
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -16,15 +15,6 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LexerTest {
-
-
-    @Test
-    void testbacks00() throws Exception {
-        var src = "\"" + '\\' + 'u' + '0' + '0' + '0' + '0' + '"';
-        try (var lexer = new Lexer(new StringReader(src))) {
-            assertThrows(JsonParseException.class, lexer::hasNext);
-        }
-    }
 
     @Test
     void testuc() throws IOException {

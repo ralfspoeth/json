@@ -57,7 +57,7 @@ to return immutable instances in the end.
 
 ## Current Status
 
-The current version 1.1.39 is mature and stable and
+The current version 1.1.41 is mature and stable and
 will not be changed with respect to the hierarchy of classes
 and interfaces in package `io.github.ralfspoeth.json` and
 the parser implemented through `JsonReader` in package
@@ -65,11 +65,22 @@ the parser implemented through `JsonReader` in package
 class in the same package has not been battle-tested thus far 
 but satisfies our needs.
 
+### JSON Test Suite
+
 Beginning with version 1.1.25 we've added a number of tests
 from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite) 
 which revealed some issues 
 parsing especially non-well-formed JSON documents; current progress
 improves upon the current stability. The API surface, however, doesn't change.
+
+You may see the results of the current version 1.1.41
+[here](https://docs.google.com/spreadsheets/d/1hP2h1GPPXk9gfiZkIdidtCaWQ7_QPOHvrBrJGqX06Z4/edit?usp=sharing).
+Summarizing, this version accepts no test files starting with `n`, rejects no
+files starting with `y`, rejects all files starting with `i` with encoding related
+issues, and accepts all other files starting with `i`, most notably deeply nested arrays
+and all numerical values which `Double.parseDouble` successfully converts to `double`s.
+
+### Beta and Fresh Features
 
 The `Path` and `Queries` classes in package
 `io.github.ralfspoeth.json.query` are still in development
@@ -92,16 +103,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.1.39</version>
+        <version>1.1.41</version>
     </dependency>
 
 or, when using Gradle (Groovy)
 
-    implementation 'io.github.ralfspoeth:json:1.1.39'
+    implementation 'io.github.ralfspoeth:json:1.1.41'
 
 or, with Gradle (Kotlin), put 
 
-    implementation("io.github.ralfspoeth:json:1.1.39")
+    implementation("io.github.ralfspoeth:json:1.1.41")
 
 in your build file.
 
@@ -685,7 +696,7 @@ Here is a link to a video from Rich Hickey:
 In order to use this Java library, include this in your `deps.edn` file:
 
     {:deps {
-        io.github.ralfspoeth/json {:mvn/version "1.1.39"}
+        io.github.ralfspoeth/json {:mvn/version "1.1.41"}
         }}
 
 Import the `Element` and IO classes into your namespace like this

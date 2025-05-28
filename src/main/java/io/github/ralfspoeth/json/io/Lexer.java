@@ -11,7 +11,6 @@ import java.util.Spliterators;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static java.lang.Character.isWhitespace;
 import static java.util.stream.StreamSupport.stream;
 
 class Lexer implements AutoCloseable {
@@ -118,12 +117,12 @@ class Lexer implements AutoCloseable {
         while (state != State.EOF && nextToken == null) {
             int r = source.read();
             // special case -1 (EOF)
-            if (r == -1) { // EOF
+            if (r == -1) {
                 state = switch (state) {
                     case NUM_LIT, CONST_LIT -> literal();
                     case STRLIT, STRLIT_ESC, STRLIT_UC ->
                             throw new JsonParseException("unexpected end of file in string literal " + buffer, row, column);
-                    default -> State.EOF;
+                    case INITIAL, EOF -> State.EOF;
                 };
             } else {
                 // char value for codepoint
@@ -158,11 +157,10 @@ class Lexer implements AutoCloseable {
                             };
                             yield State.INITIAL;
                         }
-                        default -> {
-                            if (!isWhitespace(c))
-                                throw new JsonParseException("Unexpected character: " + c, row, column);
-                            yield State.INITIAL;
-                        }
+                        case ' ', '\t', '\r', '\n' ->  State.INITIAL;
+                        default -> throw new JsonParseException("Unexpected character: " + c, row, column);
+
+
                     };
 
                     case NUM_LIT -> switch (c) {
@@ -174,16 +172,11 @@ class Lexer implements AutoCloseable {
                             source.unread(c);
                             yield literal();
                         }
-                        default -> {
-                            if (isWhitespace(c)) {
-                                yield literal();
-                            } else {
-                                throw new JsonParseException("Unexpected character: " + c + " in number literal", row, column);
-                            }
-                        }
+                        case ' ', '\t', '\r', '\n' -> literal();
+                        default -> throw new JsonParseException("Unexpected character: " + c + " in number literal", row, column);
                     };
 
-                    case CONST_LIT -> switch(c) {
+                    case CONST_LIT -> switch (c) {
                         case 'a', 'l', 's', 'e', 't', 'r', 'u' -> {
                             buffer.append(c);
                             yield State.CONST_LIT;
@@ -192,12 +185,8 @@ class Lexer implements AutoCloseable {
                             source.unread(c);
                             yield literal();
                         }
-                        default -> {
-                            if (isWhitespace(c)) {
-                                yield literal();
-                            }
-                            else throw new JsonParseException("Misspelled literal: " + buffer.append(c), row, column);
-                        }
+                        case ' ', '\t', '\r', '\n' -> literal();
+                        default -> throw new JsonParseException("Misspelled literal: " + buffer.append(c), row, column);
                     };
 
                     case STRLIT -> switch (c) {
@@ -238,6 +227,18 @@ class Lexer implements AutoCloseable {
                             buffer.append('\"');
                             yield State.STRLIT;
                         }
+                        case 'f' -> {
+                            buffer.append('\f');
+                            yield State.STRLIT;
+                        }
+                        case '/' -> {
+                            buffer.append('/');
+                            yield State.STRLIT;
+                        }
+                        case 'b' -> {
+                            buffer.append('\b');
+                            yield State.STRLIT;
+                        }
                         default -> {
                             if (r > 0x001F) {
                                 throw new JsonParseException("escaped non-control character " + c, row, column);
@@ -247,18 +248,24 @@ class Lexer implements AutoCloseable {
                         }
                     };
 
-                    case STRLIT_UC -> {
-                        unicodeSequence.put(c);
-                        if (unicodeSequence.position() == unicodeSequence.capacity()) {
-                            char[] chars = new char[unicodeSequence.capacity()];
-                            unicodeSequence.flip().get(chars);
-                            var value = Integer.parseInt(String.valueOf(chars), 16);
-                            buffer.appendCodePoint(value);
-                            yield State.STRLIT;
-                        } else {
-                            yield State.STRLIT_UC;
+                    case STRLIT_UC -> switch (c) {
+                        case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B',
+                             'C', 'D', 'E', 'F' -> {
+                            unicodeSequence.put(c);
+
+                            if (unicodeSequence.position() == unicodeSequence.capacity()) {
+                                char[] chars = new char[unicodeSequence.capacity()];
+                                unicodeSequence.flip().get(chars);
+                                int value = Integer.parseInt(String.valueOf(chars), 16);
+                                buffer.appendCodePoint(value);
+                                yield State.STRLIT;
+                            } else {
+                                yield State.STRLIT_UC;
+                            }
                         }
-                    }
+                        default ->
+                                throw new JsonParseException("Unexpected character " + c + " in unicode sequence", row, column);
+                    };
                     case EOF -> throw new JsonParseException("character " + c + " after end of file", row, column);
                 };
             }

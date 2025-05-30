@@ -33,6 +33,15 @@ class JsonWriterTest {
     }
 
     @Test
+    void testStrings() {
+        var src = """
+                Hello "World",  this
+                is / very cool
+                """ + (char)0x01;
+        System.out.println(new JsonString(src).json());
+    }
+
+    @Test
     void testBasics() throws IOException {
         try(var w = new StringWriter(); var jw = JsonWriter.createDefaultWriter(w)) {
             int len = 0;

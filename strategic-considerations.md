@@ -166,11 +166,10 @@ The standard approach would be
         .get("addresses") // a JSON array
         .stream()
         .filter(e -> e instanceof JsonObject(m) && "work".equals(m.get("type"))) // that with type 'work'
-        .map(e -> e instanceof JsonObject(m) ? new WorkAddress(m.get("address"), m.get("city")))
+        .map(e -> e instanceof JsonObject(m) ? new WorkAddress(m.get("city"), m.get("address")))
         .findFirst()
         .orElseThrow();
 
-That's not exactly what we want.
 Instead, we'd rather do something like
 
     var wa = new WorkAddress(
@@ -182,9 +181,46 @@ or even better
 
     var wa = MAGIC.convert(WorkAdress.class, person, "addresses[type=work]");
 
-That magic is dissatisfying. 
+But MAGIC doesn't work in practice when things are becoming more complex.
+Consider this sealed hierarchy
 
-### Conversions to Records
+    sealed interface I permits A, B{int x();}
+    record A(int x, double d) implements I {}
+    record B(int x, boolean b) implements I {}
 
-One the most obvious and tempting conversion functions is the 
-deserialization of JSON data into `record`s.
+and then
+
+    record R(String s, I i) {}
+
+and a JSON text
+
+    {"s":"a string", "i":{"x":5}}
+
+Both `new R("a string", new A(5, 1d))` and `new R("a string", new B(5, true)`
+are possible conversions, but which one shall we use?
+
+Take this example:
+
+    {"t":"2025-05-05"}
+
+Given
+
+    record R(LocalDate t){}
+
+we can easily convert the text into an instance of R using
+the `parse` method of `LocalDate`
+
+    var element = (JsonObject)JsonReader.readElement(text);
+    var r = new R(LocalDate.parse(element.members().get("t").toString()));
+
+We can reflectively get the record components and the static
+methode `parse` which takes a string and returns a `LocalDate`, so 
+we should be able to implement the magic here.
+We found in experiments that things get challenging when
+there is more than one static instance creation method
+or constructor
+in a given class for a single 
+argument of the same type, as is the case for `BigDecimal`.
+These do not necessarily produce identical instances, so it matters
+which of the methods we select.
+

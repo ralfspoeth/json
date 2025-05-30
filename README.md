@@ -57,7 +57,7 @@ to return immutable instances in the end.
 
 ## Current Status
 
-The current version 1.1.41 is mature and stable and
+The current version 1.1.42 is mature and stable and
 will not be changed with respect to the hierarchy of classes
 and interfaces in package `io.github.ralfspoeth.json` and
 the parser implemented through `JsonReader` in package
@@ -73,7 +73,7 @@ which revealed some issues
 parsing especially non-well-formed JSON documents; current progress
 improves upon the current stability. The API surface, however, doesn't change.
 
-You may see the results of the current version 1.1.41
+You may see the results of the current version 1.1.42
 [here](https://docs.google.com/spreadsheets/d/1hP2h1GPPXk9gfiZkIdidtCaWQ7_QPOHvrBrJGqX06Z4/edit?usp=sharing).
 Summarizing, this version accepts no test files starting with `n`, rejects no
 files starting with `y`, rejects all files starting with `i` with encoding related
@@ -103,16 +103,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.1.41</version>
+        <version>1.1.42</version>
     </dependency>
 
 or, when using Gradle (Groovy)
 
-    implementation 'io.github.ralfspoeth:json:1.1.41'
+    implementation 'io.github.ralfspoeth:json:1.1.42'
 
 or, with Gradle (Kotlin), put 
 
-    implementation("io.github.ralfspoeth:json:1.1.41")
+    implementation("io.github.ralfspoeth:json:1.1.42")
 
 in your build file.
 
@@ -652,7 +652,7 @@ Here is a link to a video from Rich Hickey:
 In order to use this Java library, include this in your `deps.edn` file:
 
     {:deps {
-        io.github.ralfspoeth/json {:mvn/version "1.1.41"}
+        io.github.ralfspoeth/json {:mvn/version "1.1.42"}
         }}
 
 Import the `Element` and IO classes into your namespace like this

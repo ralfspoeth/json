@@ -35,7 +35,7 @@ class JsonWriterTest {
     @Test
     void testStrings() {
         var src = """
-                Hello "World",  this
+                Hello "World",\tthis
                 is / very cool
                 """ + (char)0x01;
         System.out.println(new JsonString(src).json());

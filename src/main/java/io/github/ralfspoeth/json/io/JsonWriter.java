@@ -5,11 +5,15 @@ import io.github.ralfspoeth.json.Element;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+
+import static io.github.ralfspoeth.json.JsonString.escape;
 
 public class JsonWriter implements AutoCloseable {
 
@@ -27,6 +31,15 @@ public class JsonWriter implements AutoCloseable {
 
     public void write(Element elem) {
         write(elem, 0);
+    }
+
+    public static String toString(Element elem) {
+        try(var wrt = new StringWriter(); var jwrt = JsonWriter.createDefaultWriter(wrt)) {
+            jwrt.write(elem);
+            return wrt.getBuffer().toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void write(Element el, int level) {
@@ -64,7 +77,7 @@ public class JsonWriter implements AutoCloseable {
 
     private void writeMember(int level, Iterator<Map.Entry<String, Element>> memberIterator) {
         var member = memberIterator.next();
-        write(member.getKey(), member.getValue(), level + 1);
+        write(escape(member.getKey()), member.getValue(), level + 1);
     }
 
     private char[] indentationChars(int level) {

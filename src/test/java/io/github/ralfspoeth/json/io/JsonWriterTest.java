@@ -74,4 +74,18 @@ class JsonWriterTest {
             assertEquals("\"a\"", w.getBuffer().substring(len, len+3));
         }
     }
+
+    @Test
+    void testToString() {
+        // given
+        var arr = Aggregate.arrayBuilder().item(
+                Aggregate.objectBuilder()
+                        .named("a", Basic.of(true))
+                        .named("b", Basic.of(null))
+                        .named("d", Basic.of(1d))).build();
+        // when
+        var str = JsonWriter.toString(arr);
+        // then
+        assertEquals(arr, JsonReader.readElement(str));
+    }
 }

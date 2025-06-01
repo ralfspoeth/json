@@ -1,6 +1,5 @@
 package io.github.ralfspoeth.json.suite;
 
-import io.github.ralfspoeth.json.Element;
 import io.github.ralfspoeth.json.io.JsonParseException;
 import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
@@ -9,26 +8,18 @@ import org.opentest4j.MultipleFailuresError;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JSONTestSuiteTest {
-
-    record Result(Path p, Element element, Throwable exception) {
-    }
+class JSONTestSuiteParseTest extends JSONTestSuiteBase {
 
     private final List<Result> acceptedNs = new ArrayList<>();
     private final List<Result> rejectedYs = new ArrayList<>();
     private final List<Result> acceptedIs = new ArrayList<>();
     private final List<Result> rejectedIs = new ArrayList<>();
-
-    private static final Path RESOURCES = Path.of("src/test/resources");
 
     @Test
     void i_structure_UTF8_BOM_empty_object() throws IOException {
@@ -87,26 +78,11 @@ class JSONTestSuiteTest {
 
     }
 
-
-
-    // parse a single JSON file
-    private Result parse(Path p) {
-        try (var rdr = new JsonReader(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
-            return new Result(p.getFileName(), rdr.readElement(), null);
-        } catch (Throwable t) {
-            return new Result(p.getFileName(), null, t);
-        }
-    }
-
-    private Predicate<Path> fileNameFilter(FileSystem fs, String pattern) {
-        return p -> fs.getPathMatcher("glob:" + pattern).matches(p.getFileName());
-    }
-
     private void collectYs() throws IOException {
         try (var files = Files.list(RESOURCES)) {
             files.filter(fileNameFilter(RESOURCES.getFileSystem(), "y*.json"))
                     .map(this::parse)
-                    .filter(r -> r.exception != null)
+                    .filter(r -> r.exception() != null)
                     .forEach(rejectedYs::add);
         }
     }
@@ -115,7 +91,7 @@ class JSONTestSuiteTest {
         try (var files = Files.list(RESOURCES)) {
             files.filter(fileNameFilter(RESOURCES.getFileSystem(), "n*.json"))
                     .map(this::parse)
-                    .filter(r -> r.exception == null && r.element != null)
+                    .filter(r -> r.exception() == null && r.element() != null)
                     .forEach(acceptedNs::add);
         }
     }
@@ -125,7 +101,7 @@ class JSONTestSuiteTest {
             files.filter(fileNameFilter(RESOURCES.getFileSystem(), "i*.json"))
                     .map(this::parse)
                     .forEach(r -> {
-                        if (r.exception == null) {
+                        if (r.exception() == null) {
                             acceptedIs.add(r);
                         } else {
                             rejectedIs.add(r);
@@ -147,11 +123,11 @@ class JSONTestSuiteTest {
 
     void listResults(List<Result> results, String should, String did) {
         results.forEach(r -> System.out.printf("%s\t%s\t%s\t%s\t%s%n",
-                r.p,
+                r.p(),
                 should,
                 did,
-                r.element == null ? "" : formatJson(r.element.json()),
-                r.exception == null ? "" : r.exception)
+                r.element() == null ? "" : formatJson(r.element().json()),
+                r.exception() == null ? "" : r.exception())
         );
     }
 }

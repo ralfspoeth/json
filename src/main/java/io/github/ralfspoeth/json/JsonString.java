@@ -12,7 +12,7 @@ public record JsonString(String value) implements Basic<String> {
         return "\"%s\"".formatted(escape(value));
     }
 
-    private static String escape(String s) {
+    public static String escape(String s) {
         var tmp = s.replaceAll("\\\\", "\\\\\\\\")
                 .replaceAll("\"", "\\\\\"")
                 .replaceAll("/", "\\\\/")
@@ -23,7 +23,9 @@ public record JsonString(String value) implements Basic<String> {
                 .replaceAll("\t", "\\\\t");
         if(tmp.chars().filter(cp -> 0x00 <= cp && cp <= 0x1F).findFirst().isPresent()) {
             return tmp.chars()
-                    .mapToObj(cp -> 0x00 <= cp && cp <= 0x1F?String.format("\\u%04x", cp):String.valueOf((char)cp))
+                    .mapToObj(cp -> 0x00 <= cp && cp <= 0x1F
+                            ?"\\u%04x".formatted(cp)
+                            :String.valueOf((char)cp))
                     .reduce("", String::concat);
         } else {
             return tmp;

@@ -1,7 +1,7 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
-import org.junit.jupiter.api.Assertions;
+import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -29,6 +29,36 @@ class PathTest {
     }
 
     @Test
+    void ofIndex() {
+        // given
+        var one = Basic.of(1);
+        var two = Basic.of(2);
+        var three = Basic.of(3);
+        // when
+        var a = new JsonArray(List.of(one, two, three));
+        // then
+        assertAll(
+                () -> assertEquals(one, first(a, "[0]")),
+                () -> assertEquals(two, first(a, "[1]")),
+                () -> assertEquals(three, first(a, "[2]")),
+                () -> assertEquals(one, first(a, "[-3]")),
+                () -> assertEquals(two, first(a, "[-2]")),
+                () -> assertEquals(three, first(a, "[-1]")),
+                () -> assertTrue(empty(a, "[-4]")),
+                () -> assertTrue(empty(a, "[3]"))
+        );
+    }
+
+    private static Element first(Element root, String path) {
+        return Path.of(path).first(root).orElseThrow();
+    }
+
+    private static boolean empty(Element root, String path) {
+        return Path.of(path).first(root).isEmpty();
+    }
+
+
+    @Test
     void ofRange() {
         var five = Basic.of(5);
         var singleElemArray = Aggregate.arrayBuilder().item(five).build();
@@ -54,7 +84,7 @@ class PathTest {
                 )))
                 .build();
         var path = Path.of("one/[0..1]/#t.*o");
-        Assertions.assertEquals(Basic.of(5), path.apply(root).findFirst().orElseThrow());
+        assertEquals(Basic.of(5), path.apply(root).findFirst().orElseThrow());
     }
 
     @Test
@@ -62,7 +92,7 @@ class PathTest {
         var path = Path.of("#o.*e");
         var five = Basic.of(5);
         var singleElem = objectBuilder().named("oe", five).build();
-        Assertions.assertEquals(five, path.apply(singleElem).findFirst().orElseThrow());
+        assertEquals(five, path.apply(singleElem).findFirst().orElseThrow());
     }
 
     @Test
@@ -100,6 +130,46 @@ class PathTest {
         assertAll(
                 () -> assertEquals(new JsonString("Zeh"), m.getFirst()),
                 () -> assertEquals(new JsonString("Zeh"), m.getLast())
+        );
+    }
+
+
+    @Test
+    void testSingle() {
+        // given
+        var obj = objectBuilder()
+                .named("a", objectBuilder().named("b", objectBuilder().named("c", Basic.of(5))))
+                .build();
+        // when
+        var path = Path.of("a/b/c");
+        // then
+        assertEquals(5, Path.doubleValue(path, obj));
+    }
+
+    @Test
+    void testComplex() {
+        // given
+        var src = """
+                [{"a": 1, "b": 2, "c": 3}, {"a": 4, "b": 5, "c": 6, "d": 7},
+                 1, 2, 3,
+                 true, false, null,
+                 [[[[]]]],
+                 {"a": 1, "b": 2, "c": 9}
+                ]""";
+        // when
+        var elem = JsonReader.readElement(src);
+        // then
+        assertAll(
+                () -> assertEquals(1, Path.intValue(Path.of("[0]/a"), elem)),
+                () -> assertEquals(3, Path.intValue(Path.of("[0]/c"), elem)),
+                () -> assertEquals(7, Path.intValue(Path.of("[1]/d"), elem)),
+                () -> assertTrue(Path.booleanValue(Path.of("[5]"), elem)),
+                () -> assertEquals(3, Path.intValue(Path.of("[4]"), elem)),
+                () -> assertEquals(9, Path.intValue(Path.of("[9]/c"), elem)),
+                () -> assertEquals(0, Path.intValue(Path.of("[10]/a"), elem)),
+                () -> assertEquals(0, Path.intValue(Path.of("[11]"), elem)),
+                () -> assertEquals(1, Path.intValue(Path.of("[-1]/a"), elem)),
+                () -> assertEquals(0, Path.intValue(Path.of("[50..60]"), elem))
         );
     }
 

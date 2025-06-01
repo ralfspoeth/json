@@ -4,8 +4,10 @@ import io.github.ralfspoeth.json.Element;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -82,7 +84,9 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
 
         @Override
         Stream<Element> evalThis(Element elem) {
-            return elem instanceof JsonObject(Map<String, Element> members) ? Stream.of(members.get(memberName)) : Stream.of();
+            return elem instanceof JsonObject(
+                    Map<String, Element> members
+            ) ? Stream.of(members.get(memberName)) : Stream.of();
         }
 
         @Override
@@ -96,6 +100,38 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         }
     }
 
+    private static final class IndexPath extends Path {
+        private final int index;
+
+        private IndexPath(int index, Path parent) {
+            super(parent);
+            this.index = index;
+        }
+
+        @Override
+        Stream<Element> evalThis(Element elem) {
+            if (elem instanceof JsonArray(var elements)) {
+                if (index >= 0 && index < elements.size()) return Stream.of(elements.get(index));
+                else if (index < 0 && 0 <= elements.size() + index)
+                    return Stream.of(elements.get(elements.size() + index));
+                else return Stream.of();
+            } else {
+                return Stream.of();
+            }
+        }
+
+        @Override
+        boolean equalsLast(Path p) {
+            return p instanceof IndexPath ip && ip.index == index;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(index);
+        }
+
+    }
+
     private static final class RangePath extends Path {
 
         private final int min, max;
@@ -106,15 +142,15 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
             this.max = (max > 0 ? max : Integer.MAX_VALUE);
         }
 
-        Stream<Element> evalArray(JsonArray array) {
+        private Stream<Element> evalArray(List<Element> array) {
             return IntStream.range(min, max)
-                    .limit(array.size())
-                    .mapToObj(i -> array.elements().get(i));
+                    .takeWhile(i -> i < array.size())
+                    .mapToObj(array::get);
         }
 
         @Override
         Stream<Element> evalThis(Element elem) {
-            return elem instanceof JsonArray ja ? evalArray(ja) : Stream.of();
+            return elem instanceof JsonArray(var elements) ? evalArray(elements) : Stream.of();
         }
 
         @Override
@@ -176,7 +212,18 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         return parent == null ? this.evalThis(root) : parent.apply(root).flatMap(this::evalThis);
     }
 
+    Optional<Element> first(Element root) {
+        return apply(root).findFirst();
+    }
+
+    Optional<Element> single(Element root) {
+        var l = apply(root).toList();
+        return l.size() == 1 ? Optional.of(l.get(0)) : Optional.empty();
+    }
+
     abstract Stream<Element> evalThis(Element elem);
+
+    private static final Pattern INDEX_PATTERN = Pattern.compile("\\[(-?\\d+)]");
 
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)]");
 
@@ -184,16 +231,46 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         var parts = requireNonNull(pattern).split("/");
         Path prev = null;
         for (String part : parts) {
-            var m = RANGE_PATTERN.matcher(part);
-            if (m.matches()) {
-                prev = new RangePath(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), prev);
-            } else if (part.startsWith("#")) {
-                prev = new RegexPath(part.substring(1), prev);
+            var im = INDEX_PATTERN.matcher(part);
+            if (im.matches()) {
+                var index = Integer.parseInt(im.group(1));
+                prev = new IndexPath(index, prev);
             } else {
-                prev = new MemberPath(part, prev);
+                var m = RANGE_PATTERN.matcher(part);
+                if (m.matches()) {
+                    prev = new RangePath(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), prev);
+                } else if (part.startsWith("#")) {
+                    prev = new RegexPath(part.substring(1), prev);
+                } else {
+                    prev = new MemberPath(part, prev);
+                }
             }
         }
         return prev;
+    }
+
+    public static double doubleValue(Path p, Element root) {
+        return p.single(root).map(Queries::doubleValue).orElse(0d);
+    }
+
+    public static boolean booleanValue(Path p, Element root) {
+        return p.single(root).map(Queries::booleanValue).orElse(false);
+    }
+
+    public static int intValue(Path p, Element root) {
+        return p.single(root).map(Queries::intValue).orElse(0);
+    }
+
+    public static long longValue(Path p, Element root) {
+        return p.single(root).map(Queries::longValue).orElse(0L);
+    }
+
+    public static <E extends Enum<E>> Enum<E> enumValue(Path p, Element root, Class<E> enumClass) {
+        return p.single(root).map(e -> Queries.enumValue(enumClass, e)).orElse(null);
+    }
+
+    public static String stringValue(Path p, Element root) {
+        return p.single(root).map(Queries::stringValue).orElse(null);
     }
 
     @Override

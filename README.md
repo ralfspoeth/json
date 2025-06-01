@@ -637,16 +637,16 @@ Use this function in order to read JSON data from some
         (with-open [jsrd (JsonReader. rdr)]
         (.readElement jsrd)))
 
-and then, in order to turn the resulting `Element` into
+and then to turn the resulting `Element` into
 a clojure map
 
     (defn map-json ([^Element elem]
         (cond
-          (instance? JsonNull elem) nil,
-          (instance? Basic elem) (.value elem)
-          (instance? JsonArray elem) (mapv map-json (.elements elem))
-          (instance? JsonObject elem) (zipmap
-                                        (map keyword (->> elem (.members) (.keySet))),
-                                        (map map-json (->> elem (.members) (.values)))))))
+          (instance? JsonNull elem) nil,             ; special case JsonNull
+          (instance? Basic elem) (.value elem)       ; basic types
+          (instance? JsonArray elem) (mapv map-json (.elements elem)) ; map into vector
+          (instance? JsonObject elem) (into {} (map  ; map into map  
+            (fn [[k, v]] [(keyword k) (map-json v)]) ; map k-v pair to keyword and json value 
+            (.members ^JsonObject elem)))))          ; each member of the JSON object
 
 

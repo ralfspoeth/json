@@ -10,7 +10,8 @@ import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
-import static io.github.ralfspoeth.json.query.Path.*; // methods under test
+import static io.github.ralfspoeth.json.query.Path.intValue;
+import static io.github.ralfspoeth.json.query.Path.of;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
@@ -193,17 +194,45 @@ class PathTest {
         // then
         assertAll(
                 () -> assertEquals(rect, new Rect(
-                        new Point(intValue("bl/x", obj1), intValue("bl/y", obj1)),
-                        new Point(intValue("tr/x", obj1), intValue("tr/y", obj1)))
+                                new Point(
+                                        intValue("bl/x", obj1),
+                                        intValue("bl/y", obj1)
+                                ),
+                                new Point(
+                                        intValue("tr/x", obj1),
+                                        intValue("tr/y", obj1)
+                                )
+                        )
                 ), () -> assertEquals(rect, new Rect(
-                        new Point(intValue("x1", obj2), intValue("y1", obj2)),
-                        new Point(intValue("x2", obj2), intValue("y2", obj2)))
+                                new Point(
+                                        intValue("x1", obj2),
+                                        intValue("y1", obj2)
+                                ),
+                                new Point(
+                                        intValue("x2", obj2),
+                                        intValue("y2", obj2)
+                                )
+                        )
                 ), () -> assertEquals(rect, new Rect(
-                        new Point(intValue("[0]", arr1), intValue("[1]", arr1)),
-                        new Point(intValue("[2]", arr1), intValue("[3]", arr1)))
+                                new Point(
+                                        intValue("[0]", arr1),
+                                        intValue("[1]", arr1)
+                                ),
+                                new Point(
+                                        intValue("[2]", arr1),
+                                        intValue("[3]", arr1)
+                                )
+                        )
                 ), () -> assertEquals(rect, new Rect(
-                        new Point(intValue("[0]", arr2), intValue("[2]", arr2)),
-                        new Point(intValue("[1]", arr2), intValue("[3]", arr2)))
+                                new Point(
+                                        intValue("[0]", arr2),
+                                        intValue("[2]", arr2)
+                                ),
+                                new Point(
+                                        intValue("[1]", arr2),
+                                        intValue("[3]", arr2)
+                                )
+                        )
                 )
         );
 

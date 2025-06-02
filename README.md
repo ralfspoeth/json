@@ -518,12 +518,14 @@ yields the stream of `true` and `false`.
 Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
 the stream of `5d`.
 
-## The `Queries`
+## The `Queries` and `Path`s
 
 The package `io.github.ralfspoeth.json.query` 
-contains the utility class `Queries`
+contains the utility class `Queries`,
 which converts `Element`s into primitive types `int`, `long`, `double` or 
-`boolean` and to `String` or a given `Enum` type.
+`boolean` and to `String` or a given `Enum` type, and `Path`, which
+builds on `Queries` and combines the navigation to elements in a 
+JSON structure and the conversions provided by `Queries`.
 
 All functions take any `Element` type as an argument and may
 throw `IllegalArgumentException` for the sake of simplicity.
@@ -533,7 +535,7 @@ as well as numbers. These values are parsed into `JsonString` instance;
 their contains is converted into numbers, boolean values and `null` if possible 
 as well.
 
-## Take the Clutter Away
+### Take the Clutter Away
 
 The JSON structure _done right_ as we think gives us the basis for further processing data
 utilizing the pattern matching features of Java. However, there are still situations

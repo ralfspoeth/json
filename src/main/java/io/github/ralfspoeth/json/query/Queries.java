@@ -98,7 +98,7 @@ public class Queries {
      */
     public static Map<String, Element> members(Element elem) {
         return switch(elem) {
-            case JsonObject jo -> jo.members();
+            case JsonObject(var members)-> members;
             case null, default -> Map.of();
         };
     }
@@ -128,7 +128,7 @@ public class Queries {
      */
     public static List<Element> elements(Element elem) {
         return switch (elem) {
-            case JsonArray ja -> ja.elements();
+            case JsonArray(var list) -> list;
             case null, default -> List.of();
         };
     }

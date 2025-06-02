@@ -48,7 +48,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return this;
         }
 
-        public JsonObjectBuilder named(String name, Builder<?> bldr) {
+        public JsonObjectBuilder builder(String name, Builder<?> bldr) {
             return named(name, bldr.build());
         }
 

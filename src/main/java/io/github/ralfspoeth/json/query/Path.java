@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
  * </li>
  * <li>{@code #regex} where {@code regex} is a regular expression; the slash may
  * not be included in this expression. The path matches every member of a JSON
- * object the name part of which matches the given regular expression.
+ * object, the name part of which matches the given regular expression.
  * </li>
  * <li>{@code name} where {@code name} is just the literal member name of JSON
  * object</li>
@@ -253,24 +253,48 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         return p.single(root).map(Queries::doubleValue).orElse(0d);
     }
 
+    public static double doubleValue(String path, Element root) {
+        return doubleValue(of(path), root);
+    }
+
     public static boolean booleanValue(Path p, Element root) {
         return p.single(root).map(Queries::booleanValue).orElse(false);
+    }
+
+    public static boolean booleanValue(String path, Element root) {
+        return booleanValue(of(path), root);
     }
 
     public static int intValue(Path p, Element root) {
         return p.single(root).map(Queries::intValue).orElse(0);
     }
 
+    public static int intValue(String path, Element root) {
+        return intValue(of(path), root);
+    }
+
     public static long longValue(Path p, Element root) {
         return p.single(root).map(Queries::longValue).orElse(0L);
+    }
+
+    public static long longValue(String path, Element root) {
+        return longValue(of(path), root);
     }
 
     public static <E extends Enum<E>> Enum<E> enumValue(Path p, Element root, Class<E> enumClass) {
         return p.single(root).map(e -> Queries.enumValue(enumClass, e)).orElse(null);
     }
 
+    public static <E extends Enum<E>> Enum<E> enumValue(String path, Element root, Class<E> enumClass) {
+        return enumValue(of(path), root, enumClass);
+    }
+
     public static String stringValue(Path p, Element root) {
         return p.single(root).map(Queries::stringValue).orElse(null);
+    }
+
+    public static String stringValue(String path, Element root) {
+        return stringValue(of(path), root);
     }
 
     @Override

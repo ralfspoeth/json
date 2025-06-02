@@ -8,14 +8,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
+import static io.github.ralfspoeth.json.query.Path.*; // methods under test
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
 
     @Test
     void ofEmpty() {
-        assertThrows(NullPointerException.class, () -> Path.of(null));
+        assertThrows(NullPointerException.class, () -> of(null));
     }
 
     @Test
@@ -23,8 +25,8 @@ class PathTest {
         var five = Basic.of(5);
         var singleElem = objectBuilder().named("one", five).build();
         assertAll(
-                () -> assertEquals(Path.of("one"), Path.of("one")),
-                () -> assertTrue(Path.of("one").apply(singleElem).allMatch(five::equals))
+                () -> assertEquals(of("one"), of("one")),
+                () -> assertTrue(of("one").apply(singleElem).allMatch(five::equals))
         );
     }
 
@@ -50,11 +52,11 @@ class PathTest {
     }
 
     private static Element first(Element root, String path) {
-        return Path.of(path).first(root).orElseThrow();
+        return of(path).first(root).orElseThrow();
     }
 
     private static boolean empty(Element root, String path) {
-        return Path.of(path).first(root).isEmpty();
+        return of(path).first(root).isEmpty();
     }
 
 
@@ -64,14 +66,14 @@ class PathTest {
         var singleElemArray = Aggregate.arrayBuilder().item(five).build();
         var multiElemArray = Aggregate.arrayBuilder().item(five).item(five).item(five).build();
         assertAll(
-                () -> assertEquals(Path.of("[0..-5]"), Path.of("[0..-1]")),
-                () -> assertTrue(Path.of("[0..-1]").apply(singleElemArray).allMatch(five::equals)),
-                () -> assertTrue(Path.of("[0..-1]").apply(multiElemArray).allMatch(five::equals)),
-                () -> assertTrue(Path.of("[0..1]").apply(multiElemArray).allMatch(five::equals)),
-                () -> assertTrue(Path.of("[0..2]").apply(multiElemArray).allMatch(five::equals)),
-                () -> assertEquals(2, Path.of("[0..2]").apply(multiElemArray).count()),
-                () -> assertTrue(Path.of("[0..5]").apply(multiElemArray).allMatch(five::equals)),
-                () -> assertEquals(3, Path.of("[0..5]").apply(multiElemArray).count())
+                () -> assertEquals(of("[0..-5]"), of("[0..-1]")),
+                () -> assertTrue(of("[0..-1]").apply(singleElemArray).allMatch(five::equals)),
+                () -> assertTrue(of("[0..-1]").apply(multiElemArray).allMatch(five::equals)),
+                () -> assertTrue(of("[0..1]").apply(multiElemArray).allMatch(five::equals)),
+                () -> assertTrue(of("[0..2]").apply(multiElemArray).allMatch(five::equals)),
+                () -> assertEquals(2, of("[0..2]").apply(multiElemArray).count()),
+                () -> assertTrue(of("[0..5]").apply(multiElemArray).allMatch(five::equals)),
+                () -> assertEquals(3, of("[0..5]").apply(multiElemArray).count())
 
         );
     }
@@ -83,13 +85,13 @@ class PathTest {
                         new JsonObject(Map.of("two", Basic.of(5)))
                 )))
                 .build();
-        var path = Path.of("one/[0..1]/#t.*o");
+        var path = of("one/[0..1]/#t.*o");
         assertEquals(Basic.of(5), path.apply(root).findFirst().orElseThrow());
     }
 
     @Test
     void ofRegex() {
-        var path = Path.of("#o.*e");
+        var path = of("#o.*e");
         var five = Basic.of(5);
         var singleElem = objectBuilder().named("oe", five).build();
         assertEquals(five, path.apply(singleElem).findFirst().orElseThrow());
@@ -98,7 +100,7 @@ class PathTest {
     @Test
     void testFlatMap() {
         var array = JsonArray.ofArray(new int[]{1, 2, 3, 4});
-        var path = Path.of("[0..4]");
+        var path = of("[0..4]");
         assertTrue(Stream.of(array)
                 .flatMap(path)
                 .allMatch(JsonNumber.class::isInstance));
@@ -115,9 +117,9 @@ class PathTest {
                 .build();
 
         var l = Stream.of(obj)
-                .flatMap(Path.of("a"))
-                .flatMap(Path.of("b"))
-                .flatMap(Path.of("c"))
+                .flatMap(of("a"))
+                .flatMap(of("b"))
+                .flatMap(of("c"))
                 .toList();
         assertAll(
                 () -> assertEquals(new JsonString("Zeh"), l.getFirst()),
@@ -125,7 +127,7 @@ class PathTest {
         );
 
         var m = Stream.of(obj)
-                .flatMap(Path.of("a/b/c"))
+                .flatMap(of("a/b/c"))
                 .toList();
         assertAll(
                 () -> assertEquals(new JsonString("Zeh"), m.getFirst()),
@@ -138,10 +140,10 @@ class PathTest {
     void testSingle() {
         // given
         var obj = objectBuilder()
-                .named("a", objectBuilder().named("b", objectBuilder().named("c", Basic.of(5))))
+                .builder("a", objectBuilder().builder("b", objectBuilder().named("c", Basic.of(5))))
                 .build();
         // when
-        var path = Path.of("a/b/c");
+        var path = of("a/b/c");
         // then
         assertEquals(5, Path.doubleValue(path, obj));
     }
@@ -160,17 +162,51 @@ class PathTest {
         var elem = JsonReader.readElement(src);
         // then
         assertAll(
-                () -> assertEquals(1, Path.intValue(Path.of("[0]/a"), elem)),
-                () -> assertEquals(3, Path.intValue(Path.of("[0]/c"), elem)),
-                () -> assertEquals(7, Path.intValue(Path.of("[1]/d"), elem)),
-                () -> assertTrue(Path.booleanValue(Path.of("[5]"), elem)),
-                () -> assertEquals(3, Path.intValue(Path.of("[4]"), elem)),
-                () -> assertEquals(9, Path.intValue(Path.of("[9]/c"), elem)),
-                () -> assertEquals(0, Path.intValue(Path.of("[10]/a"), elem)),
-                () -> assertEquals(0, Path.intValue(Path.of("[11]"), elem)),
-                () -> assertEquals(1, Path.intValue(Path.of("[-1]/a"), elem)),
-                () -> assertEquals(0, Path.intValue(Path.of("[50..60]"), elem))
+                () -> assertEquals(1, intValue(of("[0]/a"), elem)),
+                () -> assertEquals(3, intValue(of("[0]/c"), elem)),
+                () -> assertEquals(7, intValue(of("[1]/d"), elem)),
+                () -> assertTrue(Path.booleanValue(of("[5]"), elem)),
+                () -> assertEquals(3, intValue(of("[4]"), elem)),
+                () -> assertEquals(9, intValue(of("[9]/c"), elem)),
+                () -> assertEquals(0, intValue(of("[10]/a"), elem)),
+                () -> assertEquals(0, intValue(of("[11]"), elem)),
+                () -> assertEquals(1, intValue(of("[-1]/a"), elem)),
+                () -> assertEquals(0, intValue(of("[50..60]"), elem))
         );
+    }
+
+    @Test
+    void testRect() {
+        // given
+        record Point(int x, int y) {}
+        record Rect(Point bottomLeft, Point topRight) {}
+        var rect = new Rect(new Point(1, 2), new Point(3, 4));
+        // when
+        var obj1 = objectBuilder()
+                .builder("bl", objectBuilder().basic("x", 1).basic("y", 2))
+                .builder("tr", objectBuilder().basic("x", 3).basic("y", 4))
+                .build();
+        var obj2 = objectBuilder().named("x1", Basic.of(1)).named("y1", Basic.of(2))
+                .named("x2", Basic.of(3)).named("y2", Basic.of(4)).build();
+        var arr1 = arrayBuilder().item(Basic.of(1)).item(Basic.of(2)).item(Basic.of(3)).item(Basic.of(4)).build();
+        var arr2 = arrayBuilder().item(Basic.of(1)).item(Basic.of(3)).item(Basic.of(2)).item(Basic.of(4)).build();
+        // then
+        assertAll(
+                () -> assertEquals(rect, new Rect(
+                        new Point(intValue("bl/x", obj1), intValue("bl/y", obj1)),
+                        new Point(intValue("tr/x", obj1), intValue("tr/y", obj1)))
+                ), () -> assertEquals(rect, new Rect(
+                        new Point(intValue("x1", obj2), intValue("y1", obj2)),
+                        new Point(intValue("x2", obj2), intValue("y2", obj2)))
+                ), () -> assertEquals(rect, new Rect(
+                        new Point(intValue("[0]", arr1), intValue("[1]", arr1)),
+                        new Point(intValue("[2]", arr1), intValue("[3]", arr1)))
+                ), () -> assertEquals(rect, new Rect(
+                        new Point(intValue("[0]", arr2), intValue("[2]", arr2)),
+                        new Point(intValue("[1]", arr2), intValue("[3]", arr2)))
+                )
+        );
+
     }
 
 }

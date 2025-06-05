@@ -1,22 +1,15 @@
 # Java JSON IO Library
 
-This project implements a JSON parser and serializer 
-which operates around immutable data structures for 
-the JSON elements, that is: text to JSON and JSON to text.
+A modern Java library for parsing JSON into **immutable data structures** and serializing them back to text. It features a robust parser, a fluent builder API, efficient UTF-8 serialization, and powerful query functions to transform JSON elements into your Java objects.
 
-The library contains some standard query functions
-that are to be used to transform JSON elements
-into objects of arbitrary classes.
+## Core Goals
 
-## Motivation
+*   **Immutable JSON Representation**: Work with JSON data that cannot change after creation, ensuring thread safety and predictable state.
+*   **Robust Parsing**: Reliably parse all legal JSON documents and streams.
+*   **Fluent Builder API**: Construct complex JSON objects and arrays with ease.
+*   **Efficient Serialization**: Quickly serialize JSON elements into UTF-8 text streams.
 
-The goals for this library are
-* having an immutable representation of JSON elements,
-* to provide a robust parser of legal JSON documents and streams,
-* a fluent builder API, and
-* efficient serialization of JSON elements into UTF-8 text streams.
-
-Find more the motivation [here](motivation.md)
+Find more on the motivation [here](motivation.md).
 
 ## Current Status
 

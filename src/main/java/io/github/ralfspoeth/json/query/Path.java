@@ -22,6 +22,9 @@ import static java.util.Objects.requireNonNull;
  * using the slash {@code /} as separator and then each component matches a
  * pattern of the following form:
  * <ul>
+ * <li>{@code [n]} where {@code n} is an integer denoting the index of the
+ * element in JSON array. Negative values of {@code n} point to the n-th element
+ * from the end of the array.</li>
  * <li>{@code [a..b]} where {@code a} is non-negative integer and {@code b} any
  * integer; resolves to the range from {@code a} inclusively to {@code b}
  * exclusively and may be applied to JSON arrays. A negative value of {@code b}

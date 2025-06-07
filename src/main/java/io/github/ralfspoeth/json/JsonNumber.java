@@ -5,16 +5,16 @@ public record JsonNumber(double numVal) implements Basic<Double> {
 
     @Override
     public String json() {
-        return Double.toString(numVal);
+        return Double.toString(numVal());
     }
 
     @Override
     public Double value() {
-        return numVal;
+        return numVal();
     }
 
     @Override
     public boolean test(Double aDouble) {
-        return Double.compare(aDouble, numVal) == 0;
+        return Double.compare(aDouble, numVal()) == 0;
     }
 }

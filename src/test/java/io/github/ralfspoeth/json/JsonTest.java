@@ -32,7 +32,7 @@ class JsonTest {
         String jsonString = "{\"name\":\"test\",\"value\":123}";
         Element element = Json.read(jsonString);
         assertNotNull(element);
-        assertTrue(element instanceof JsonObject);
+        assertInstanceOf(JsonObject.class, element);
         JsonObject jo = (JsonObject) element;
         assertEquals(new JsonString("test"), jo.members().get("name"));
         assertEquals(new JsonNumber(123), jo.members().get("value"));
@@ -66,10 +66,10 @@ class JsonTest {
         Reader reader = new StringReader(jsonString);
         Element element = Json.read(reader);
         assertNotNull(element);
-        assertTrue(element instanceof JsonArray);
+        assertInstanceOf(JsonArray.class, element);
         JsonArray ja = (JsonArray) element;
         assertEquals(2, ja.elements().size());
-        assertEquals(new JsonString("apple"), ja.elements().get(0));
+        assertEquals(new JsonString("apple"), ja.elements().getFirst());
     }
 
     @Test
@@ -88,17 +88,20 @@ class JsonTest {
     }
 
     @Test
-    void testReadFromReader_ioExceptionDuringRead() {
-        Reader faultyReader = new Reader() {
+    void testReadFromReader_ioExceptionDuringRead() throws IOException {
+        try (Reader faultyReader = new Reader() {
             @Override
             public int read(char[] cbuf, int off, int len) throws IOException {
                 throw new IOException("Simulated read error");
             }
+
             @Override
-            public void close() throws IOException {}
-        };
-        // Json.read(Reader) declares IOException
-        assertThrows(IOException.class, () -> Json.read(faultyReader));
+            public void close() {
+            }
+        }) {
+            // Json.read(Reader) declares IOException
+            assertThrows(IOException.class, () -> Json.read(faultyReader));
+        }
     }
 
 
@@ -160,12 +163,12 @@ class JsonTest {
         assertNotNull(elements);
         assertEquals(6, elements.size());
 
-        assertTrue(elements.get(0) instanceof JsonObject);
+        assertInstanceOf(JsonObject.class, elements.get(0));
         assertEquals(new JsonNumber(1), ((JsonObject)elements.get(0)).members().get("id"));
 
         assertEquals(new JsonString("test_string"), elements.get(1));
 
-        assertTrue(elements.get(2) instanceof JsonArray);
+        assertInstanceOf(JsonArray.class, elements.get(2));
         assertEquals(3, ((JsonArray)elements.get(2)).elements().size());
 
         assertEquals(JsonNull.INSTANCE, elements.get(3));
@@ -176,21 +179,22 @@ class JsonTest {
     @Test
     void testStream_emptyReader() throws IOException {
         Reader reader = new StringReader("");
-        List<Element> elements = Json.stream(reader).collect(Collectors.toList());
+        List<Element> elements = Json.stream(reader).toList();
         assertTrue(elements.isEmpty());
     }
 
     @Test
     void testStream_readerWithOnlyWhitespace() throws IOException {
         Reader reader = new StringReader("   \n \t  ");
-        List<Element> elements = Json.stream(reader).collect(Collectors.toList());
+        List<Element> elements = Json.stream(reader).toList();
         assertTrue(elements.isEmpty());
     }
 
     @Test
-    void testStream_ioExceptionDuringStream() {
-        Reader faultyReader = new Reader() {
+    void testStream_ioExceptionDuringStream() throws IOException {
+        try (Reader faultyReader = new Reader() {
             private boolean firstRead = true;
+
             @Override
             public int read(char[] cbuf, int off, int len) throws IOException {
                 if (firstRead) { // Allow initial read for JsonReader setup if any
@@ -203,16 +207,19 @@ class JsonTest {
                 }
                 throw new IOException("Simulated stream read error");
             }
-            @Override
-            public void close() throws IOException {}
-        };
 
-        // The IOException should propagate from the stream's spliterator
-        assertThrows(IOException.class, () -> {
-            try (Stream<Element> stream = Json.stream(faultyReader)) {
-                stream.collect(Collectors.toList());
+            @Override
+            public void close() {
             }
-        });
+        }) {
+
+            // The IOException should propagate from the stream's spliterator
+            assertThrows(IOException.class, () -> {
+                try (Stream<Element> stream = Json.stream(faultyReader)) {
+                    stream.toList();
+                }
+            });
+        }
     }
 
     @Test
@@ -224,7 +231,7 @@ class JsonTest {
         // It might throw an unchecked exception when .next() is called on the invalid part.
         assertThrows(IllegalArgumentException.class, () -> {
             try (Stream<Element> stream = Json.stream(reader)) {
-                stream.collect(Collectors.toList()); // Consumption triggers parsing
+                stream.toList(); // Consumption triggers parsing
             }
         });
     }

@@ -1,9 +1,12 @@
 package io.github.ralfspoeth.json;
 
 import io.github.ralfspoeth.json.io.JsonReader;
+import io.github.ralfspoeth.json.io.JsonWriter;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -21,6 +24,16 @@ public class Json {
         try(var jr = new JsonReader(rdr)) {
             return jr.readElement();
         }
+    }
+
+    public static void write(Writer writer, Element elem) {
+        try(var wrt = JsonWriter.createDefaultWriter(writer)) {
+            wrt.write(elem);
+        }
+    }
+
+    public static void writeToSystemOut(Element elem) {
+        write(new PrintWriter(System.out), elem);
     }
 
     public static Stream<Element> stream(Reader rdr) throws IOException {

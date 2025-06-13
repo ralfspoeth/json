@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.*;
 import static java.util.Spliterators.spliteratorUnknownSize;
 
@@ -26,12 +27,21 @@ public class Json {
         }
     }
 
+    /**
+     * Serialize the {@link Element} to the {@link Writer}.
+     * @param writer a writer, must not be {@code null}
+     * @param elem the element to serialize, must not be {@code null}
+     */
     public static void write(Writer writer, Element elem) {
-        try(var wrt = JsonWriter.createDefaultWriter(writer)) {
-            wrt.write(elem);
+        try(var wrt = JsonWriter.createDefaultWriter(requireNonNull(writer))) {
+            wrt.write(requireNonNull(elem));
         }
     }
 
+    /**
+     * Serialize the {@link Element} to {@code System.out}.
+     * @param elem the element to serialize, must not be {@code null}
+     */
     public static void writeToSystemOut(Element elem) {
         write(new PrintWriter(System.out), elem);
     }

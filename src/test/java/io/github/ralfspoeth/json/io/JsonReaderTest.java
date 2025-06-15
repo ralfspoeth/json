@@ -7,9 +7,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,17 +61,6 @@ class JsonReaderTest {
                 () -> assertNull(result.elem),
                 () -> assertInstanceOf(JsonParseException.class, result.ex)
         );
-    }
-    @Test
-    void testCommaAfterObjectClose() throws IOException {
-        var src = "[],";
-        try(var jr = new JsonReader(new StringReader(src))) {
-            assertAll(
-                    () -> assertTrue(jr.hasNext()),
-                    () -> assertEquals(new JsonArray(List.of()), jr.next()),
-                    () -> assertThrows(JsonParseException.class, jr::hasNext)
-            );
-        }
     }
 
     @Test
@@ -261,20 +247,6 @@ class JsonReaderTest {
         try (var src = largeFile(); var rdr = new JsonReader(src)) {
             var result = rdr.readElement();
             assertNotNull(result);
-        }
-    }
-
-    @Test
-    void testIterator() throws IOException {
-        try (var src = new StringReader("1 2 3"); var jdr = new JsonReader(src)) {
-            var l = StreamSupport.stream(Spliterators.spliteratorUnknownSize(jdr, Spliterator.IMMUTABLE), false)
-                    .toList();
-            assertArrayEquals(new Object[]{
-                    new JsonNumber(1),
-                            new JsonNumber(2),
-                            new JsonNumber(3)
-                    }, l.toArray()
-            );
         }
     }
 

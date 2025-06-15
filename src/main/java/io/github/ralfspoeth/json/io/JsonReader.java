@@ -9,11 +9,16 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
 import static io.github.ralfspoeth.json.io.Lexer.FixToken.*;
-import static io.github.ralfspoeth.json.io.Lexer.Type.*;
+import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.NONNULL;
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 /**
  * Instances parse character streams into JSON {@link Element}s.
@@ -29,7 +34,7 @@ import static io.github.ralfspoeth.json.io.Lexer.Type.*;
  * The class supports strict adherence to the JSON specification
  * exclusively; there is no support for the sloppy variant.
  */
-public class JsonReader implements AutoCloseable, Iterator<Element> {
+public class JsonReader implements AutoCloseable {
 
     private final Lexer lexer;
 
@@ -40,7 +45,12 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
      * @param src the character source
      */
     public JsonReader(Reader src) {
+        this(src, false);
+    }
+
+    private JsonReader(Reader src, boolean piped) {
         this.lexer = new Lexer(src);
+        this.usedInStreamPipeline = piped;
     }
 
     sealed interface Elem {
@@ -92,8 +102,10 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
         var result = readNextElement();
         if (lexer.hasNext()) {
             throw new JsonParseException("Input contains tokens after the first element", lexer.coordinates().row(), lexer.coordinates().column());
-        } else {
+        } else if (result != null) {
             return result;
+        } else {
+            throw new JsonParseException("Source is empty", lexer.coordinates().row(), lexer.coordinates().column());
         }
     }
 
@@ -195,7 +207,7 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
             }
         }
 
-        // an empty stack is okay, signalling
+        // an empty stack is okay, signaling
         // that the input stream contains nothing but whitespace
         if (stack.isEmpty()) {
             return null;
@@ -251,14 +263,13 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
 
     private static Basic<?> token2Value(Lexer.Token tkn) {
         return switch (tkn) {
-            case Lexer.LiteralToken(var type, var val) ->
-                switch(type) {
-                    case NULL -> JsonNull.INSTANCE;
-                    case TRUE -> JsonBoolean.TRUE;
-                    case FALSE -> JsonBoolean.FALSE;
-                    case STRING -> new JsonString(val);
-                    case NUMBER -> new JsonNumber(Double.parseDouble(val));
-                };
+            case Lexer.LiteralToken(var type, var val) -> switch (type) {
+                case NULL -> JsonNull.INSTANCE;
+                case TRUE -> JsonBoolean.TRUE;
+                case FALSE -> JsonBoolean.FALSE;
+                case STRING -> new JsonString(val);
+                case NUMBER -> new JsonNumber(Double.parseDouble(val));
+            };
             case Lexer.FixToken ignored -> throw new AssertionError();
         };
     }
@@ -268,26 +279,52 @@ public class JsonReader implements AutoCloseable, Iterator<Element> {
         throw new JsonParseException(msg, coordinates.row(), coordinates.column());
     }
 
-    private Element next = null;
+    private static class ElementIterator implements Iterator<Element> {
 
-    @Override
-    public boolean hasNext() {
-        try {
-            return (next = readNextElement()) != null;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        private final JsonReader jr;
+        private Element next = null;
+
+        private ElementIterator(JsonReader jr) {
+            this.jr = jr;
+        }
+
+        @Override
+        public boolean hasNext() {
+            try {
+                return (next = jr.readNextElement()) != null;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Element next() {
+            var ret = next;
+            next = null;
+            return ret;
         }
     }
 
-    @Override
-    public Element next() {
-        var ret = next;
-        next = null;
-        return ret;
-    }
+    private final boolean usedInStreamPipeline;
 
     @Override
     public void close() throws IOException {
-        lexer.close();
+        if(!usedInStreamPipeline) lexer.close();
+    }
+
+    private void closeInStream() {
+        try {
+            lexer.close();
+        } catch (IOException ioex) {
+            throw new RuntimeException(ioex);
+        }
+    }
+
+    public static Stream<Element> stream(Reader rdr) throws IOException {
+        try(var jr = new JsonReader(rdr, true)) {
+            return StreamSupport.stream(
+                    spliteratorUnknownSize(new ElementIterator(jr), NONNULL | IMMUTABLE), false
+            ).onClose(jr::closeInStream);
+        }
     }
 }

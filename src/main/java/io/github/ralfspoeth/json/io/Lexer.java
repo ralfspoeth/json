@@ -47,10 +47,12 @@ class Lexer implements AutoCloseable {
 
     private final PushbackReader source;
 
-    Lexer(Reader source) {
-        this.source = source instanceof PushbackReader pr ? pr :
-                source instanceof BufferedReader br ? new PushbackReader(br) :
-                        new PushbackReader(new BufferedReader(source));
+    Lexer(Reader rdr) {
+        this.source = switch(rdr) {
+            case PushbackReader pr -> pr;
+            case BufferedReader br -> new PushbackReader(br);
+            default -> new PushbackReader(new BufferedReader(rdr));
+        };
     }
 
     static Stream<Token> tokenStream(Reader rdr) {

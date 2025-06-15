@@ -8,11 +8,8 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.Spliterator.*;
-import static java.util.Spliterators.spliteratorUnknownSize;
 
 public class Json {
     private Json() {}
@@ -47,10 +44,6 @@ public class Json {
     }
 
     public static Stream<Element> stream(Reader rdr) throws IOException {
-        try(var jr = new JsonReader(rdr)) {
-            return StreamSupport.stream(
-                    spliteratorUnknownSize(jr, ORDERED | NONNULL | IMMUTABLE), false
-            );
-        }
+        return JsonReader.stream(rdr);
     }
 }

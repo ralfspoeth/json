@@ -54,24 +54,27 @@ import static java.util.Objects.requireNonNull;
  *       """;
  * var elem = JsonReader.readElement(given);
  *
- * // when p matches any element beginning with the third and then each member starts with 'a'
+ * // when p matches any element beginning with the third
+ * // and then each member starts with 'a'
  * Path p = Path.of("[2, -1]/#a.*");
  *
  * // then
  * List<Element> result = p.apply(given).toList();
- * assert result.size() == 3; // three members of the last JSON objects start with 'a' assert
- * assert result.get(0) == JsonBoolean.TRUE;
- * assert result.get(1).equals(new JsonNumber(2));
- * assert result.get(2).equals(new JsonNumber(3));
+ * assert result.size() == 3; // three JSON objects...
+ * assert result.get(0) == JsonBoolean.TRUE; // the "aa" member of the third object
+ * assert result.get(1).equals(new JsonNumber(2)); // the "ab" member of the fourth
+ * assert result.get(2).equals(new JsonNumber(3)); // the "ac" member of the fifth
  *}
  * <p>
  * The class implements {@link Function} such that it may be used in stream
  * pipelines easily as in
  * <p>
  * {@snippet :
- * import io.github.ralfspoeth.json.JsonArray;Path p = Path.of("..."); // @replace regex='"..."' replacement="..."
- * JsonArray a = new JsonArray(List.of()); // @replace regex='List.of()' replacement='...'
- * var result = a.stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
+ * import java.util.List;
+ * import io.github.ralfspoeth.json.*;
+ * Path p = Path.of("..."); // @replace regex='"..."' replacement="..."
+ * JsonArray a = new JsonArray(List.of()); // @replace regex='new JsonArray(List.of())' replacement='...'
+ * List<Element> result = a.stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
  *}
  */
 public sealed abstract class Path implements Function<Element, Stream<Element>> {

@@ -3,7 +3,10 @@ package io.github.ralfspoeth.json.io;
 import io.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -38,7 +41,8 @@ class JsonWriterTest {
                 Hello "World",\tthis
                 is / very cool
                 """ + (char)0x01;
-        System.out.println(new JsonString(src).json());
+        var json = "\"Hello \\\"World\\\",\\tthis\\nis \\/ very cool\\n\\u0001\"";
+        assertEquals(json, new JsonString(src).json());
     }
 
     @Test

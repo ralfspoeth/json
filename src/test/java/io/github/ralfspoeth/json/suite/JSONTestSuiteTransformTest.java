@@ -33,7 +33,7 @@ class JSONTestSuiteTransformTest extends JSONTestSuiteBase {
     }
 
     @Test
-    void transformAll() throws IOException {
+    void transformYs() throws IOException {
         try (var files = Files.list(RESOURCES)) {
             var execs = files.filter(fileNameFilter(RESOURCES.getFileSystem(), "y*.json"))
                     .map(this::testTransform)

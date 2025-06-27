@@ -199,7 +199,7 @@ types as in `[null, true, false, 1, {"x":5}, [2, 3, 4]]`
 
 The two only instances of type `Boolean` are `true` and 
 `false` in JSON notation; we model them as an enum
-because it is implicitly final and the behaviour
+because it is implicitly final and the behavior
 of its `equals` and `hashCode` methods comes without
 any surprises.
 
@@ -418,8 +418,8 @@ It utilizes an inner sealed interface to cater for this limited set of stack ele
 ## JsonWriter
 
 The `JsonWriter` class is instantiated with its 
-default behaviour of indenting the members of JSON 
-objects by 4 characters and putting each member in 
+default behavior of indenting the members of JSON 
+objects by four characters and putting each member in 
 a separate line. Arrays are printed interspersed 
 by commas and a white space but in a single line.
 

@@ -2,7 +2,9 @@ package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
@@ -242,8 +244,7 @@ public class Queries {
     }
 
     /**
-     * Converts a {@link JsonString} to an {@link Enum} value ignore the case of the value
-     * of the string.
+     * Converts a {@link JsonString} to an {@link Enum} instance ignoring the case of the string.
      * {@snippet :
      * // given
      * enum E{a, b}

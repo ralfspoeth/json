@@ -23,7 +23,7 @@ and provide implementations very much like
 
 The problem is that while possible almost
 all the names collide with class names in the
-core package `java.lang`; once we consider modelling
+core package `java.lang`; once we consider modeling
 the `String` class as `record` with a single
 component of class `java.lang.String` things
 start to get clumsy. We therefore decided to

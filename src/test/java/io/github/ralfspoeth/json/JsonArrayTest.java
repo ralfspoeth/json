@@ -20,14 +20,14 @@ class JsonArrayTest {
 
     @Test
     void testNoNulls() {
-        List<Element> elems = new ArrayList<>();
+        List<JsonValue> elems = new ArrayList<>();
         elems.add(null);
         assertThrows(NullPointerException.class, () -> new JsonArray(elems));
     }
 
     @Test
     void testIntFunction() {
-        List<Element> elems = List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, new JsonNumber(5d));
+        List<JsonValue> elems = List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, new JsonNumber(5d));
         var ja = new JsonArray(elems);
         assertAll(
                 () -> assertEquals(elems.size(), ja.elements().size()),

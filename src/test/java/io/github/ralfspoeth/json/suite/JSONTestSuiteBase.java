@@ -1,6 +1,6 @@
 package io.github.ralfspoeth.json.suite;
 
-import io.github.ralfspoeth.json.Element;
+import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.io.JsonReader;
 
 import java.nio.charset.StandardCharsets;
@@ -25,6 +25,6 @@ class JSONTestSuiteBase {
         }
     }
 
-    record Result(Path p, Element element, Throwable exception) {
+    record Result(Path p, JsonValue element, Throwable exception) {
     }
 }

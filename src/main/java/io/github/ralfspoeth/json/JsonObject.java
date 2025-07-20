@@ -11,7 +11,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
-public record JsonObject(Map<String, Element> members) implements Aggregate, Function<String, Element> {
+public record JsonObject(Map<String, JsonValue> members) implements Aggregate, Function<String, JsonValue> {
 
     public JsonObject {
         members = Map.copyOf(requireNonNullElse(members, Map.of()));
@@ -28,7 +28,7 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
             var name = comp.getName();
             try {
                 var value = comp.getAccessor().invoke(r);
-                ob.named(name, Element.of(value));
+                ob.named(name, JsonValue.of(value));
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
@@ -39,7 +39,7 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
     public static JsonObject ofMap(Map<?, ?> map) {
         var members = map.entrySet()
                 .stream()
-                .collect(toMap(String::valueOf, Element::of));
+                .collect(toMap(String::valueOf, JsonValue::of));
         return new JsonObject(members);
     }
 
@@ -52,12 +52,12 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
     public int depth() {
         return members.values()
                 .stream()
-                .mapToInt(Element::depth)
+                .mapToInt(JsonValue::depth)
                 .max()
                 .orElse(0) + 1;
     }
 
-    public <T extends Element> T get(String name, Class<T> cls) {
+    public <T extends JsonValue> T get(String name, Class<T> cls) {
         return ofNullable(members.get(name)).map(cls::cast).orElse(null);
     }
 
@@ -69,7 +69,7 @@ public record JsonObject(Map<String, Element> members) implements Aggregate, Fun
     }
 
     @Override
-    public Element apply(String name) {
-        return get(name, Element.class);
+    public JsonValue apply(String name) {
+        return get(name, JsonValue.class);
     }
 }

@@ -2,7 +2,7 @@ package io.github.ralfspoeth.json;
 
 import java.util.function.Predicate;
 
-public sealed interface Basic<T> extends Element, Predicate<T> permits JsonBoolean, JsonNull, JsonNumber, JsonString {
+public sealed interface Basic<T> extends JsonValue, Predicate<T> permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 
     String json();
     T value();

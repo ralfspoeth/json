@@ -1,6 +1,9 @@
 # Java JSON IO Library
 
-A modern Java library for parsing JSON into **immutable data structures** and serializing them back to text. It features a robust parser, a fluent builder API, efficient UTF-8 serialization, and powerful query functions to transform JSON elements into your Java objects.
+A modern Java library for parsing JSON into **immutable data structures** 
+and serializing them back to text. It features a robust parser, a fluent builder API, 
+efficient UTF-8 serialization, and powerful query functions to transform JSON 
+elements into your Java objects.
 
 ## Core Goals
 
@@ -25,7 +28,7 @@ development, are forming a fundamental part of the library.
 
 ## JSON Test Suite
 
-Beginning with version 1.1.25 we've added a number of tests
+Beginning with version 1.1.25, we've added a number of tests
 from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite) 
 which revealed some issues 
 parsing especially non-well-formed JSON documents; current progress

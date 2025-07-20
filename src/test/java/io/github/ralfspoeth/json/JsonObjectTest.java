@@ -20,7 +20,7 @@ class JsonObjectTest {
 
     @Test
     void testNoNulls() {
-        Map<String, Element> map = new HashMap<>();
+        Map<String, JsonValue> map = new HashMap<>();
         map.put("x", null);
         assertThrows(NullPointerException.class, () -> new JsonObject(map));
     }

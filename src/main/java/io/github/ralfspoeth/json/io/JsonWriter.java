@@ -1,7 +1,7 @@
 package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.json.Basic;
-import io.github.ralfspoeth.json.Element;
+import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
@@ -29,11 +29,11 @@ public class JsonWriter implements AutoCloseable {
         return new JsonWriter(4, out);
     }
 
-    public void write(Element elem) {
+    public void write(JsonValue elem) {
         write(elem, 0);
     }
 
-    public static String toString(Element elem) {
+    public static String toString(JsonValue elem) {
         try(var wrt = new StringWriter(); var jwrt = JsonWriter.createDefaultWriter(wrt)) {
             jwrt.write(elem);
             return wrt.getBuffer().toString();
@@ -42,7 +42,7 @@ public class JsonWriter implements AutoCloseable {
         }
     }
 
-    private void write(Element el, int level) {
+    private void write(JsonValue el, int level) {
         char[] chars = indentationChars(level);
         switch (el) {
             case JsonObject jo -> {
@@ -75,7 +75,7 @@ public class JsonWriter implements AutoCloseable {
         }
     }
 
-    private void writeMember(int level, Iterator<Map.Entry<String, Element>> memberIterator) {
+    private void writeMember(int level, Iterator<Map.Entry<String, JsonValue>> memberIterator) {
         var member = memberIterator.next();
         write(escape(member.getKey()), member.getValue(), level + 1);
     }
@@ -86,7 +86,7 @@ public class JsonWriter implements AutoCloseable {
         return chars;
     }
 
-    private void write(String name, Element elem, int level) {
+    private void write(String name, JsonValue elem, int level) {
         var chars = indentationChars(level);
         out.print(chars);
         out.print('"');

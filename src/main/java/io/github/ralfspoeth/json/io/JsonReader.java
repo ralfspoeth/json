@@ -21,7 +21,7 @@ import static java.util.Spliterator.NONNULL;
 import static java.util.Spliterators.spliteratorUnknownSize;
 
 /**
- * Instances parse character streams into JSON {@link Element}s.
+ * Instances parse character streams into JSON {@link JsonValue}s.
  * The class implements {@link AutoCloseable} and is meant to
  * be used in try-with-resources statements like this:
  * {@snippet :
@@ -70,7 +70,7 @@ public class JsonReader implements AutoCloseable {
 
         enum Char implements Elem {colon, comma}
 
-        record Root(Element elem) implements Elem {
+        record Root(JsonValue elem) implements Elem {
         }
     }
 
@@ -84,7 +84,7 @@ public class JsonReader implements AutoCloseable {
      * @param s the source string
      * @return the element representing the source string
      */
-    public static Element readElement(String s) {
+    public static JsonValue readElement(String s) {
         try (var rdr = new JsonReader(new StringReader(s))) {
             return rdr.readElement();
         } catch (IOException ioex) {
@@ -98,7 +98,7 @@ public class JsonReader implements AutoCloseable {
      * @return the JSON element
      * @throws IOException whenever the underlying source throws
      */
-    public Element readElement() throws IOException {
+    public JsonValue readElement() throws IOException {
         var result = readNextElement();
         if (lexer.hasNext()) {
             throw new JsonParseException("Input contains tokens after the first element", lexer.coordinates().row(), lexer.coordinates().column());
@@ -109,7 +109,7 @@ public class JsonReader implements AutoCloseable {
         }
     }
 
-    private Element readNextElement() throws IOException {
+    private JsonValue readNextElement() throws IOException {
         // repeat to take the next token while the lexer has more tokens available
         // and either the stack is empty or,
         // in case we expect to read more than one JSON element from the potentially unbounded source,
@@ -223,7 +223,7 @@ public class JsonReader implements AutoCloseable {
 
     // handle tokens UNLESS these are element names
     // in a JSON object
-    private void handle(String token, Element v) {
+    private void handle(String token, JsonValue v) {
         switch (stack.top()) {
             // stack is empty
             case null -> stack.push(new Elem.Root(v));
@@ -279,10 +279,10 @@ public class JsonReader implements AutoCloseable {
         throw new JsonParseException(msg, coordinates.row(), coordinates.column());
     }
 
-    private static class ElementIterator implements Iterator<Element> {
+    private static class ElementIterator implements Iterator<JsonValue> {
 
         private final JsonReader jr;
-        private Element next = null;
+        private JsonValue next = null;
 
         private ElementIterator(JsonReader jr) {
             this.jr = jr;
@@ -298,7 +298,7 @@ public class JsonReader implements AutoCloseable {
         }
 
         @Override
-        public Element next() {
+        public JsonValue next() {
             var ret = next;
             next = null;
             return ret;
@@ -320,7 +320,7 @@ public class JsonReader implements AutoCloseable {
         }
     }
 
-    public static Stream<Element> stream(Reader rdr) throws IOException {
+    public static Stream<JsonValue> stream(Reader rdr) throws IOException {
         try(var jr = new JsonReader(rdr, true)) {
             return StreamSupport.stream(
                     spliteratorUnknownSize(new ElementIterator(jr), NONNULL | IMMUTABLE), false

@@ -89,7 +89,7 @@ class QueriesTest {
                 .build();
 
         // extracts the member named "e", first three letters of the value, then to upper case
-        Function<Element, String> extr = elem -> elem instanceof JsonObject(Map<String, Element> members)
+        Function<JsonValue, String> extr = elem -> elem instanceof JsonObject(Map<String, JsonValue> members)
                 ? stringValue(members.get("e"), null).substring(0, 3).toUpperCase()
                 : null;
 

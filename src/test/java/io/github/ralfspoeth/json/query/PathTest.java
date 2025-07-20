@@ -52,11 +52,11 @@ class PathTest {
         );
     }
 
-    private static Element first(Element root, String path) {
+    private static JsonValue first(JsonValue root, String path) {
         return of(path).first(root).orElseThrow();
     }
 
-    private static boolean empty(Element root, String path) {
+    private static boolean empty(JsonValue root, String path) {
         return of(path).first(root).isEmpty();
     }
 

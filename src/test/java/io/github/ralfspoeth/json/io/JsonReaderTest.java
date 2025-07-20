@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JsonReaderTest {
 
-    record Result(Element elem, Exception ex) {}
+    record Result(JsonValue elem, Exception ex) {}
 
     Result parse(String text) {
         try(var jr = new JsonReader(new StringReader(text))) {
@@ -78,7 +78,7 @@ class JsonReaderTest {
         var src = """
                 {"a":5
                  "b":6}"""; // comma missing
-        Element result = null;
+        JsonValue result = null;
         Exception ex = null;
         try(var rdr = new JsonReader(new StringReader(src))) {
             result = rdr.readElement();

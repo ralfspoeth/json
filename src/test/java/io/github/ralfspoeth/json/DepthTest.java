@@ -12,14 +12,14 @@ class DepthTest {
     @Test
     void depthBasics() {
         // given s: stream of basic instances
-        List<Element> basics = List.of(
+        List<JsonValue> basics = List.of(
                 JsonNull.INSTANCE,
                 JsonBoolean.TRUE,
                 JsonBoolean.FALSE,
                 JsonNumber.ZERO,
                 new JsonString("")
         );
-        List<Element> empties = List.of(
+        List<JsonValue> empties = List.of(
                 new JsonObject(Map.of()), new JsonArray(List.of())
         );
         // then

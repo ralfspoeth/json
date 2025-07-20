@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static java.util.Objects.requireNonNullElse;
 
-public record JsonArray(List<Element> elements) implements Aggregate, IntFunction<Element> {
+public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunction<JsonValue> {
     public JsonArray {
         elements = List.copyOf(requireNonNullElse(elements, List.of()));
     }
@@ -32,7 +32,7 @@ public record JsonArray(List<Element> elements) implements Aggregate, IntFunctio
     public static JsonArray ofIterable(Iterable<?> iterable) {
         var ab = arrayBuilder();
         for (var it : iterable) {
-            ab.item(Element.of(it));
+            ab.item(JsonValue.of(it));
         }
         return ab.build();
     }
@@ -40,7 +40,7 @@ public record JsonArray(List<Element> elements) implements Aggregate, IntFunctio
     public static JsonArray ofArray(Object o) {
         var ab = arrayBuilder();
         for (int i = 0, len = Array.getLength(o); i < len; i++) {
-            ab.item(Element.of(Array.get(o, i)));
+            ab.item(JsonValue.of(Array.get(o, i)));
         }
         return ab.build();
     }
@@ -48,7 +48,7 @@ public record JsonArray(List<Element> elements) implements Aggregate, IntFunctio
     @Override
     public String json() {
         return elements.stream()
-                .map(Element::json)
+                .map(JsonValue::json)
                 .collect(Collectors.joining(",", "[", "]"));
     }
 
@@ -59,15 +59,15 @@ public record JsonArray(List<Element> elements) implements Aggregate, IntFunctio
 
     @Override
     public int depth() {
-        return elements.stream().mapToInt(Element::depth).max().orElse(0) + 1;
+        return elements.stream().mapToInt(JsonValue::depth).max().orElse(0) + 1;
     }
 
-    public Stream<Element> stream() {
+    public Stream<JsonValue> stream() {
         return elements.stream();
     }
 
     @Override
-    public Element apply(int index) {
+    public JsonValue apply(int index) {
         return elements.get(index);
     }
 }

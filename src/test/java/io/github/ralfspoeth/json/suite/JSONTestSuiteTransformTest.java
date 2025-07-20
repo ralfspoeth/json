@@ -1,7 +1,7 @@
 package io.github.ralfspoeth.json.suite;
 
 
-import io.github.ralfspoeth.json.Element;
+import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.io.JsonReader;
 import io.github.ralfspoeth.json.io.JsonWriter;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JSONTestSuiteTransformTest extends JSONTestSuiteBase {
 
-    private Element serialAndParse(Element element) {
+    private JsonValue serialAndParse(JsonValue element) {
         var str = JsonWriter.toString(element);
         return JsonReader.readElement(str);
     }

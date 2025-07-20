@@ -6,12 +6,12 @@ import static io.github.ralfspoeth.basix.fn.Predicates.in;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 
-public sealed interface Aggregate extends Element permits JsonArray, JsonObject {
+public sealed interface Aggregate extends JsonValue permits JsonArray, JsonObject {
     static JsonObjectBuilder objectBuilder() {
         return new JsonObjectBuilder();
     }
 
-    static JsonObjectBuilder objectBuilder(Map<String, ? extends Element> map) {
+    static JsonObjectBuilder objectBuilder(Map<String, ? extends JsonValue> map) {
         var bldr = objectBuilder();
         map.forEach(bldr::named);
         return bldr;
@@ -41,9 +41,9 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
 
         private JsonObjectBuilder() {}
 
-        private final Map<String, Element> data = new HashMap<>();
+        private final Map<String, JsonValue> data = new HashMap<>();
 
-        public JsonObjectBuilder named(String name, Element el) {
+        public JsonObjectBuilder named(String name, JsonValue el) {
             data.put(requireNonNull(name), requireNonNull(el));
             return this;
         }
@@ -57,10 +57,10 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         }
 
         public JsonObjectBuilder element(String name, Object o) {
-            return named(name, Element.of(o));
+            return named(name, JsonValue.of(o));
         }
 
-        public JsonObjectBuilder update(Map<String, ? extends Element> map) {
+        public JsonObjectBuilder update(Map<String, ? extends JsonValue> map) {
             map.entrySet().stream()
                     .filter(in(data.keySet(), Map.Entry::getKey))
                     .forEach(e -> named(e.getKey(), e.getValue()));
@@ -71,7 +71,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return update(o.members());
         }
 
-        public JsonObjectBuilder merge(Map<String, ? extends Element> map) {
+        public JsonObjectBuilder merge(Map<String, ? extends JsonValue> map) {
             map.forEach(this::named);
             return this;
         }
@@ -80,7 +80,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return merge(o.members());
         }
 
-        public JsonObjectBuilder insert(Map<String, ? extends Element> map) {
+        public JsonObjectBuilder insert(Map<String, ? extends JsonValue> map) {
             map.entrySet().stream()
                     .filter(not(in(data.keySet(), Map.Entry::getKey)))
                     .forEach(e -> named(e.getKey(), e.getValue()));
@@ -136,9 +136,9 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
             return new JsonArray(data.stream().toList());
         }
 
-        private final List<Element> data = new ArrayList<>();
+        private final List<JsonValue> data = new ArrayList<>();
 
-        public JsonArrayBuilder item(Element elem) {
+        public JsonArrayBuilder item(JsonValue elem) {
             data.add(requireNonNull(elem));
             return this;
         }
@@ -152,7 +152,7 @@ public sealed interface Aggregate extends Element permits JsonArray, JsonObject 
         }
 
         public JsonArrayBuilder element(Object o) {
-            return item(Element.of(o));
+            return item(JsonValue.of(o));
         }
 
         public JsonArrayBuilder nullItem() {

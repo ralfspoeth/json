@@ -1,6 +1,6 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.Element;
+import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
@@ -41,7 +41,7 @@ import static java.util.Objects.requireNonNull;
  * Example:
  * <p>
  * {@snippet :
- * import io.github.ralfspoeth.json.Element;
+ * import io.github.ralfspoeth.json.JsonValue;
  * import io.github.ralfspoeth.json.JsonBoolean;
  * import io.github.ralfspoeth.json.JsonNumber;
  * import io.github.ralfspoeth.json.io.JsonReader;
@@ -59,7 +59,7 @@ import static java.util.Objects.requireNonNull;
  * Path p = Path.of("[2, -1]/#a.*");
  *
  * // then
- * List<Element> result = p.apply(given).toList();
+ * List<JsonValue> result = p.apply(given).toList();
  * assert result.size() == 3; // three JSON objects...
  * assert result.get(0) == JsonBoolean.TRUE; // the "aa" member of the third object
  * assert result.get(1).equals(new JsonNumber(2)); // the "ab" member of the fourth
@@ -74,10 +74,10 @@ import static java.util.Objects.requireNonNull;
  * import io.github.ralfspoeth.json.*;
  * Path p = Path.of("..."); // @replace regex='"..."' replacement="..."
  * JsonArray a = new JsonArray(List.of()); // @replace regex='new JsonArray(List.of())' replacement='...'
- * List<Element> result = a.stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
+ * List<JsonValue> result = a.stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
  *}
  */
-public sealed abstract class Path implements Function<Element, Stream<Element>> {
+public sealed abstract class Path implements Function<JsonValue, Stream<JsonValue>> {
 
     private static final class MemberPath extends Path {
 
@@ -89,9 +89,9 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         }
 
         @Override
-        Stream<Element> evalThis(Element elem) {
+        Stream<JsonValue> evalThis(JsonValue elem) {
             return elem instanceof JsonObject(
-                    Map<String, Element> members
+                    Map<String, JsonValue> members
             ) ? Stream.of(members.get(memberName)) : Stream.of();
         }
 
@@ -115,7 +115,7 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         }
 
         @Override
-        Stream<Element> evalThis(Element elem) {
+        Stream<JsonValue> evalThis(JsonValue elem) {
             if (elem instanceof JsonArray(var elements)) {
                 if (index >= 0 && index < elements.size()) return Stream.of(elements.get(index));
                 else if (index < 0 && 0 <= elements.size() + index)
@@ -148,14 +148,14 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
             this.max = (max > 0 ? max : Integer.MAX_VALUE);
         }
 
-        private Stream<Element> evalArray(List<Element> array) {
+        private Stream<JsonValue> evalArray(List<JsonValue> array) {
             return IntStream.range(min, max)
                     .takeWhile(i -> i < array.size())
                     .mapToObj(array::get);
         }
 
         @Override
-        Stream<Element> evalThis(Element elem) {
+        Stream<JsonValue> evalThis(JsonValue elem) {
             return elem instanceof JsonArray(var elements) ? evalArray(elements) : Stream.of();
         }
 
@@ -184,11 +184,11 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         }
 
         @Override
-        Stream<Element> evalThis(Element elem) {
+        Stream<JsonValue> evalThis(JsonValue elem) {
             return elem instanceof JsonObject o ? evalObject(o) : Stream.of();
         }
 
-        Stream<Element> evalObject(JsonObject o) {
+        Stream<JsonValue> evalObject(JsonObject o) {
             return o.members()
                     .entrySet()
                     .stream()
@@ -214,20 +214,20 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
     }
 
     @Override
-    public Stream<Element> apply(Element root) {
+    public Stream<JsonValue> apply(JsonValue root) {
         return parent == null ? this.evalThis(root) : parent.apply(root).flatMap(this::evalThis);
     }
 
-    Optional<Element> first(Element root) {
+    Optional<JsonValue> first(JsonValue root) {
         return apply(root).findFirst();
     }
 
-    Optional<Element> single(Element root) {
+    Optional<JsonValue> single(JsonValue root) {
         var l = apply(root).toList();
-        return l.size() == 1 ? Optional.of(l.get(0)) : Optional.empty();
+        return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
     }
 
-    abstract Stream<Element> evalThis(Element elem);
+    abstract Stream<JsonValue> evalThis(JsonValue elem);
 
     private static final Pattern INDEX_PATTERN = Pattern.compile("\\[(-?\\d+)]");
 
@@ -255,51 +255,51 @@ public sealed abstract class Path implements Function<Element, Stream<Element>> 
         return prev;
     }
 
-    public static double doubleValue(Path p, Element root) {
+    public static double doubleValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::doubleValue).orElse(0d);
     }
 
-    public static double doubleValue(String path, Element root) {
+    public static double doubleValue(String path, JsonValue root) {
         return doubleValue(of(path), root);
     }
 
-    public static boolean booleanValue(Path p, Element root) {
+    public static boolean booleanValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::booleanValue).orElse(false);
     }
 
-    public static boolean booleanValue(String path, Element root) {
+    public static boolean booleanValue(String path, JsonValue root) {
         return booleanValue(of(path), root);
     }
 
-    public static int intValue(Path p, Element root) {
+    public static int intValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::intValue).orElse(0);
     }
 
-    public static int intValue(String path, Element root) {
+    public static int intValue(String path, JsonValue root) {
         return intValue(of(path), root);
     }
 
-    public static long longValue(Path p, Element root) {
+    public static long longValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::longValue).orElse(0L);
     }
 
-    public static long longValue(String path, Element root) {
+    public static long longValue(String path, JsonValue root) {
         return longValue(of(path), root);
     }
 
-    public static <E extends Enum<E>> Enum<E> enumValue(Path p, Element root, Class<E> enumClass) {
+    public static <E extends Enum<E>> Enum<E> enumValue(Path p, JsonValue root, Class<E> enumClass) {
         return p.single(root).map(e -> Queries.enumValue(enumClass, e)).orElse(null);
     }
 
-    public static <E extends Enum<E>> Enum<E> enumValue(String path, Element root, Class<E> enumClass) {
+    public static <E extends Enum<E>> Enum<E> enumValue(String path, JsonValue root, Class<E> enumClass) {
         return enumValue(of(path), root, enumClass);
     }
 
-    public static String stringValue(Path p, Element root) {
+    public static String stringValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::stringValue).orElse(null);
     }
 
-    public static String stringValue(String path, Element root) {
+    public static String stringValue(String path, JsonValue root) {
         return stringValue(of(path), root);
     }
 

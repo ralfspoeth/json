@@ -31,7 +31,7 @@ class JsonTest {
     @Test
     void testReadFromString_validJson() {
         String jsonString = "{\"name\":\"test\",\"value\":123}";
-        Element element = Json.read(jsonString);
+        JsonValue element = Json.read(jsonString);
         assertNotNull(element);
         assertInstanceOf(JsonObject.class, element);
         JsonObject jo = (JsonObject) element;
@@ -62,7 +62,7 @@ class JsonTest {
     void testReadFromReader_validJson() throws IOException {
         String jsonString = "[\"apple\", \"banana\"]";
         Reader reader = new StringReader(jsonString);
-        Element element = Json.read(reader);
+        JsonValue element = Json.read(reader);
         assertNotNull(element);
         assertInstanceOf(JsonArray.class, element);
         JsonArray ja = (JsonArray) element;
@@ -141,7 +141,7 @@ class JsonTest {
         String multiJsonString = "{\"id\":1} \"test_string\" [1,2,3] null true 42.5";
         Reader reader = new StringReader(multiJsonString);
 
-        List<Element> elements = Json.stream(reader).collect(Collectors.toList());
+        List<JsonValue> elements = Json.stream(reader).collect(Collectors.toList());
 
         assertNotNull(elements);
         assertEquals(6, elements.size());
@@ -162,14 +162,14 @@ class JsonTest {
     @Test
     void testStream_emptyReader() throws IOException {
         Reader reader = new StringReader("");
-        List<Element> elements = Json.stream(reader).toList();
+        List<JsonValue> elements = Json.stream(reader).toList();
         assertTrue(elements.isEmpty());
     }
 
     @Test
     void testStream_readerWithOnlyWhitespace() throws IOException {
         Reader reader = new StringReader("   \n \t  ");
-        List<Element> elements = Json.stream(reader).toList();
+        List<JsonValue> elements = Json.stream(reader).toList();
         assertTrue(elements.isEmpty());
     }
 
@@ -197,7 +197,7 @@ class JsonTest {
         }) {
             // The IOException should propagate from the stream's spliterator
             assertThrows(RuntimeException.class, () -> {
-                try (Stream<Element> stream = Json.stream(faultyReader)) {
+                try (Stream<JsonValue> stream = Json.stream(faultyReader)) {
                     stream.toList();
                 }
             });
@@ -212,7 +212,7 @@ class JsonTest {
         // How parsing errors are handled in stream depends on JsonReader's iterator behavior.
         // It might throw an unchecked exception when .next() is called on the invalid part.
         assertThrows(JsonParseException.class, () -> {
-            try (Stream<Element> stream = Json.stream(reader)) {
+            try (Stream<JsonValue> stream = Json.stream(reader)) {
                 stream.toList(); // Consumption triggers parsing
             }
         });

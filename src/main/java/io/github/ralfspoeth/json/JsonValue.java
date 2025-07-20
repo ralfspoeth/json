@@ -2,13 +2,13 @@ package io.github.ralfspoeth.json;
 
 import java.util.Map;
 
-public sealed interface Element permits Aggregate, Basic {
+public sealed interface JsonValue permits Aggregate, Basic {
 
     String json();
 
     int depth();
 
-    static Element of(Object o) {
+    static JsonValue of(Object o) {
         return switch(o) {
             case Record r -> JsonObject.ofRecord(r);
             case Map<?, ?> m -> JsonObject.ofMap(m);

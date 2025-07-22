@@ -6,20 +6,20 @@
 
 The first attempt can be easily copied from
 the sources cited above. Let's define a sealed
-a `json` package with an `Element` interface as
+a `json` package with an `Value` interface as
 
     package json;
-    sealed interface Element permits ...;
+    sealed interface Value permits ...;
 
 and provide implementations very much like
 
     package json;
-    final class Boolean implements Element{...}
-    final class Number implements Element{...}
-    final class Null implements Element{...}
-    final class String implements Element{...}
-    final class Array implements Element{...}
-    final class Object implements Element{...}
+    final class Boolean implements Value {...}
+    final class Number implements Value {...}
+    final class Null implements Value {...}
+    final class String implements Value {...}
+    final class Array implements Value {...}
+    final class Object implements Value {...}
 
 The problem is that while possible almost
 all the names collide with class names in the
@@ -37,7 +37,7 @@ of `JSON` as the prefix for the concrete types.
 
 At the top of the hierarchy we then had
 
-    public sealed interface Element {}
+    public sealed interface JsonValue {}
 
 All implementations must be `final` or `non-sealed`
 in order to comply with the contract for sealed
@@ -49,25 +49,25 @@ inheritance we will implement `final` classes only.
 The next most tempting take on the design of implementation
 classes is records:
 
-    record JsonNumber(double value) implements Element {...}
-    record JsonString(String value) implements Element {...}
-    record JsonBoolean(boolean value) implements Element {...}
-    record JsonNull() implements Element {...}
-    record JsonObject(Map<String, Element> value) implements Element {}
-    record JsonArray(List<Element> value) implements Element {}
+    record JsonNumber(BigDecimal value) implements JsonValue {...}
+    record JsonString(String value) implements JsonValue {...}
+    record JsonBoolean(boolean value) implements JsonValue {...}
+    record JsonNull() implements JsonValue {...}
+    record JsonObject(Map<String, JsonValue> value) implements JsonValue {}
+    record JsonArray(List<JsonValue> value) implements JsonValue {}
 
 So it's a no-brainer... or not?
 We think that a `boolean` should rather be an `enum`, as in
 
-    enum JsonBoolean implements Element {
+    enum JsonBoolean implements JsonValue {
         TRUE, FALSE
     }
 
 and `Null` a singleton:
 
-    class JsonNull implements Element {
-        public static final JsonNull INSTANCE = new JsonNull();e
-        private JsonNull(){}
+    class JsonNull implements JsonValue {
+        public static final JsonNull INSTANCE = new JsonNull();
+        private JsonNull(){} // prevent instantiation
     }
 
 ### Distinction between Literal and Aggregate Values
@@ -75,27 +75,13 @@ and `Null` a singleton:
 There are a number of reasons to separate literal from aggregate values
 when modeling JSON data. We found two separate interfaces useful:
 
-    sealed interface Element permits Basic, Aggregate {...}
-    sealed interface Basic extends Element permits JsonNull, JsonBoolean, JsonNumber, JsonString {...}
-    sealed interface Aggregate extends Element permits JsonArray, JsonObject {...}
+    sealed interface JsonValue permits Basic, Aggregate {...}
+    sealed interface Basic extends JsonValue permits JsonNull, JsonBoolean, JsonNumber, JsonString {...}
+    sealed interface Aggregate extends JsonValue permits JsonArray, JsonObject {...}
 
-The aggregate types should provide builders for their construction;
-we want to keep the data immutable for __all__ elements.
+The aggregate types should provide builders for their construction.
+We want to keep the data immutable for __all__ elements.
 
-### Numbers are Doubles — Or Variants?
-
-The JSON grammar allows for numbers that are beyond the scope of IEEE754 doubles.
-BUT we think that since most JSON data starts or ends in `JavaScript` applications
-and since `JavaScript` considers all numbers to be `double`s we rejected any 
-attempt towards more flexibility regarding numbers.
-
-Even more so since much better alternatives exist. `JSON` may be used ubiquitously
-nowadays, but that was true for `XML` a decade or two ago as well.
-It's been a bold and wise decision of **Douglas Crockford**, the founder of JSON,
-__not__ to version the spec and thereby foregoing any attempt to __grow__ the grammar.
-
-Therefore, numbers are `record JsonNumber(double value)...` instance which use
-`double` values as their payload-**without any intent to change that**.
 
 ## Querying and Converting Data
 
@@ -210,7 +196,7 @@ Given
 we can easily convert the text into an instance of R using
 the `parse` method of `LocalDate`
 
-    var element = (JsonObject)JsonReader.readElement(text);
+    var element = (JsonObject)JsonReader.readJsonValue(text);
     var r = new R(LocalDate.parse(element.members().get("t").toString()));
 
 We can reflectively get the record components and the static

@@ -11,8 +11,8 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-public class Json {
-    private Json() {}
+public class Greyson {
+    private Greyson() {}
 
     public static JsonValue read(String s) {
         return JsonReader.readElement(s);

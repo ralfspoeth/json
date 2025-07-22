@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JsonTest {
+class GreysonTest {
 
     private final PrintStream originalSystemOut = System.out;
     private ByteArrayOutputStream systemOutContent;
@@ -31,7 +31,7 @@ class JsonTest {
     @Test
     void testReadFromString_validJson() {
         String jsonString = "{\"name\":\"test\",\"value\":123}";
-        JsonValue element = Json.read(jsonString);
+        JsonValue element = Greyson.read(jsonString);
         assertNotNull(element);
         assertInstanceOf(JsonObject.class, element);
         JsonObject jo = (JsonObject) element;
@@ -42,12 +42,12 @@ class JsonTest {
     @Test
     void testReadFromString_invalidJson() {
         String invalidJsonString = "{\"name\":\"test\",\"value\":123"; // Missing closing brace
-        assertThrows(JsonParseException.class, () -> Json.read(invalidJsonString));
+        assertThrows(JsonParseException.class, () -> Greyson.read(invalidJsonString));
     }
 
     @Test
     void testReadFromString_nullInput() {
-        assertThrows(NullPointerException.class, () -> Json.read((String) null));
+        assertThrows(NullPointerException.class, () -> Greyson.read((String) null));
     }
 
     @Test
@@ -55,14 +55,14 @@ class JsonTest {
         // Behavior for empty string depends on JsonReader.readElement(String) implementation
         // It might throw an exception or return null/JsonNull if it's considered valid empty content.
         // Assuming it throws an exception for non-JSON content.
-        assertThrows(JsonParseException.class, () -> Json.read(""));
+        assertThrows(JsonParseException.class, () -> Greyson.read(""));
     }
 
     @Test
     void testReadFromReader_validJson() throws IOException {
         String jsonString = "[\"apple\", \"banana\"]";
         Reader reader = new StringReader(jsonString);
-        JsonValue element = Json.read(reader);
+        JsonValue element = Greyson.read(reader);
         assertNotNull(element);
         assertInstanceOf(JsonArray.class, element);
         JsonArray ja = (JsonArray) element;
@@ -75,14 +75,14 @@ class JsonTest {
         String invalidJsonString = "[1, 2,"; // Missing closing bracket
         Reader reader = new StringReader(invalidJsonString);
         // Json.read(Reader) wraps JsonReader, which might throw during parsing.
-        assertThrows(JsonParseException.class, () -> Json.read(reader));
+        assertThrows(JsonParseException.class, () -> Greyson.read(reader));
     }
 
     @Test
     void testReadFromReader_nullInput() {
         // The Json.read(Reader) method creates `new JsonReader(rdr)`.
         // If rdr is null, JsonReader constructor should handle it (e.g., throw NPE).
-        assertThrows(NullPointerException.class, () -> Json.read((Reader) null));
+        assertThrows(NullPointerException.class, () -> Greyson.read((Reader) null));
     }
 
     @Test
@@ -98,7 +98,7 @@ class JsonTest {
             }
         }) {
             // Json.read(Reader) declares IOException
-            assertThrows(IOException.class, () -> Json.read(faultyReader));
+            assertThrows(IOException.class, () -> Greyson.read(faultyReader));
         }
     }
 
@@ -109,7 +109,7 @@ class JsonTest {
                 .item(JsonBoolean.TRUE)
                 .item(JsonNull.INSTANCE)
                 .build();
-        Json.write(writer, jsonArray);
+        Greyson.write(writer, jsonArray);
         // Default writer for arrays might be a single line
         String expectedOutput = "[true, null]";
         assertEquals(expectedOutput, writer.toString().trim());
@@ -118,7 +118,7 @@ class JsonTest {
     @Test
     void testWrite_jsonNull() {
         StringWriter writer = new StringWriter();
-        Json.write(writer, JsonNull.INSTANCE);
+        Greyson.write(writer, JsonNull.INSTANCE);
         assertEquals("null", writer.toString().trim());
     }
 
@@ -127,7 +127,7 @@ class JsonTest {
         JsonObject jsonObject = Aggregate.objectBuilder()
                 .named("message", new JsonString("hello"))
                 .build();
-        Json.writeToSystemOut(jsonObject);
+        Greyson.writeToSystemOut(jsonObject);
 
         String expectedOutput = String.format("{%n    \"message\": \"hello\"%n}");
         // The systemOutContent will have an extra newline from PrintWriter
@@ -141,7 +141,7 @@ class JsonTest {
         String multiJsonString = "{\"id\":1} \"test_string\" [1,2,3] null true 42.5";
         Reader reader = new StringReader(multiJsonString);
 
-        List<JsonValue> elements = Json.stream(reader).collect(Collectors.toList());
+        List<JsonValue> elements = Greyson.stream(reader).collect(Collectors.toList());
 
         assertNotNull(elements);
         assertEquals(6, elements.size());
@@ -162,14 +162,14 @@ class JsonTest {
     @Test
     void testStream_emptyReader() throws IOException {
         Reader reader = new StringReader("");
-        List<JsonValue> elements = Json.stream(reader).toList();
+        List<JsonValue> elements = Greyson.stream(reader).toList();
         assertTrue(elements.isEmpty());
     }
 
     @Test
     void testStream_readerWithOnlyWhitespace() throws IOException {
         Reader reader = new StringReader("   \n \t  ");
-        List<JsonValue> elements = Json.stream(reader).toList();
+        List<JsonValue> elements = Greyson.stream(reader).toList();
         assertTrue(elements.isEmpty());
     }
 
@@ -197,7 +197,7 @@ class JsonTest {
         }) {
             // The IOException should propagate from the stream's spliterator
             assertThrows(RuntimeException.class, () -> {
-                try (Stream<JsonValue> stream = Json.stream(faultyReader)) {
+                try (Stream<JsonValue> stream = Greyson.stream(faultyReader)) {
                     stream.toList();
                 }
             });
@@ -212,7 +212,7 @@ class JsonTest {
         // How parsing errors are handled in stream depends on JsonReader's iterator behavior.
         // It might throw an unchecked exception when .next() is called on the invalid part.
         assertThrows(JsonParseException.class, () -> {
-            try (Stream<JsonValue> stream = Json.stream(reader)) {
+            try (Stream<JsonValue> stream = Greyson.stream(reader)) {
                 stream.toList(); // Consumption triggers parsing
             }
         });

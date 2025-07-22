@@ -2,6 +2,7 @@ package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,9 +21,35 @@ import static java.util.stream.Collectors.toMap;
 
 public class Queries {
 
-    private Queries() {
-        // prevent instantiation
+    // prevent instantiation
+    private Queries() {}
+
+    /**
+     * Provides the most natural mapping of a JSON element
+     * to their Java counterparts.
+     * A {@link JsonObject object} is basically converted into its map of
+     * {@link JsonObject#members() members},
+     * the values of which are passed to this method recursively.
+     * An {@link JsonArray array} is represented by a {@link List}
+     * with this function applied to all
+     * its {@link JsonArray#elements() elements}.
+     * All other {@link Basic} elements are converted using the basic's
+     * {@link Basic#value()} function.
+     * <p/>
+     * {@link JsonNull} instances in {@link Aggregate}s are suppressed.
+     *
+     * @param elem a JSON element, may not be {@code null}
+     * @return either a {@link Map}, a {@link List}
+     * or a {@code String}, {@code BigDecimal}, {@code Boolean}, or {@code null}
+     */
+    public static Object value(JsonValue elem) {
+        return switch (requireNonNull(elem)) {
+            case JsonObject jo -> asMap(jo);
+            case JsonArray ja -> asList(ja);
+            case Basic<?> basic -> asBasic(basic);
+        };
     }
+
 
     private static Map<String, ?> asMap(JsonValue elem) {
         return switch (elem) {
@@ -56,30 +83,6 @@ public class Queries {
     }
 
     /**
-     * Provides the most natural mapping of a JSON element
-     * to their Java counterparts.
-     * A {@link JsonObject object} is basically converted into its map of
-     * {@link JsonObject#members() members},
-     * the values of which are passed to this method recursively.
-     * An {@link JsonArray array} is represented by a {@link List}
-     * with this function applied to all
-     * its {@link JsonArray#elements() elements}.
-     * All other {@link Basic} elements are converted using the basic's
-     * {@link Basic#value()} function.
-     *
-     * @param elem a JSON element, may not be {@code null}
-     * @return either a {@link Map}, a {@link List}
-     * or a {@code String}, {@code Double}, {@code Boolean}, or {@code null}
-     */
-    public static Object value(JsonValue elem) {
-        return switch (requireNonNull(elem)) {
-            case JsonObject jo -> asMap(jo);
-            case JsonArray ja -> asList(ja);
-            case Basic<?> basic -> asBasic(basic);
-        };
-    }
-
-    /**
      * Exactly the same as {@link #value(JsonValue)} except
      * that it allows {@code null} as parameter 1.
      *
@@ -99,8 +102,8 @@ public class Queries {
      * @return the members of a JsonObject, or an empty map
      */
     public static Map<String, JsonValue> members(JsonValue elem) {
-        return switch(elem) {
-            case JsonObject(var members)-> members;
+        return switch (elem) {
+            case JsonObject(var members) -> members;
             case null, default -> Map.of();
         };
     }
@@ -153,7 +156,7 @@ public class Queries {
     public static int intValue(JsonValue elem, int def) {
         return switch (elem) {
             case null -> def;
-            case JsonNumber n -> (int) n.numVal();
+            case JsonNumber n -> n.numVal().intValue();
             case TRUE -> 1;
             case FALSE -> 0;
             case JsonString s -> Integer.parseInt(s.value());
@@ -176,7 +179,7 @@ public class Queries {
     public static long longValue(JsonValue elem, long def) {
         return switch (elem) {
             case null -> def;
-            case JsonNumber n -> (long) n.numVal();
+            case JsonNumber n -> n.numVal().longValue();
             case TRUE -> 1L;
             case FALSE -> 0L;
             case JsonString s -> Long.parseLong(s.value());
@@ -200,7 +203,7 @@ public class Queries {
     public static double doubleValue(JsonValue elem, double def) {
         return switch (elem) {
             case null -> def;
-            case JsonNumber n -> n.numVal();
+            case JsonNumber n -> n.numVal().doubleValue();
             case TRUE -> 1d;
             case FALSE -> 0d;
             case JsonString s -> Double.parseDouble(s.value());
@@ -217,14 +220,34 @@ public class Queries {
     }
 
     /**
+     * Same as {@link #intValue(JsonValue, int)} except that it converts the result to
+     * {@link BigDecimal}.
+     */
+    public static BigDecimal decimalValue(JsonValue elem, BigDecimal def) {
+        return switch (elem) {
+            case null -> def;
+            case JsonNumber n -> n.numVal();
+            case TRUE -> BigDecimal.ONE;
+            case FALSE -> BigDecimal.ZERO;
+            case JsonString s -> new BigDecimal(s.value());
+            case JsonNull ignored -> BigDecimal.ZERO;
+            case Aggregate a -> throw new IllegalArgumentException("cannot convert to BigDecimal: " + a);
+        };
+    }
+
+    public static BigDecimal decimalValue(JsonValue elem) {
+        return decimalValue(requireNonNull(elem), BigDecimal.ZERO);
+    }
+
+    /**
      * Converts {@link JsonString}s to enum values using
      * {@link Enum#valueOf(Class, String)}.
      *
      * @param enumClass the parameterized enum class
      * @param elem      the element to convert, may be {@code null}
      * @param def       the default value
+     * @param <E>       the enum type
      * @return the enum value
-     * @param <E> the enum type
      * @throws IllegalArgumentException if elem not a {@link JsonString} or {@link JsonNull}.
      */
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, JsonValue elem, E def) {
@@ -252,12 +275,12 @@ public class Queries {
      * var s = new JsonString("A");
      * // then
      * assert enumValueIgnoreCase(E.class, s) == E.a;
-     * }
+     *}
      *
      * @param enumClass the parameterized enum class
-     * @param elem the element to convert
+     * @param elem      the element to convert
+     * @param <E>       the enum type
      * @return the enum value
-     * @param <E> the enum type
      */
     public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, JsonValue elem) {
         if (elem instanceof JsonString(String value)) {
@@ -274,10 +297,10 @@ public class Queries {
      * a string value using the {@code extractor} function and then through {@link Enum#valueOf(Class, String)}.
      *
      * @param enumClass the parameterized enum class
-     * @param elem the element to convert
+     * @param elem      the element to convert
      * @param extractor an extractor function
+     * @param <E>       the enum type
      * @return the enum value
-     * @param <E> the enum type
      */
     public static <E extends Enum<E>> E enumValue(Class<E> enumClass, JsonValue
             elem, Function<JsonValue, String> extractor) {
@@ -299,7 +322,7 @@ public class Queries {
      * </ul>
      *
      * @param elem the element to convert
-     * @param def the default value
+     * @param def  the default value
      * @return the string value
      */
     public static String stringValue(JsonValue elem, String def) {
@@ -307,7 +330,7 @@ public class Queries {
             case null -> def;
             case JsonString s -> s.value();
             case JsonNull ignored -> "null";
-            case JsonNumber n -> Double.toString(n.numVal());
+            case JsonNumber n -> n.numVal().toString();
             case JsonBoolean b -> Boolean.toString(b == TRUE);
             case JsonArray a -> a.elements().toString();
             case JsonObject o -> o.members().toString();
@@ -328,7 +351,7 @@ public class Queries {
      * naturally.
      *
      * @param elem the element to convert
-     * @param def the default value
+     * @param def  the default value
      * @return the boolean value
      */
     public static boolean booleanValue(JsonValue elem, boolean def) {
@@ -336,7 +359,7 @@ public class Queries {
             case null -> def;
             case JsonBoolean b -> b == TRUE;
             case JsonString(String value) -> Boolean.parseBoolean(value);
-            case JsonNumber jn -> Double.compare(0, jn.numVal()) != 0;
+            case JsonNumber jn -> jn.numVal().compareTo(BigDecimal.ZERO) != 0;
             default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);
         };
     }
@@ -361,7 +384,7 @@ public class Queries {
      * {@link #intValue(JsonValue)} to convert the elements.
      */
     public static int[] intArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> intArray(ja);
             case null, default -> new int[0];
         };
@@ -380,7 +403,7 @@ public class Queries {
      * {@link #longValue(JsonValue)} to convert the elements.
      */
     public static long[] longArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> longArray(ja);
             case null, default -> new long[0];
         };
@@ -399,7 +422,7 @@ public class Queries {
      * to {@code char}.
      */
     public static char[] charArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> charArray(ja);
             case null, default -> new char[0];
         };
@@ -418,7 +441,7 @@ public class Queries {
      * to {@code short}.
      */
     public static short[] shortArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> shortArray(ja);
             case null, default -> new short[0];
         };
@@ -438,7 +461,7 @@ public class Queries {
      * to {@code byte}.
      */
     public static byte[] byteArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> byteArray(ja);
             case null, default -> new byte[0];
         };
@@ -458,7 +481,7 @@ public class Queries {
      * member elements.
      */
     public static double[] doubleArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> doubleArray(ja);
             case null, default -> new double[0];
         };
@@ -478,9 +501,28 @@ public class Queries {
      * elements are cast to {@code float}.
      */
     public static float[] floatArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> floatArray(ja);
             case null, default -> new float[0];
+        };
+    }
+
+    private static BigDecimal[] decimalArray(JsonArray ja) {
+        var tmp = new BigDecimal[ja.size()];
+        for (int i = 0; i < tmp.length; i++) {
+            tmp[i] = decimalValue(ja.elements().get(i));
+        }
+        return tmp;
+    }
+
+    /**
+     * Same as {@link #doubleArray(JsonValue)} except that its
+     * array consists of {@link BigDecimal}s.
+     */
+    public static BigDecimal[] decimalArray(JsonValue elem) {
+        return switch (elem) {
+            case JsonArray ja -> decimalArray(ja);
+            case null, default -> new BigDecimal[0];
         };
     }
 
@@ -498,7 +540,7 @@ public class Queries {
      * it utilizes {@link #booleanValue(JsonValue)}.
      */
     public static boolean[] booleanArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> booleanArray(ja);
             case null, default -> new boolean[0];
         };
@@ -521,10 +563,9 @@ public class Queries {
      * @return a potentially empty array of strings, never {@code null}
      */
     public static String[] stringArray(JsonValue elem) {
-        return switch(elem) {
+        return switch (elem) {
             case JsonArray ja -> stringArray(ja);
             case null, default -> new String[0];
         };
     }
-
 }

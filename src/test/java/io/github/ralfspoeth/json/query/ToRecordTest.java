@@ -12,8 +12,10 @@ import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ToRecordTest {
+
     @Test
     void toR() {
+        // given
         record R(int x) {}
         var src = """
                 {
@@ -21,10 +23,13 @@ class ToRecordTest {
                 }
                 """;
 
+        // when
         var jo = JsonReader.readElement(src);
         var result = new R(
                 intValue(members(jo).get("x"), 0)
         );
+
+        // then
         assertAll(
                 () -> assertInstanceOf(R.class, result),
                 () -> assertInstanceOf(JsonObject.class, jo),
@@ -34,6 +39,7 @@ class ToRecordTest {
 
     @Test
     void toRs() {
+        // given
         record R(int x) {}
         var src = """
                 [{
@@ -46,16 +52,20 @@ class ToRecordTest {
                 ]
                 """;
 
-        var ja = JsonReader.readElement(src);
-        var result = elements(ja)
+        // when
+        var value = JsonReader.readElement(src);
+        var result = elements(value)
                 .stream()
                 .map(Queries::members)
                 .map(jo -> new R(
                         intValue(jo.get("x"), 0)
                 ))
                 .toList();
+
+        // then
         assertAll(
-                () -> assertInstanceOf(JsonArray.class, ja),
+                () -> assertInstanceOf(JsonArray.class, value),
+                () -> assertAll(result.stream().map(r -> () -> assertInstanceOf(R.class, r))),
                 () -> assertEquals(List.of(new R(1), new R(2), new R(0), new R(0)), result)
         );
     }

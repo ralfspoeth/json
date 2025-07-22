@@ -82,7 +82,7 @@ class JsonWriterTest {
     @Test
     void testToString() {
         // given
-        var arr = Aggregate.arrayBuilder().item(
+        var arr = Aggregate.arrayBuilder().builder(
                 Aggregate.objectBuilder()
                         .named("a", Basic.of(true))
                         .named("b", Basic.of(null))

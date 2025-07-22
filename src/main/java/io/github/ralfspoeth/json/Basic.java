@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import java.math.BigDecimal;
 import java.util.function.Predicate;
 
 public sealed interface Basic<T> extends JsonValue, Predicate<T> permits JsonBoolean, JsonNull, JsonNumber, JsonString {
@@ -15,18 +16,13 @@ public sealed interface Basic<T> extends JsonValue, Predicate<T> permits JsonBoo
     static Basic<?> of(Object o) {
         return switch(o) {
             case null -> JsonNull.INSTANCE;
+            case BigDecimal bd -> new JsonNumber(bd);
+            case Integer i -> new JsonNumber(BigDecimal.valueOf(i));
+            case Long l -> new JsonNumber(BigDecimal.valueOf(l));
+            case Double d -> new JsonNumber(d);
+            case Number n -> new JsonNumber(n.doubleValue());
             case Boolean b -> JsonBoolean.of(b);
-            case Double d -> ofDouble(d);
-            case Float f -> ofDouble(f);
-            case Number n -> ofDouble(n.doubleValue());
-            default -> ofString(o.toString());
+            default -> new JsonString(o.toString());
         };
-    }
-    private static JsonNumber ofDouble(double d) {
-        return new JsonNumber(d);
-    }
-
-    private static JsonString ofString(String s) {
-        return new JsonString(s);
     }
 }

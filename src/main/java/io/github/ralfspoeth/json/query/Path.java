@@ -4,6 +4,7 @@ import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  * not be included in this expression. The path matches every member of a JSON
  * object, the name part of which matches the given regular expression.
  * </li>
- * <li>{@code name} where {@code name} is just the literal member name of JSON
+ * <li>{@code name} where {@code name} is just the literal member name of a JSON
  * object</li>
  * </ul>
  * Example:
@@ -253,6 +254,14 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
             }
         }
         return prev;
+    }
+
+    public static BigDecimal decimalValue(Path p, JsonValue root) {
+        return p.single(root).map(Queries::decimalValue).orElse(BigDecimal.ZERO);
+    }
+
+    public static BigDecimal decimalValue(String path, JsonValue root) {
+        return decimalValue(of(path), root);
     }
 
     public static double doubleValue(Path p, JsonValue root) {

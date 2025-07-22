@@ -1,20 +1,45 @@
 package io.github.ralfspoeth.json;
 
-public record JsonNumber(double numVal) implements Basic<Double> {
-    public static final JsonNumber ZERO = new JsonNumber(0d);
+import java.math.BigDecimal;
+import java.util.Objects;
 
-    @Override
-    public String json() {
-        return Double.toString(numVal());
+public record JsonNumber(BigDecimal numVal) implements Basic<BigDecimal> {
+    public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
+
+    public JsonNumber {
+        Objects.requireNonNull(numVal);
+    }
+
+    public JsonNumber(double d) {
+        this(BigDecimal.valueOf(d));
     }
 
     @Override
-    public Double value() {
+    public String json() {
+        return numVal.toString();
+    }
+
+    @Override
+    public BigDecimal value() {
         return numVal();
     }
 
     @Override
-    public boolean test(Double aDouble) {
-        return Double.compare(aDouble, numVal()) == 0;
+    public boolean test(BigDecimal other) {
+        return numVal.compareTo(other) == 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof JsonNumber(BigDecimal other)) {
+            return numVal.compareTo(other) == 0;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return Double.hashCode(numVal.doubleValue());
     }
 }

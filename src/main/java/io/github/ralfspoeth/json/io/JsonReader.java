@@ -8,6 +8,7 @@ import io.github.ralfspoeth.json.Aggregate.JsonObjectBuilder;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -268,7 +269,7 @@ public class JsonReader implements AutoCloseable {
                 case TRUE -> JsonBoolean.TRUE;
                 case FALSE -> JsonBoolean.FALSE;
                 case STRING -> new JsonString(val);
-                case NUMBER -> new JsonNumber(Double.parseDouble(val));
+                case NUMBER -> new JsonNumber(new BigDecimal(val));
             };
             case Lexer.FixToken ignored -> throw new AssertionError();
         };

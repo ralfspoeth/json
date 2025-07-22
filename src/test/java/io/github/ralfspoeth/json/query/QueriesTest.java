@@ -4,6 +4,7 @@ import io.github.ralfspoeth.json.*;
 import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -172,7 +173,7 @@ class QueriesTest {
         var jo = JsonReader.readElement(src);
         assertAll(
                 () -> assertInstanceOf(Map.class, value(jo)),
-                () -> assertInstanceOf(Double.class, ((Map<String, ?>) value(jo)).get("a")),
+                () -> assertInstanceOf(BigDecimal.class, ((Map<String, ?>) value(jo)).get("a")),
                 () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) value(jo)).get("b")),
                 () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) value(jo)).get("c")),
                 () -> assertNull(((Map<String, ?>) value(jo)).get("d")),

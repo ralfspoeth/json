@@ -17,11 +17,12 @@ class BuilderTest {
         var one = objectBuilder().basic("a", 1).basic("b", 2).build();
         var two = objectBuilder().basic("b", 3).basic("c", 4).build();
         var merged = Aggregate.objectBuilder(one).merge(two).build();
-        var expected = objectBuilder().basic("a", 1).basic("b", 3).basic("c", 4).build();
+        var expectedMerged = objectBuilder().basic("a", 1).basic("b", 3).basic("c", 4).build();
+        var expectedA = objectBuilder().basic("a", 1).build();
         assertAll(
-                () -> assertEquals(expected, merged),
-                () -> assertEquals(objectBuilder().basic("a", 1).build(), Aggregate.objectBuilder(one).remove("b").build()),
-                () -> assertEquals(objectBuilder().basic("a", 1).build(), Aggregate.objectBuilder(one).removeAll(two).build()),
+                () -> assertEquals(expectedMerged, merged),
+                () -> assertEquals(expectedA, Aggregate.objectBuilder(one).remove("b").build()),
+                () -> assertEquals(expectedA, Aggregate.objectBuilder(one).removeAll(two).build()),
                 () -> assertEquals(objectBuilder().basic("a", 1).basic("b", 3).build(), Aggregate.objectBuilder(one).update(two).build())
         );
 
@@ -47,6 +48,18 @@ class BuilderTest {
         assertAll(
                 () -> assertEquals(6, obj.members().size()),
                 () -> Assertions.assertEquals(5, obj.get("adr", JsonArray.class).elements().size())
+        );
+    }
+
+    @Test
+    void testObjectBuilderFromJsonObject() {
+        // given
+        var jo = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE));
+        // when
+        var ob = objectBuilder(jo);
+        // then
+        assertAll(
+                () -> assertEquals(jo, ob.build())
         );
     }
 
@@ -115,13 +128,13 @@ class BuilderTest {
     @Test
     void testArrayBuilderItem() {
         var array = arrayBuilder()
-                .item(objectBuilder().namedNull("a"))
-                .item(arrayBuilder().basic(1))
+                .builder(objectBuilder().namedNull("a"))
+                .builder(arrayBuilder().basic(1))
                 .build();
         assertAll(
                 () -> assertEquals(2, array.elements().size()),
                 () -> assertEquals(JsonNull.INSTANCE, members(array.elements().getFirst()).get("a")),
-                () -> assertEquals(1,  intValue(elements(array.elements().getLast()).getFirst()))
+                () -> assertEquals(1, intValue(elements(array.elements().getLast()).getFirst()))
         );
     }
 

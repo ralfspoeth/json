@@ -1,30 +1,34 @@
-# Java JSON IO Library
+# Greyson - A Java JSON IO Library
+
+![greyson.png](greyson.png "JSON")
 
 A modern Java library for parsing JSON into **immutable data structures** 
 and serializing them back to text. It features a robust parser, a fluent builder API, 
 efficient UTF-8 serialization, and powerful query functions to transform JSON 
 elements into your Java objects.
 
-## Core Goals
+## Goals
 
 *   **Immutable JSON Representation**: Work with JSON data that cannot change after creation, ensuring thread safety and predictable state.
 *   **Robust Parsing**: Reliably parse all legal JSON documents and streams.
 *   **Fluent Builder API**: Construct complex JSON objects and arrays with ease.
-*   **Efficient Serialization**: Quickly serialize JSON elements into UTF-8 text streams.
+*   **Efficient Serialization**: Quickly serialize JSON elements into UTF-8 documents and streams.
 
 Find more on the motivation [here](motivation.md).
 
 ## Current Status
 
-The current version 1.2.0 is mature and stable and
-will not be changed with respect to the hierarchy of classes
-and interfaces in package `io.github.ralfspoeth.json` and
-the parser implemented through `JsonReader` in package
-`io.github.ralfspoeth.json.io`; the `JsonWriter` serializer
-class in the same package has not been battle-tested thus far 
-but satisfies our needs.
-The `Path` and `Queries` classes, while still in active
-development, are forming a fundamental part of the library.
+The current version of the library is 1.2.0.
+It contains two breaking changes compared to version 1.1.x:
+* The common interface has been renamed from `Element` to `JsonValue`
+  because that naming pattern seems to be more in line with other libraries.
+* `JsonNumber` uses `BigDecimal` instead of `double` for its payload; 
+  cf. [numbers](numbers.md) for a detailed discussion.
+
+## Why not Jackson or GSON?
+
+There is nothing wrong with either Jackson or GSON. Got me?
+Nothing!  
 
 ## JSON Test Suite
 

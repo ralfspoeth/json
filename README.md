@@ -28,7 +28,8 @@ It contains two breaking changes compared to version 1.1.x:
 ## Why not Jackson or GSON?
 
 There is nothing wrong with either Jackson or GSON. Got me?
-Nothing!  
+Nothing!
+Here are some thoughts about why not [why not GSON or Jackson](whynot.md)]
 
 ## JSON Test Suite
 

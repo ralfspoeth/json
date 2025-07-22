@@ -6,9 +6,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -135,86 +132,16 @@ class GreysonTest {
     }
 
     @Test
-    void testStream_validMultipleElements() throws IOException {
-        // Assuming JsonReader as an Iterator can read multiple top-level JSON values
-        // separated by whitespace.
-        String multiJsonString = "{\"id\":1} \"test_string\" [1,2,3] null true 42.5";
-        Reader reader = new StringReader(multiJsonString);
-
-        List<JsonValue> elements = Greyson.stream(reader).collect(Collectors.toList());
-
-        assertNotNull(elements);
-        assertEquals(6, elements.size());
-
-        assertInstanceOf(JsonObject.class, elements.get(0));
-        assertEquals(new JsonNumber(1), ((JsonObject)elements.get(0)).members().get("id"));
-
-        assertEquals(new JsonString("test_string"), elements.get(1));
-
-        assertInstanceOf(JsonArray.class, elements.get(2));
-        assertEquals(3, ((JsonArray)elements.get(2)).elements().size());
-
-        assertEquals(JsonNull.INSTANCE, elements.get(3));
-        assertEquals(JsonBoolean.TRUE, elements.get(4));
-        assertEquals(new JsonNumber(42.5), elements.get(5));
-    }
-
-    @Test
-    void testStream_emptyReader() throws IOException {
-        Reader reader = new StringReader("");
-        List<JsonValue> elements = Greyson.stream(reader).toList();
-        assertTrue(elements.isEmpty());
-    }
-
-    @Test
-    void testStream_readerWithOnlyWhitespace() throws IOException {
-        Reader reader = new StringReader("   \n \t  ");
-        List<JsonValue> elements = Greyson.stream(reader).toList();
-        assertTrue(elements.isEmpty());
-    }
-
-    @Test
-    void testStream_ioExceptionDuringStream() throws IOException {
-        try (Reader faultyReader = new Reader() {
-            private boolean firstRead = true;
-
-            @Override
-            public int read(char[] cbuf, int off, int len) throws IOException {
-                if (firstRead) { // Allow initial read for JsonReader setup if any
-                    if (len > 0) {
-                        cbuf[off] = '{'; // Start of a JSON object
-                        firstRead = false;
-                        return 1;
-                    }
-                    return -1;
-                }
-                throw new IOException("Simulated stream read error");
-            }
-
-            @Override
-            public void close() {
-            }
-        }) {
-            // The IOException should propagate from the stream's spliterator
-            assertThrows(RuntimeException.class, () -> {
-                try (Stream<JsonValue> stream = Greyson.stream(faultyReader)) {
-                    stream.toList();
-                }
-            });
-        }
-    }
-
-    @Test
-    void testStream_parsingErrorInStream() {
-        String faultyJsonStream = "{\"key\": \"value\"} [1,2"; // Valid first, then invalid
-        Reader reader = new StringReader(faultyJsonStream);
-
-        // How parsing errors are handled in stream depends on JsonReader's iterator behavior.
-        // It might throw an unchecked exception when .next() is called on the invalid part.
-        assertThrows(JsonParseException.class, () -> {
-            try (Stream<JsonValue> stream = Greyson.stream(reader)) {
-                stream.toList(); // Consumption triggers parsing
-            }
-        });
+    void testWriteStringBuilder() {
+        // given
+        var sb = new StringBuilder();
+        var jsonObject = Aggregate.objectBuilder()
+                .named("message", new JsonString("hello"))
+                .basic("num", 5)
+                .build();
+        // when
+        Greyson.write(sb, jsonObject);
+        // then
+        assertEquals(jsonObject, Greyson.read(sb.toString()));
     }
 }

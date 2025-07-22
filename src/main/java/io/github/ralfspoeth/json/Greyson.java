@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,15 +34,24 @@ public class Greyson {
         }
     }
 
+    public static void write(StringBuilder sb, JsonValue elem) {
+        write(new Writer() {
+            @Override
+            public void write(char[] cbuf, int off, int len) {
+                sb.append(cbuf, off, len);
+            }
+            @Override
+            public void flush() {}
+            @Override
+            public void close() {}
+        }, elem);
+    }
+
     /**
      * Serialize the {@link JsonValue} to {@code System.out}.
      * @param elem the element to serialize, must not be {@code null}
      */
     public static void writeToSystemOut(JsonValue elem) {
         write(new PrintWriter(System.out), elem);
-    }
-
-    public static Stream<JsonValue> stream(Reader rdr) throws IOException {
-        return JsonReader.stream(rdr);
     }
 }

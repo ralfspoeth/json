@@ -1,13 +1,5 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.*;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
@@ -18,6 +10,12 @@ import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
+import io.github.ralfspoeth.json.*;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 public class Queries {
 
@@ -35,7 +33,6 @@ public class Queries {
      * its {@link JsonArray#elements() elements}.
      * All other {@link Basic} elements are converted using the basic's
      * {@link Basic#value()} function.
-     * <p/>
      * {@link JsonNull} instances in {@link Aggregate}s are suppressed.
      *
      * @param elem a JSON element, may not be {@code null}
@@ -50,15 +47,17 @@ public class Queries {
         };
     }
 
-
     private static Map<String, ?> asMap(JsonValue elem) {
         return switch (elem) {
-            case JsonObject jo -> jo.members()
-                    .entrySet()
-                    .stream()
-                    .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
-                    .collect(toMap(Map.Entry::getKey, e -> value(e.getValue())));
-            case null, default -> throw new IllegalArgumentException(elem + " is not a JSON Object");
+            case JsonObject jo -> jo
+                .members()
+                .entrySet()
+                .stream()
+                .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
+                .collect(toMap(Map.Entry::getKey, e -> value(e.getValue())));
+            case null, default -> throw new IllegalArgumentException(
+                elem + " is not a JSON Object"
+            );
         };
     }
 
@@ -66,19 +65,24 @@ public class Queries {
     private static Object asBasic(JsonValue elem) {
         return switch (elem) {
             case Basic<?> basic -> basic.value();
-            case null, default -> throw new IllegalArgumentException(elem + " is not a basic JSON element");
+            case null, default -> throw new IllegalArgumentException(
+                elem + " is not a basic JSON element"
+            );
         };
     }
 
     // turns a JsonArray into a list
     private static List<?> asList(JsonValue elem) {
         return switch (elem) {
-            case JsonArray ar -> ar.elements()
-                    .stream()
-                    .filter(not(eq(JsonNull.INSTANCE, identity())))
-                    .map(Queries::value)
-                    .toList();
-            case null, default -> throw new IllegalArgumentException(elem + " is not a JSON array");
+            case JsonArray ar -> ar
+                .elements()
+                .stream()
+                .filter(not(eq(JsonNull.INSTANCE, identity())))
+                .map(Queries::value)
+                .toList();
+            case null, default -> throw new IllegalArgumentException(
+                elem + " is not a JSON array"
+            );
         };
     }
 
@@ -161,7 +165,9 @@ public class Queries {
             case FALSE -> 0;
             case JsonString s -> Integer.parseInt(s.value());
             case JsonNull ignored -> 0;
-            case Aggregate a -> throw new IllegalArgumentException("cannot convert to int: " + a);
+            case Aggregate a -> throw new IllegalArgumentException(
+                "cannot convert to int: " + a
+            );
         };
     }
 
@@ -184,7 +190,9 @@ public class Queries {
             case FALSE -> 0L;
             case JsonString s -> Long.parseLong(s.value());
             case JsonNull ignored -> 0L;
-            case Aggregate a -> throw new IllegalArgumentException("cannot convert to long: " + a);
+            case Aggregate a -> throw new IllegalArgumentException(
+                "cannot convert to long: " + a
+            );
         };
     }
 
@@ -208,7 +216,9 @@ public class Queries {
             case FALSE -> 0d;
             case JsonString s -> Double.parseDouble(s.value());
             case JsonNull ignored -> 0d;
-            case Aggregate a -> throw new IllegalArgumentException("cannot convert to double: " + a);
+            case Aggregate a -> throw new IllegalArgumentException(
+                "cannot convert to double: " + a
+            );
         };
     }
 
@@ -231,7 +241,9 @@ public class Queries {
             case FALSE -> BigDecimal.ZERO;
             case JsonString s -> new BigDecimal(s.value());
             case JsonNull ignored -> BigDecimal.ZERO;
-            case Aggregate a -> throw new IllegalArgumentException("cannot convert to BigDecimal: " + a);
+            case Aggregate a -> throw new IllegalArgumentException(
+                "cannot convert to BigDecimal: " + a
+            );
         };
     }
 
@@ -250,19 +262,28 @@ public class Queries {
      * @return the enum value
      * @throws IllegalArgumentException if elem not a {@link JsonString} or {@link JsonNull}.
      */
-    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, JsonValue elem, E def) {
+    public static <E extends Enum<E>> E enumValue(
+        Class<E> enumClass,
+        JsonValue elem,
+        E def
+    ) {
         return switch (elem) {
             case null -> def;
             case JsonNull ignored -> def;
             case JsonString js -> Enum.valueOf(enumClass, js.value());
-            default -> throw new IllegalArgumentException("cannot convert to enum: " + elem);
+            default -> throw new IllegalArgumentException(
+                "cannot convert to enum: " + elem
+            );
         };
     }
 
     /**
      * Same as {@code enumValue} with a default value of {@code null}.
      */
-    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, JsonValue elem) {
+    public static <E extends Enum<E>> E enumValue(
+        Class<E> enumClass,
+        JsonValue elem
+    ) {
         return enumValue(enumClass, elem, (E) null);
     }
 
@@ -282,13 +303,18 @@ public class Queries {
      * @param <E>       the enum type
      * @return the enum value
      */
-    public static <E extends Enum<E>> E enumValueIgnoreCase(Class<E> enumClass, JsonValue elem) {
+    public static <E extends Enum<E>> E enumValueIgnoreCase(
+        Class<E> enumClass,
+        JsonValue elem
+    ) {
         if (elem instanceof JsonString(String value)) {
             return stream(enumClass.getEnumConstants())
-                    .collect(toMap(c -> c.name().toUpperCase(), identity()))
-                    .get(value.toUpperCase());
+                .collect(toMap(c -> c.name().toUpperCase(), identity()))
+                .get(value.toUpperCase());
         } else {
-            throw new IllegalArgumentException("cannot convert to enum: " + elem);
+            throw new IllegalArgumentException(
+                "cannot convert to enum: " + elem
+            );
         }
     }
 
@@ -302,11 +328,12 @@ public class Queries {
      * @param <E>       the enum type
      * @return the enum value
      */
-    public static <E extends Enum<E>> E enumValue(Class<E> enumClass, JsonValue
-            elem, Function<JsonValue, String> extractor) {
-        return extractor
-                .andThen(s -> Enum.valueOf(enumClass, s))
-                .apply(elem);
+    public static <E extends Enum<E>> E enumValue(
+        Class<E> enumClass,
+        JsonValue elem,
+        Function<JsonValue, String> extractor
+    ) {
+        return extractor.andThen(s -> Enum.valueOf(enumClass, s)).apply(elem);
     }
 
     /**
@@ -360,7 +387,9 @@ public class Queries {
             case JsonBoolean b -> b == TRUE;
             case JsonString(String value) -> Boolean.parseBoolean(value);
             case JsonNumber jn -> jn.numVal().compareTo(BigDecimal.ZERO) != 0;
-            default -> throw new IllegalArgumentException("cannot convert to boolean: " + elem);
+            default -> throw new IllegalArgumentException(
+                "cannot convert to boolean: " + elem
+            );
         };
     }
 
@@ -447,7 +476,6 @@ public class Queries {
         };
     }
 
-
     private static byte[] byteArray(JsonArray ja) {
         var tmp = new byte[ja.size()];
         for (int i = 0; i < tmp.length; i++) {
@@ -487,7 +515,6 @@ public class Queries {
         };
     }
 
-
     private static float[] floatArray(JsonArray ja) {
         var tmp = new float[ja.size()];
         for (int i = 0; i < tmp.length; i++) {
@@ -525,7 +552,6 @@ public class Queries {
             case null, default -> new BigDecimal[0];
         };
     }
-
 
     private static boolean[] booleanArray(JsonArray ja) {
         var tmp = new boolean[ja.size()];

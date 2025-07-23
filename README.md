@@ -25,10 +25,29 @@ It contains two breaking changes compared to version 1.1.x:
 * `JsonNumber` uses `BigDecimal` instead of `double` for its payload; 
   cf. [numbers](numbers.md) for a detailed discussion.
 
-## Why not Jackson or GSON?
+## The Greyson Workflow
 
-There is nothing wrong with either Jackson or GSON. Got me?
-Nothing!
+The Greyson workflow has been designed around the JSON in memory object representation
+described below:
+
+* The Greyson library parses a JSON document into a JsonValue instance.
+* User Code uses the Greyson query API to instantiate target class instances for this value.
+* User Code transforms an arbitrary class instance (or array or collection of objects) into a JsonValue 
+  using the Greyson builder API.
+* The Greyson library serializes this JSON value into a JSON file.
+
+![workflow.png](workflow.png "Greyson Workflow")
+
+## Why Yet Another JSON Library?
+
+There is nothing wrong with either Jackson or GSON. Both
+Jackson and GSON tend to provide some magic twists to convert
+a JSON document into an arbitrary class instance and vice versa.
+Both libraries support a model similar to the Greyson workflow with
+an intermediate representation, and both libraries provide access to 
+their token stream parsers. Both provide extensive customization options.
+All these features make these libraries quite large. Greyson is intentionally
+small both in terms of package size and in terms of classes and methods. 
 Here are some thoughts about [why not GSON or Jackson](whynot.md)]
 
 ## JSON Test Suite

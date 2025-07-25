@@ -19,6 +19,29 @@ import static org.junit.jupiter.api.Assertions.*;
 class ValidationTest {
 
     @Test
+    void testTypes() {
+        assertAll(
+                () -> assertTrue(is(JsonString.class).test(Basic.of("hello"))),
+                () -> assertFalse(is(JsonString.class).test(Basic.of(false))),
+                () -> assertFalse(is(JsonString.class).test(Basic.of(true))),
+                () -> assertFalse(is(JsonString.class).test(Basic.of(null))),
+                () -> assertFalse(is(JsonString.class).test(Basic.of(5))),
+                // JsonBoolean
+                () -> assertTrue(is(JsonBoolean.class).test(TRUE)),
+                () -> assertTrue(is(JsonBoolean.class).test(FALSE)),
+                () -> assertFalse(is(JsonBoolean.class).test(INSTANCE)),
+                () -> assertFalse(is(JsonBoolean.class).test(Basic.of(5))),
+                () -> assertFalse(is(JsonBoolean.class).test(Basic.of("ehllo"))),
+                // JsonNumber
+                () -> assertTrue(is(JsonNumber.class).test(Basic.of(5))),
+                () -> assertTrue(is(JsonNumber.class).test(Basic.of(0))),
+                () -> assertFalse(is(JsonNumber.class).test(INSTANCE)),
+                () -> assertFalse(is(JsonNumber.class).test(TRUE)),
+                () -> assertFalse(is(JsonNumber.class).test(Basic.of("ehllo")))
+        );
+    }
+
+    @Test
     void testRequiredKeys() {
         // given: obj with two keys "a" and "b"
         var obj = new JsonObject(Map.of("a", Basic.of(5), "b", Basic.of(7)));
@@ -95,14 +118,23 @@ class ValidationTest {
     }
 
     @Test
+    void superSimple() {
+        var array = arrayBuilder().basic(true).build();
+        var struc = structuralTypes(array);
+        System.out.println(TRUE.getDeclaringClass());
+        assertTrue(struc.test(new JsonArray(List.of(FALSE))));
+    }
+
+    @Test
     void testSimpleArrayTypeStructure() {
         // given
-        var array = arrayBuilder().basic(1).basic(true).nullItem().build();
+        var array = arrayBuilder().basic(1).basic(true).build();
         // when
         var structure = structuralTypes(array);
+        var matching = arrayBuilder().basic(2).basic(true).build();
         // then
         assertAll(
-                () -> assertTrue(structure.test(new JsonArray(List.of(Basic.of(2), FALSE, INSTANCE))))
+                () -> assertTrue(structure.test(matching))
         );
     }
 
@@ -145,6 +177,9 @@ class ValidationTest {
         var number = is(JsonNumber.class);
         var string = is(JsonString.class);
         var bool = is(JsonBoolean.class);
+
+        array.elements().stream().filter(string).forEach(System.out::println);
+
         // then
         assertAll( // there are...
                 () -> assertTrue(any(number).test(array)), // ...numbers

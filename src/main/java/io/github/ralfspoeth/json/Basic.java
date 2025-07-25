@@ -1,9 +1,8 @@
 package io.github.ralfspoeth.json;
 
 import java.math.BigDecimal;
-import java.util.function.Predicate;
 
-public sealed interface Basic<T> extends JsonValue, Predicate<JsonValue> permits JsonBoolean, JsonNull, JsonNumber, JsonString {
+public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 
     String json();
     T value();

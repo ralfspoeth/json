@@ -76,7 +76,7 @@ public class Validation {
     }
 
     public static Predicate<JsonValue> structuralTypes(JsonArray array) {
-        return structural(array.stream().map(v -> switch(v) {
+        return structural(array.stream().map(v -> switch (v) {
             case Basic<?> b -> is(b.getClass());
             case JsonArray a -> structuralTypes(a);
             case JsonObject o -> structuralTypes(o);
@@ -134,5 +134,4 @@ public class Validation {
     public static Predicate<JsonValue> is(Class<? extends JsonValue> type) {
         return type::isInstance;
     }
-
 }

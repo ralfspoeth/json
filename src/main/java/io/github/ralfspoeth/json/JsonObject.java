@@ -44,6 +44,14 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     }
 
     @Override
+    public boolean test(JsonValue jv) {
+        return switch (jv) {
+            case JsonObject(var mems) -> mems.equals(members);
+            case null, default -> false;
+        };
+    }
+
+    @Override
     public int size() {
         return members.size();
     }

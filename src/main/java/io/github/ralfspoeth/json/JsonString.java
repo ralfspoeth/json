@@ -33,7 +33,7 @@ public record JsonString(String value) implements Basic<String> {
     }
 
     @Override
-    public boolean test(String s) {
-        return value().equals(s);
+    public boolean test(JsonValue s) {
+        return s instanceof JsonString(String v) && v.equals(value);
     }
 }

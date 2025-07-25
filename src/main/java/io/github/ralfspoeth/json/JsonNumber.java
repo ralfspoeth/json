@@ -25,8 +25,8 @@ public record JsonNumber(BigDecimal numVal) implements Basic<BigDecimal> {
     }
 
     @Override
-    public boolean test(BigDecimal other) {
-        return numVal.compareTo(other) == 0;
+    public boolean test(JsonValue other) {
+        return other instanceof JsonNumber(BigDecimal bd) && bd.compareTo(value())==0;
     }
 
     @Override

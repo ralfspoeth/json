@@ -46,6 +46,14 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     }
 
     @Override
+    public boolean test(JsonValue jv) {
+        return switch (jv) {
+            case JsonArray(var elems) -> elems.equals(elements());
+            case null, default -> false;
+        };
+    }
+
+    @Override
     public String json() {
         return elements.stream()
                 .map(JsonValue::json)

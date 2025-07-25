@@ -1,8 +1,9 @@
 package io.github.ralfspoeth.json;
 
 import java.util.Map;
+import java.util.function.Predicate;
 
-public sealed interface JsonValue permits Aggregate, Basic {
+public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate, Basic {
 
     String json();
 

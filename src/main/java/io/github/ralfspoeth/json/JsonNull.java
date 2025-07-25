@@ -19,7 +19,7 @@ public final class JsonNull implements Basic<Object> {
     }
 
     @Override
-    public boolean test(Object o) {
-        return o==null;
+    public boolean test(JsonValue o) {
+        return o instanceof JsonNull;
     }
 }

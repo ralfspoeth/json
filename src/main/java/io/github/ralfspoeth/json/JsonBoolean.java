@@ -28,7 +28,7 @@ public enum JsonBoolean implements Basic<Boolean> {
     }
 
     @Override
-    public boolean test(Boolean aBoolean) {
-        return aBoolean == value();
+    public boolean test(JsonValue aBoolean) {
+        return aBoolean instanceof JsonBoolean jb && jb.value().equals(value());
     }
 }

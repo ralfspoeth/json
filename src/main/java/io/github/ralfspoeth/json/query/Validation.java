@@ -77,6 +77,7 @@ public class Validation {
 
     public static Predicate<JsonValue> structuralTypes(JsonArray array) {
         return structural(array.stream().map(v -> switch (v) {
+            case JsonBoolean ignored -> is(JsonBoolean.class);
             case Basic<?> b -> is(b.getClass());
             case JsonArray a -> structuralTypes(a);
             case JsonObject o -> structuralTypes(o);
@@ -87,6 +88,7 @@ public class Validation {
         return structural(object.members().entrySet().stream().collect(toMap(
                 Map.Entry::getKey,
                 e -> switch (e.getValue()) {
+                    case JsonBoolean ignored -> is(JsonBoolean.class);
                     case Basic<?> b -> is(b.getClass());
                     case JsonArray a -> structuralTypes(a);
                     case JsonObject o -> structuralTypes(o);

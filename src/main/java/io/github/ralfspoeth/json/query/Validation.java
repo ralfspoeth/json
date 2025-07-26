@@ -6,34 +6,29 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
 public class Validation {
+
+    public record Result(JsonValue value, Predicate<JsonValue> failed, List<Result> details) {
+        public Result(JsonValue value, Predicate<JsonValue> failed) {
+            this(value, failed, List.of());
+        }
+    }
+
     private Validation() {
     }
 
-    private static final System.Logger LOGGER = System.getLogger(Validation.class.getName());
-
-    private static boolean throwIllegal(Supplier<String> msg) {
-        throw new IllegalArgumentException(msg.get());
-    }
-
-    public static Predicate<JsonValue> matchesOrThrow(Predicate<JsonValue> predicate, Supplier<String> msg) {
-        return jv -> switch (jv) {
-            case JsonValue v when predicate.test(v) -> true;
-            case null, default -> throwIllegal(msg);
-        };
-    }
-
-    public static Predicate<JsonValue> matchesOrLog(Predicate<JsonValue> predicate, Supplier<String> msg) {
+    public static Predicate<JsonValue> matchesOrThrow(Predicate<JsonValue> predicate)
+            throws ValidationException
+    {
         return jv -> {
-            boolean valid = predicate.test(jv);
-            if (!valid) {
-                LOGGER.log(System.Logger.Level.INFO, msg);
-            }
-            return valid;
+            if(not(predicate).test(jv)) {
+                throw new ValidationException("Predicate %s does not match %s".formatted(predicate, jv),
+                        new Result(jv, predicate));
+            } else return true;
         };
     }
 
@@ -44,8 +39,7 @@ public class Validation {
         };
     }
 
-
-    public static Predicate<JsonValue> structural(Map<String, Predicate<JsonValue>> structure) {
+    public static Predicate<JsonValue> matches(Map<String, Predicate<JsonValue>> structure) {
         return jv -> switch (jv) {
             case JsonObject(var members) -> members.entrySet().stream()
                     .filter(e -> structure.containsKey(e.getKey()))
@@ -54,48 +48,50 @@ public class Validation {
         };
     }
 
-    public static Predicate<JsonValue> structuralValues(JsonObject jo) {
-        return structural(
+    public static Predicate<JsonValue> matchesValuesOf(JsonObject jo) {
+        return matches(
                 jo.members().entrySet().stream().collect(toMap(
                         Map.Entry::getKey,
                         e -> switch (e.getValue()) {
                             case Basic<?> b -> b;
-                            case JsonObject o -> structuralValues(o);
-                            case JsonArray a -> structuralValues(a);
+                            case JsonObject o -> matchesValuesOf(o);
+                            case JsonArray a -> matchesValuesOf(a);
                         }
                 ))
         );
     }
 
-    public static Predicate<JsonValue> structuralValues(JsonArray array) {
-        return structural(array.elements().stream().map(e -> switch (e) {
+    public static Predicate<JsonValue> matchesValuesOf(JsonArray array) {
+        return matches(array.elements().stream().map(e -> switch (e) {
             case Basic<?> b -> b;
-            case JsonObject o -> structuralValues(o);
-            case JsonArray a -> structuralValues(a);
+            case JsonObject o -> matchesValuesOf(o);
+            case JsonArray a -> matchesValuesOf(a);
         }).toList());
     }
 
-    public static Predicate<JsonValue> structuralTypes(JsonArray array) {
-        return structural(array.stream().map(v -> switch (v) {
+    public static Predicate<JsonValue> matchesTypesOf(JsonArray array) {
+        return matches(array.stream().map(v -> switch (v) {
+            case JsonBoolean ignored -> is(JsonBoolean.class);
             case Basic<?> b -> is(b.getClass());
-            case JsonArray a -> structuralTypes(a);
-            case JsonObject o -> structuralTypes(o);
+            case JsonArray a -> matchesTypesOf(a);
+            case JsonObject o -> matchesTypesOf(o);
         }).toList());
     }
 
-    public static Predicate<JsonValue> structuralTypes(JsonObject object) {
-        return structural(object.members().entrySet().stream().collect(toMap(
+    public static Predicate<JsonValue> matchesTypesOf(JsonObject object) {
+        return matches(object.members().entrySet().stream().collect(toMap(
                 Map.Entry::getKey,
                 e -> switch (e.getValue()) {
+                    case JsonBoolean ignored -> is(JsonBoolean.class);
                     case Basic<?> b -> is(b.getClass());
-                    case JsonArray a -> structuralTypes(a);
-                    case JsonObject o -> structuralTypes(o);
+                    case JsonArray a -> matchesTypesOf(a);
+                    case JsonObject o -> matchesTypesOf(o);
                 }))
         );
     }
 
     public static Predicate<JsonValue> required(Map<String, Predicate<JsonValue>> structure) {
-        return required(structure.keySet()).and(structural(structure));
+        return required(structure.keySet()).and(matches(structure));
     }
 
     public static Predicate<JsonValue> all(Predicate<JsonValue> predicate) {
@@ -112,7 +108,7 @@ public class Validation {
         };
     }
 
-    public static Predicate<JsonValue> structural(List<Predicate<JsonValue>> structure) {
+    public static Predicate<JsonValue> matches(List<Predicate<JsonValue>> structure) {
         return jv -> switch (jv) {
             case JsonArray(var elements) when elements.size() == structure.size() -> {
                 for (int i = 0; i < elements.size(); i++) {

@@ -58,17 +58,17 @@ class ValidationTest {
     }
 
     @Test
-    void testStructuralObject() {
+    void testMatchesObject() {
         // given
         var obj = new JsonObject(Map.of("a", Basic.of(5), "b", TRUE, "c", Basic.of("zeh")));
         // when
-        var struc1 = structural(Map.of(
+        var struc1 = matches(Map.of(
                 "a", is(JsonNumber.class),
                 "b", is(JsonBoolean.class),
                 "c", regex("[a-z]+")
         )); // all keys included
-        var struc2 = structural(Map.of("a", Basic.of(5))); // incomplete
-        var struc3 = structural(Map.of(
+        var struc2 = matches(Map.of("a", Basic.of(5))); // incomplete
+        var struc3 = matches(Map.of(
                 "a", is(JsonString.class), // not a string, must fail
                 "b", FALSE // not false but true
         ));
@@ -76,7 +76,7 @@ class ValidationTest {
         assertAll(
                 () -> assertTrue(struc1.test(obj)),
                 () -> assertTrue(struc2.test(obj)),
-                () -> assertFalse(matchesOrLog(struc3, () -> "does not match map of a to string an b to false").test(obj))
+                () -> assertThrows(ValidationException.class, ()->matchesOrThrow(struc3).test(obj))
         );
     }
 
@@ -120,7 +120,7 @@ class ValidationTest {
     @Test
     void superSimple() {
         var array = arrayBuilder().basic(true).build();
-        var struc = structuralTypes(array);
+        var struc = matchesTypesOf(array);
         System.out.println(TRUE.getDeclaringClass());
         assertTrue(struc.test(new JsonArray(List.of(FALSE))));
     }
@@ -130,7 +130,7 @@ class ValidationTest {
         // given
         var array = arrayBuilder().basic(1).basic(true).build();
         // when
-        var structure = structuralTypes(array);
+        var structure = matchesTypesOf(array);
         var matching = arrayBuilder().basic(2).basic(true).build();
         // then
         assertAll(
@@ -140,7 +140,7 @@ class ValidationTest {
 
 
     @Test
-    void testStructuralTypes() {
+    void testMatchesTypes() {
         // given is a list of
         // a boolean, the null instance, a number, a string, a map with keys "a" and "b" to a boolean and a number, a list of 9
         var array = new JsonArray(List.of(
@@ -152,7 +152,7 @@ class ValidationTest {
                 new JsonArray(List.of(Basic.of(9)))
         ));
         // when
-        var arrayTypeStructure = structuralTypes(array);
+        var arrayTypeStructure = matchesTypesOf(array);
         // then
         assertAll(
                 () -> assertTrue(arrayTypeStructure.test(new JsonArray(List.of(
@@ -195,21 +195,8 @@ class ValidationTest {
         var value = TRUE;
         // then
         assertAll(
-                () -> assertThrows(IllegalArgumentException.class, () -> matchesOrThrow(FALSE, () -> "true is not false").test(value)),
-                () -> assertDoesNotThrow(() -> matchesOrThrow(TRUE, () -> "true is not false").test(value))
+                () -> assertThrows(ValidationException.class, () -> matchesOrThrow(FALSE).test(value)),
+                () -> assertDoesNotThrow(() -> matchesOrThrow(TRUE).test(value))
         );
     }
-
-    @Test
-    void testMatchesOrLog() {
-        // given
-        var value = TRUE;
-        // then
-        assertAll(
-                () -> assertTrue(matchesOrLog(TRUE, () -> "true is true").test(value)),
-                () -> assertFalse(matchesOrLog(FALSE, () -> "true is not false").test(value))
-        );
-    }
-
-
 }

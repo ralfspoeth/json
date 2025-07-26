@@ -268,32 +268,12 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return p.single(root).map(Queries::doubleValue).orElse(0d);
     }
 
-    public static double doubleValue(String path, JsonValue root) {
-        return doubleValue(of(path), root);
-    }
-
     public static boolean booleanValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::booleanValue).orElse(false);
     }
 
-    public static boolean booleanValue(String path, JsonValue root) {
-        return booleanValue(of(path), root);
-    }
-
     public static int intValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::intValue).orElse(0);
-    }
-
-    public static int intValue(String path, JsonValue root) {
-        return intValue(of(path), root);
-    }
-
-    public static long longValue(Path p, JsonValue root) {
-        return p.single(root).map(Queries::longValue).orElse(0L);
-    }
-
-    public static long longValue(String path, JsonValue root) {
-        return longValue(of(path), root);
     }
 
     public static <E extends Enum<E>> Enum<E> enumValue(Path p, JsonValue root, Class<E> enumClass) {
@@ -308,16 +288,12 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return p.single(root).map(Queries::stringValue).orElse(null);
     }
 
-    public static String stringValue(String path, JsonValue root) {
-        return stringValue(of(path), root);
-    }
+    abstract boolean equalsLast(Path p);
 
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Path p && equalsLast(p) && Objects.equals(p.parent, parent);
     }
-
-    abstract boolean equalsLast(Path p);
 
     @Override
     public abstract int hashCode();

@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -100,13 +101,23 @@ public class JsonReader implements AutoCloseable {
      * @throws IOException whenever the underlying source throws
      */
     public JsonValue readElement() throws IOException {
+        return read().orElseThrow(() -> new JsonParseException("No JSON element in the source",
+                lexer.coordinates().row(),
+                lexer.coordinates().column())
+        );
+    }
+
+    /**
+     * Reads the first JSON element if there is one.
+     * @return a JSON value wrapped in an Optional
+     * @throws IOException whenever the lexer throws
+     */
+    public Optional<JsonValue> read() throws IOException {
         var result = readNextElement();
         if (lexer.hasNext()) {
             throw new JsonParseException("Input contains tokens after the first element", lexer.coordinates().row(), lexer.coordinates().column());
-        } else if (result != null) {
-            return result;
         } else {
-            throw new JsonParseException("Source is empty", lexer.coordinates().row(), lexer.coordinates().column());
+            return Optional.ofNullable(result);
         }
     }
 

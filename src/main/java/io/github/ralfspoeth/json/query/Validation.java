@@ -21,6 +21,7 @@ public class Validation {
 
     sealed interface Structured extends Predicate<JsonValue> {
         Result explain(JsonValue value);
+
         record MapBased(Map<String, Predicate<JsonValue>> structure) implements Structured {
             @Override
             public boolean test(JsonValue jv) {
@@ -41,7 +42,7 @@ public class Validation {
                                 .filter(e -> structure.containsKey(e.getKey()))
                                 .filter(e -> !structure.get(e.getKey()).test(e.getValue()))
                                 .forEach(e -> {
-                                    if(structure.get(e.getKey()) instanceof Structured structured) {
+                                    if (structure.get(e.getKey()) instanceof Structured structured) {
                                         details.add(structured.explain(e.getValue()));
                                     } else {
                                         details.add(new Result(e.getValue(), structure.get(e.getKey())));
@@ -71,11 +72,11 @@ public class Validation {
             @Override
             public Result explain(JsonValue value) {
                 return switch (value) {
-                    case JsonArray(var elems) when elems.size()==structure.size() -> {
+                    case JsonArray(var elems) when elems.size() == structure.size() -> {
                         List<Result> details = new ArrayList<>();
-                        for(int i=0; i<elems.size(); i++) {
-                            if(!structure.get(i).test(elems.get(i))) {
-                                if(structure.get(i) instanceof Structured structured) {
+                        for (int i = 0; i < elems.size(); i++) {
+                            if (!structure.get(i).test(elems.get(i))) {
+                                if (structure.get(i) instanceof Structured structured) {
                                     details.add(structured.explain(elems.get(i)));
                                 } else {
                                     details.add(new Result(elems.get(i), structure.get(i)));
@@ -97,32 +98,16 @@ public class Validation {
                     case JsonArray(var elems) -> {
                         List<Result> details = new ArrayList<>();
                         elems.stream().filter(not(predicate)).forEach(e -> {
-                            if(predicate instanceof Structured structured) {
+                            if (predicate instanceof Structured structured) {
                                 details.add(structured.explain(e));
                             } else {
                                 details.add(new Result(e, predicate));
                             }
                         });
-                        yield new Result(value, this);
+                        yield new Result(value, this, details);
                     }
                     case null, default -> new Result(value, this);
                 };
-            }
-
-            record Any(Predicate<JsonValue> predicate) implements Structured {
-
-                @Override
-                public Result explain(JsonValue value) {
-                    return new Result(value, this);
-                }
-
-                @Override
-                public boolean test(JsonValue jsonValue) {
-                    return switch (jsonValue) {
-                        case JsonArray(var elems) -> elems.stream().anyMatch(predicate);
-                        case null, default -> false;
-                    };
-                }
             }
 
             @Override
@@ -134,11 +119,28 @@ public class Validation {
             }
         }
 
+        record Any(Predicate<JsonValue> predicate) implements Structured {
+
+            @Override
+            public Result explain(JsonValue value) {
+                return new Result(value, this);
+            }
+
+            @Override
+            public boolean test(JsonValue jsonValue) {
+                return switch (jsonValue) {
+                    case JsonArray(var elems) -> elems.stream().anyMatch(predicate);
+                    case null, default -> false;
+                };
+            }
+
+        }
+
         record Wrapped(Predicate<JsonValue> predicate) implements Structured {
 
             @Override
             public Result explain(JsonValue value) {
-                return switch(predicate) {
+                return switch (predicate) {
                     case Structured s -> s.explain(value);
                     default -> new Result(value, predicate);
                 };
@@ -155,10 +157,9 @@ public class Validation {
     }
 
     public static Predicate<JsonValue> matchesOrThrow(Predicate<JsonValue> predicate)
-            throws ValidationException
-    {
+            throws ValidationException {
         return jv -> {
-            if(not(predicate).test(jv)) {
+            if (not(predicate).test(jv)) {
                 throw new ValidationException("Predicate %s does not match %s".formatted(predicate, jv),
                         new Result(jv, predicate));
             } else return true;
@@ -223,17 +224,11 @@ public class Validation {
     }
 
     public static Predicate<JsonValue> all(Predicate<JsonValue> predicate) {
-        return jv -> switch (jv) {
-            case JsonArray(var elements) -> elements.stream().allMatch(predicate);
-            case null, default -> false;
-        };
+        return new Structured.All(predicate);
     }
 
     public static Predicate<JsonValue> any(Predicate<JsonValue> predicate) {
-        return jv -> switch (jv) {
-            case JsonArray(var elements) -> elements.stream().anyMatch(predicate);
-            case null, default -> false;
-        };
+        return new Structured.Any(predicate);
     }
 
     public static Predicate<JsonValue> matches(List<Predicate<JsonValue>> structure) {

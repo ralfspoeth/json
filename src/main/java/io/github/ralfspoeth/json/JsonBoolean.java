@@ -1,34 +1,25 @@
 package io.github.ralfspoeth.json;
 
-public enum JsonBoolean implements Basic<Boolean> {
-    TRUE {
-        @Override
-        public String json() {
-            return "true";
-        }
-
-        @Override
-        public Boolean value() {
-            return Boolean.TRUE;
-        }
-    }, FALSE {
-        @Override
-        public String json() {
-            return "false";
-        }
-
-        @Override
-        public Boolean value() {
-            return Boolean.FALSE;
-        }
-    };
+public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
+    public static final JsonBoolean TRUE = new JsonBoolean(true);
+    public static final JsonBoolean FALSE = new JsonBoolean(false);
 
     public static JsonBoolean of(boolean b) {
         return b ? TRUE : FALSE;
     }
 
     @Override
+    public Boolean value() {
+        return boolValue;
+    }
+
+    @Override
     public boolean test(JsonValue aBoolean) {
-        return aBoolean instanceof JsonBoolean jb && jb.value().equals(value());
+        return aBoolean instanceof JsonBoolean(boolean value) && value == boolValue;
+    }
+
+    @Override
+    public String json() {
+        return Boolean.toString(boolValue);
     }
 }

@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -119,14 +120,6 @@ class ValidationTest {
     }
 
     @Test
-    void superSimple() {
-        var array = arrayBuilder().basic(true).build();
-        var struc = matchesTypesOf(array);
-        System.out.println(TRUE.getDeclaringClass());
-        assertTrue(struc.test(new JsonArray(List.of(FALSE))));
-    }
-
-    @Test
     void testSimpleArrayTypeStructure() {
         // given
         var array = arrayBuilder().basic(1).basic(true).build();
@@ -235,7 +228,7 @@ class ValidationTest {
         // then
         var points = array.filter(all(is(JsonObject.class))).stream()
                 .map(Queries::elements)
-                .flatMap(l -> l.stream())
+                .flatMap(Collection::stream)
                 .map(jv -> new Point(
                         Path.intValue(Path.of("x"), jv, 0),
                         Path.intValue(Path.of("y"), jv, 1)

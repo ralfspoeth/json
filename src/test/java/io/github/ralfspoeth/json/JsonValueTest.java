@@ -61,9 +61,6 @@ class JsonValueTest {
                         .build()
         );
         var l = str.map(e -> switch (e) {
-            case JsonBoolean.TRUE -> "true";
-            case JsonBoolean.FALSE -> "false";
-            case JsonNull ignored -> "null";
             case Basic<?> b -> b.json();
             case Aggregate a -> a.toString();
         }).toList();

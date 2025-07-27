@@ -110,12 +110,10 @@ may use in your application:
 ```
 The first package contains the data types (`JsonValue` and its descendants)
 and the second contains the `JsonReader` and `JsonWriter` classes.
-The last package contain the `Queries` class with static 
-query functions and the `Path` API, both of which are under active 
-development.
+The last package contains the `Queries`, the `Path` and the `Validation` classes
+which make the Query API of Greyson.
+This API allows for mapping operations like this:
 
-In your code you'll typically write something like this 
-when your want to start with 
 ```java
     Reader r;
     try(var rdr = new JsonReader(r)) { // auto-closeable

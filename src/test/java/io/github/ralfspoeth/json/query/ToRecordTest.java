@@ -1,8 +1,8 @@
 package io.github.ralfspoeth.json.query;
 
+import io.github.ralfspoeth.json.Greyson;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
-import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,7 +24,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var jo = JsonReader.readElement(src);
+        var jo = Greyson.readValue(src);
         var result = new R(
                 intValue(members(jo).get("x"), 0)
         );
@@ -53,7 +53,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var value = JsonReader.readElement(src);
+        var value = Greyson.readValue(src);
         var result = elements(value)
                 .stream()
                 .map(Queries::members)
@@ -94,7 +94,7 @@ class ToRecordTest {
                 }
                 """;
         // JSON object representation
-        var jo = JsonReader.readElement(src);
+        var jo = Greyson.readValue(src);
         // convert to singleton list of Large instances
         var result = Stream.of(jo).map(Queries::members).map(om -> new Large(
                 intValue(om.get("x"), 0),

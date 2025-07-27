@@ -3,24 +3,38 @@ package io.github.ralfspoeth.json;
 import io.github.ralfspoeth.json.io.JsonReader;
 import io.github.ralfspoeth.json.io.JsonWriter;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * The Greyson class provides convenient access to common IO operations.
+ *
+ */
 public class Greyson {
     private Greyson() {}
 
-    public static JsonValue read(String s) {
-        return JsonReader.readElement(s);
+    public static Optional<JsonValue> read(String s) {
+        try {
+            return read(new StringReader(s));
+        } catch (IOException e) {
+            throw new AssertionError("StringReader should never throw IOException", e);
+        }
     }
 
-    public static JsonValue read(Reader rdr) throws IOException {
+    public static Optional<JsonValue> read(Reader rdr) throws IOException {
         try(var jr = new JsonReader(rdr)) {
-            return jr.readElement();
+            return jr.read();
         }
+    }
+
+    public static JsonValue readValue(String s) {
+        return read(s).orElseThrow();
+    }
+
+    public static JsonValue readValue(Reader rdr) throws IOException {
+        return read(rdr).orElseThrow();
     }
 
     /**
@@ -29,12 +43,37 @@ public class Greyson {
      * @param elem the element to serialize, must not be {@code null}
      */
     public static void write(Writer writer, JsonValue elem) {
-        try(var wrt = JsonWriter.createDefaultWriter(requireNonNull(writer))) {
+        try(var wrt = new JsonWriter(writer)) {
             wrt.write(requireNonNull(elem));
         }
     }
 
-    public static void write(StringBuilder sb, JsonValue elem) {
+    /**
+     * Serialize the {@link JsonValue} to {@code System.out}.
+     * @param elem the element to serialize, must not be {@code null}
+     */
+    public static void writeToSystemOut(JsonValue elem) {
+        write(new PrintWriter(System.out), elem);
+    }
+
+    /**
+     * Serialize the {@link JsonValue} into a {@link StringBuilder}.
+     * The string builder is returned for convenient use:
+     * {@snippet :
+     * // Given
+     * JsonValue jv = null; // @replace regex="null;" replacement="..."
+     * // we can then chain things like `toString` easily, so instead of
+     * var sb = new StringBuilder();
+     * Greyson.writeToStringBuilder(sb, jv);
+     * var s = sb.toString();
+     * // we may write
+     * var s = Greyson.writeToStringBuilder(new StringBuilder(), jv).toString();
+     * }
+     * @param elem the element to serialize, must not be {@code null}
+     * @param sb a string builder
+     * @return the string builder provided
+     */
+    public static StringBuilder write(StringBuilder sb, JsonValue elem) {
         write(new Writer() {
             @Override
             public void write(char[] cbuf, int off, int len) {
@@ -45,13 +84,6 @@ public class Greyson {
             @Override
             public void close() {}
         }, elem);
-    }
-
-    /**
-     * Serialize the {@link JsonValue} to {@code System.out}.
-     * @param elem the element to serialize, must not be {@code null}
-     */
-    public static void writeToSystemOut(JsonValue elem) {
-        write(new PrintWriter(System.out), elem);
+        return sb;
     }
 }

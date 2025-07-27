@@ -29,7 +29,7 @@ class GreysonTest {
     @Test
     void testReadFromString_validJson() {
         String jsonString = "{\"name\":\"test\",\"value\":123}";
-        JsonValue element = Greyson.read(jsonString);
+        JsonValue element = Greyson.read(jsonString).orElseThrow();
         assertNotNull(element);
         assertInstanceOf(JsonObject.class, element);
         JsonObject jo = (JsonObject) element;
@@ -53,14 +53,14 @@ class GreysonTest {
         // Behavior for empty string depends on JsonReader.readElement(String) implementation
         // It might throw an exception or return null/JsonNull if it's considered valid empty content.
         // Assuming it throws an exception for non-JSON content.
-        assertThrows(NoSuchElementException.class, () -> Greyson.read(""));
+        assertThrows(NoSuchElementException.class, () -> Greyson.readValue(""));
     }
 
     @Test
     void testReadFromReader_validJson() throws IOException {
         String jsonString = "[\"apple\", \"banana\"]";
         Reader reader = new StringReader(jsonString);
-        JsonValue element = Greyson.read(reader);
+        JsonValue element = Greyson.read(reader).orElseThrow();
         assertNotNull(element);
         assertInstanceOf(JsonArray.class, element);
         JsonArray ja = (JsonArray) element;
@@ -102,15 +102,15 @@ class GreysonTest {
 
     @Test
     void testWrite_jsonArray() {
-        StringWriter writer = new StringWriter();
+        // given
         JsonArray jsonArray = Aggregate.arrayBuilder()
                 .item(JsonBoolean.TRUE)
                 .item(JsonNull.INSTANCE)
                 .build();
-        Greyson.write(writer, jsonArray);
-        // Default writer for arrays might be a single line
+        // when
+        var result = Greyson.write(new StringBuilder(), jsonArray).toString();
         String expectedOutput = "[true, null]";
-        assertEquals(expectedOutput, writer.toString().trim());
+        assertEquals(expectedOutput, result);
     }
 
     @Test
@@ -141,8 +141,8 @@ class GreysonTest {
                 .basic("num", 5)
                 .build();
         // when
-        Greyson.write(sb, jsonObject);
+        var serial = Greyson.write(sb, jsonObject).toString();
         // then
-        assertEquals(jsonObject, Greyson.read(sb.toString()));
+        assertEquals(jsonObject, Greyson.read(serial).orElseThrow());
     }
 }

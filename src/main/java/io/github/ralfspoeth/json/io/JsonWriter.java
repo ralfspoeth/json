@@ -5,9 +5,7 @@ import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -20,34 +18,25 @@ public class JsonWriter implements AutoCloseable {
     private final int indentation;
     private final PrintWriter out;
 
-    private JsonWriter(int indentation, Writer out) {
+    public JsonWriter(Writer out, int indentation) {
         this.indentation = indentation;
         this.out = out instanceof PrintWriter pw?pw:new PrintWriter(out);
     }
 
-    public static JsonWriter createDefaultWriter(Writer out) {
-        return new JsonWriter(4, out);
+    public JsonWriter(Writer out) {
+        this(out, 4);
     }
 
     public void write(JsonValue elem) {
         write(elem, 0);
     }
 
-    public static String toString(JsonValue elem) {
-        try(var wrt = new StringWriter(); var jwrt = JsonWriter.createDefaultWriter(wrt)) {
-            jwrt.write(elem);
-            return wrt.getBuffer().toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void write(JsonValue el, int level) {
         char[] chars = indentationChars(level);
         switch (el) {
-            case JsonObject jo -> {
+            case JsonObject(var members)-> {
                 out.println('{');
-                var memberIterator = jo.members().entrySet().iterator();
+                var memberIterator = members.entrySet().iterator();
                 if(memberIterator.hasNext()) {
                     writeMember(level, memberIterator);
                     while(memberIterator.hasNext()) {
@@ -59,9 +48,9 @@ public class JsonWriter implements AutoCloseable {
                 out.print(chars);
                 out.print('}');
             }
-            case JsonArray ja -> {
+            case JsonArray(var elements) -> {
                 out.print('[');
-                var itemIterator = ja.elements().iterator();
+                var itemIterator = elements.iterator();
                 if(itemIterator.hasNext()) {
                     write(itemIterator.next(), level);
                     while(itemIterator.hasNext()) {

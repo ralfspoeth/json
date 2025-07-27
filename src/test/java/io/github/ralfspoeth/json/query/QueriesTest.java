@@ -1,7 +1,6 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
-import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -131,7 +130,7 @@ class QueriesTest {
                     "o": null
                 }
                 """;
-        var jo = JsonReader.readElement(src);
+        var jo = Greyson.readValue(src);
 
         var r = new R(
                 stringValue(members(jo).get("s"), ""),
@@ -149,7 +148,7 @@ class QueriesTest {
         var src = """
                 [{"d": 5}, {"d": 6}, {"d": 7}]
                 """;
-        var ja = JsonReader.readElement(src);
+        var ja = Greyson.readValue(src);
         var result = elements(ja)
                 .stream()
                 .map(Queries::members)
@@ -170,7 +169,7 @@ class QueriesTest {
                 , "d": null
                 , "e": [1, 2, 3]
                 }""";
-        var jo = JsonReader.readElement(src);
+        var jo = Greyson.readValue(src);
         assertAll(
                 () -> assertInstanceOf(Map.class, value(jo)),
                 () -> assertInstanceOf(BigDecimal.class, ((Map<String, ?>) value(jo)).get("a")),

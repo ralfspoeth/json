@@ -1,7 +1,6 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
-import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -160,7 +159,7 @@ class PathTest {
                  {"a": 1, "b": 2, "c": 9}
                 ]""";
         // when
-        var elem = JsonReader.readElement(src);
+        var elem = Greyson.readValue(src);
         // then
         assertAll(
                 () -> assertEquals(1, intValue(of("[0]/a"), elem)),

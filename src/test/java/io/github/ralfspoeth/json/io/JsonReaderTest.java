@@ -238,8 +238,10 @@ class JsonReaderTest {
     }
 
     @Test
-    void testParseString(){
-        assertEquals(JsonNull.INSTANCE, JsonReader.readElement("null"));
+    void testParseString() throws Exception {
+        try(var src = new StringReader("null"); var rdr = new JsonReader(src)) {
+            assertEquals(JsonNull.INSTANCE, rdr.readElement());
+        }
     }
 
     @Test

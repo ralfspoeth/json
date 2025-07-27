@@ -7,20 +7,14 @@ import io.github.ralfspoeth.json.Aggregate.JsonObjectBuilder;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
 import static io.github.ralfspoeth.json.io.Lexer.FixToken.*;
 import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.NONNULL;
-import static java.util.Spliterators.spliteratorUnknownSize;
 
 /**
  * Instances parse character streams into JSON {@link JsonValue}s.
@@ -79,40 +73,23 @@ public class JsonReader implements AutoCloseable {
     private final Stack<Elem> stack = new Stack<>();
 
     /**
-     * Parses a fixed string.
-     * Uses a {@link StringReader} internally which is passed
-     * to a fresh instance of this class.
-     *
-     * @param s the source string
-     * @return the element representing the source string
-     */
-    public static JsonValue readElement(String s) {
-        return read(s).orElseThrow();
-    }
-
-    public static Optional<JsonValue> read(String s) {
-        try(var rdr = new JsonReader(new StringReader(s))) {
-            return rdr.read();
-        }catch (IOException ioex) {
-            throw new RuntimeException(ioex);
-        }
-    }
-
-    /**
      * Reads the first and only JSON element from the source.
      *
      * @return the JSON element
      * @throws IOException whenever the underlying source throws
      */
     public JsonValue readElement() throws IOException {
-        return read().orElseThrow(() -> new JsonParseException("No JSON element in the source",
-                lexer.coordinates().row(),
-                lexer.coordinates().column())
+        return read().orElseThrow(
+                () -> new JsonParseException("No JSON element in the source",
+                        lexer.coordinates().row(),
+                        lexer.coordinates().column()
+                )
         );
     }
 
     /**
      * Reads the first JSON element if there is one.
+     *
      * @return a JSON value wrapped in an Optional
      * @throws IOException whenever the lexer throws
      */
@@ -325,22 +302,6 @@ public class JsonReader implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if(!usedInStreamPipeline) lexer.close();
-    }
-
-    private void closeInStream() {
-        try {
-            lexer.close();
-        } catch (IOException ioex) {
-            throw new RuntimeException(ioex);
-        }
-    }
-
-    public static Stream<JsonValue> stream(Reader rdr) throws IOException {
-        try(var jr = new JsonReader(rdr, true)) {
-            return StreamSupport.stream(
-                    spliteratorUnknownSize(new ElementIterator(jr), NONNULL | IMMUTABLE), false
-            ).onClose(jr::closeInStream);
-        }
+        if (!usedInStreamPipeline) lexer.close();
     }
 }

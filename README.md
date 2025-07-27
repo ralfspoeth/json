@@ -5,7 +5,7 @@
 A modern Java library for parsing JSON into **immutable data structures** 
 and serializing them back to text. It features a robust parser, a fluent builder API, 
 efficient UTF-8 serialization, and powerful query functions to transform JSON 
-elements into your Java objects.
+elements into any Java objects.
 
 ## Goals
 
@@ -14,7 +14,10 @@ elements into your Java objects.
 *   **Fluent Builder API**: Construct complex JSON objects and arrays with ease.
 *   **Efficient Serialization**: Quickly serialize JSON elements into UTF-8 documents and streams.
 
-Find more on the motivation [here](motivation.md).
+Greyson parses the original version of JSON only with the only relaxation
+that ALL values may be root elements, not just objects and arrays. There are 
+no options to customize the contents, to be more relaxed or even stricter at the 
+parsing level.
 
 ## Current Status
 

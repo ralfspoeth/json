@@ -26,7 +26,7 @@ class JsonWriterTest {
                         .build())
                 .build();
 
-        try (var pw = new StringWriter(); var wrt = JsonWriter.createDefaultWriter(new PrintWriter(pw))) {
+        try (var pw = new StringWriter(); var wrt = new JsonWriter(new PrintWriter(pw))) {
             wrt.write(orig);
             try(var sr = new StringReader(pw.toString()); var rdr = new JsonReader(sr)) {
                 var result = rdr.readElement();
@@ -47,7 +47,7 @@ class JsonWriterTest {
 
     @Test
     void testBasics() throws IOException {
-        try(var w = new StringWriter(); var jw = JsonWriter.createDefaultWriter(w)) {
+        try(var w = new StringWriter(); var jw = new JsonWriter(w)) {
             int len = 0;
             jw.write(new JsonNumber(1.2));
             assertEquals("1.2", w.getBuffer().substring(len, len+=3));
@@ -64,7 +64,7 @@ class JsonWriterTest {
 
     @Test
     void testAggregates() throws IOException {
-        try(var w = new StringWriter(); var jw = JsonWriter.createDefaultWriter(w)) {
+        try(var w = new StringWriter(); var jw = new JsonWriter(w)) {
             int len = 0;
             jw.write(new JsonNumber(1.2));
             assertEquals("1.2", w.getBuffer().substring(len, len+=3));
@@ -77,19 +77,5 @@ class JsonWriterTest {
             jw.write(new JsonString("a"));
             assertEquals("\"a\"", w.getBuffer().substring(len, len+3));
         }
-    }
-
-    @Test
-    void testToString() {
-        // given
-        var arr = Aggregate.arrayBuilder().builder(
-                Aggregate.objectBuilder()
-                        .named("a", Basic.of(true))
-                        .named("b", Basic.of(null))
-                        .named("d", Basic.of(1d))).build();
-        // when
-        var str = JsonWriter.toString(arr);
-        // then
-        assertEquals(arr, JsonReader.readElement(str));
     }
 }

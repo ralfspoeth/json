@@ -11,37 +11,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
-import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
-import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
-import static io.github.ralfspoeth.json.JsonNull.INSTANCE;
-import static io.github.ralfspoeth.json.io.JsonReader.read;
+import static io.github.ralfspoeth.json.Greyson.read;
 import static io.github.ralfspoeth.json.query.Validation.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ValidationTest {
-
-    @Test
-    void testTypes() {
-        assertAll(
-                () -> assertTrue(is(JsonString.class).test(Basic.of("hello"))),
-                () -> assertFalse(is(JsonString.class).test(Basic.of(false))),
-                () -> assertFalse(is(JsonString.class).test(Basic.of(true))),
-                () -> assertFalse(is(JsonString.class).test(Basic.of(null))),
-                () -> assertFalse(is(JsonString.class).test(Basic.of(5))),
-                // JsonBoolean
-                () -> assertTrue(is(JsonBoolean.class).test(TRUE)),
-                () -> assertTrue(is(JsonBoolean.class).test(FALSE)),
-                () -> assertFalse(is(JsonBoolean.class).test(INSTANCE)),
-                () -> assertFalse(is(JsonBoolean.class).test(Basic.of(5))),
-                () -> assertFalse(is(JsonBoolean.class).test(Basic.of("ehllo"))),
-                // JsonNumber
-                () -> assertTrue(is(JsonNumber.class).test(Basic.of(5))),
-                () -> assertTrue(is(JsonNumber.class).test(Basic.of(0))),
-                () -> assertFalse(is(JsonNumber.class).test(INSTANCE)),
-                () -> assertFalse(is(JsonNumber.class).test(TRUE)),
-                () -> assertFalse(is(JsonNumber.class).test(Basic.of("ehllo")))
-        );
-    }
 
     @Test
     void testRequiredKeys() {
@@ -62,7 +36,7 @@ class ValidationTest {
     @Test
     void testMatchesObject() {
         // given
-        var obj = new JsonObject(Map.of("a", Basic.of(5), "b", TRUE, "c", Basic.of("zeh")));
+        var obj = new JsonObject(Map.of("a", Basic.of(5), "b", Basic.of(true), "c", Basic.of("zeh")));
         // when
         var struc1 = matches(Map.of(
                 "a", is(JsonNumber.class),
@@ -72,7 +46,7 @@ class ValidationTest {
         var struc2 = matches(Map.of("a", Basic.of(5))); // incomplete
         var struc3 = matches(Map.of(
                 "a", is(JsonString.class), // not a string, must fail
-                "b", FALSE // not false but true
+                "b", Basic.of(false) // not false but true
         ));
         // then
         assertAll(
@@ -85,12 +59,12 @@ class ValidationTest {
     @Test
     void testRequiredMap() {
         // given
-        Map<String, JsonValue> data = Map.of("a", Basic.of(5), "b", TRUE);
+        Map<String, JsonValue> data = Map.of("a", Basic.of(5), "b", Basic.of(true));
         var obj = new JsonObject(data);
         // when
         var struc1 = required(Map.of("a", is(JsonNumber.class), "b", is(JsonBoolean.class))); // keys and types
-        var struc2 = required(Map.of("a", Basic.of(5), "b", TRUE)); // exact map
-        var struc3 = required(Map.of("c", INSTANCE)); // key c missing
+        var struc2 = required(Map.of("a", Basic.of(5), "b", Basic.of(true))); // exact map
+        var struc3 = required(Map.of("c", Basic.of(null))); // key c missing
         var struc4 = required(Map.of("a", x -> false, "b", x -> false));
         // then
         assertAll(
@@ -138,11 +112,11 @@ class ValidationTest {
         // given is a list of
         // a boolean, the null instance, a number, a string, a map with keys "a" and "b" to a boolean and a number, a list of 9
         var array = new JsonArray(List.of(
-                TRUE,
-                INSTANCE,
+                Basic.of(true),
+                Basic.of(null),
                 Basic.of(5),
                 Basic.of("hello"),
-                new JsonObject(Map.of("a", FALSE, "b", Basic.of(7))),
+                new JsonObject(Map.of("a", Basic.of(false), "b", Basic.of(7))),
                 new JsonArray(List.of(Basic.of(9)))
         ));
         // when
@@ -150,8 +124,8 @@ class ValidationTest {
         // then
         assertAll(
                 () -> assertTrue(arrayTypeStructure.test(new JsonArray(List.of(
-                        FALSE, INSTANCE, Basic.of(-5), Basic.of("ola"),
-                        new JsonObject(Map.of("a", TRUE, "b", Basic.of(-7))),
+                        Basic.of(false), Basic.of(null), Basic.of(-5), Basic.of("ola"),
+                        new JsonObject(Map.of("a", Basic.of(true), "b", Basic.of(-7))),
                         new JsonArray(List.of(Basic.of(-9)))
                 ))))
         );
@@ -165,7 +139,7 @@ class ValidationTest {
                         .boxed()
                         .map(Basic::of)
                         .map(JsonValue.class::cast),
-                Stream.of(INSTANCE, TRUE)
+                Stream.of(Basic.of(null), Basic.of(true))
         ).toList());
         // when
         var number = is(JsonNumber.class);
@@ -178,7 +152,7 @@ class ValidationTest {
         assertAll( // there are...
                 () -> assertTrue(any(number).test(array)), // ...numbers
                 () -> assertTrue(any(bool).test(array)), // ... one boolean
-                () -> assertTrue(any(INSTANCE).test(array)), //... a null
+                () -> assertTrue(any(Basic.of(null)).test(array)), //... a null
                 () -> assertFalse(any(string).test(array)) // ... but no strings
         );
     }
@@ -186,11 +160,11 @@ class ValidationTest {
     @Test
     void testMatchesOrThrow() {
         // given
-        var value = TRUE;
+        var value = Basic.of(true);
         // then
         assertAll(
-                () -> assertThrows(ValidationException.class, () -> matchesOrThrow(FALSE).test(value)),
-                () -> assertDoesNotThrow(() -> matchesOrThrow(TRUE).test(value))
+                () -> assertThrows(ValidationException.class, () -> matchesOrThrow(Basic.of(false)).test(value)),
+                () -> assertDoesNotThrow(() -> matchesOrThrow(Basic.of(true)).test(value))
         );
     }
 

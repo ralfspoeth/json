@@ -1,9 +1,8 @@
 package io.github.ralfspoeth.json.suite;
 
 
+import io.github.ralfspoeth.json.Greyson;
 import io.github.ralfspoeth.json.JsonValue;
-import io.github.ralfspoeth.json.io.JsonReader;
-import io.github.ralfspoeth.json.io.JsonWriter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.MultipleFailuresError;
@@ -17,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class JSONTestSuiteTransformTest extends JSONTestSuiteBase {
 
     private JsonValue serialAndParse(JsonValue element) {
-        var str = JsonWriter.toString(element);
-        return JsonReader.readElement(str);
+        var str = Greyson.write(new StringBuilder(), element).toString();
+        return Greyson.readValue(str);
     }
 
     private Executable testTransform(Path path) {

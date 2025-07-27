@@ -1,4 +1,4 @@
-# Greyson - A Java JSON IO Library
+# Greyso - Java JSON IO Library
 
 ![greyson.png](greyson.png "JSON")
 
@@ -72,13 +72,13 @@ Maven Coordinates
     Artifact ID: json
 
 In your `pom.xml` add
-
+```xml
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
         <version>1.2.0</version>
     </dependency>
-
+```
 or, when using Gradle (Groovy)
 
     implementation 'io.github.ralfspoeth:json:1.2.0'
@@ -90,21 +90,21 @@ or, with Gradle (Kotlin), put
 in your build file.
 
 If you are using JPMS modules with a `module-info.java` file, add
-    
+```java    
     module your.module {
         requires io.github.ralfspoeth.json;
         // more
     }
-
+```
 ### Basic Usage
 
 The module `io.github.ralfspoeth.json` exports three packages that you 
 may use in your application:
-
+```java
     import io.github.ralfspoeth.json.*;       // class hierarchy
     import io.github.ralfspoeth.json.io.*;    // reader and writer
     import io.github.ralfspoeth.json.query.*; // Queries and Path API
-
+```
 The first package contains the data types (`JsonValue` and its descendants)
 and the second contains the `JsonReader` and `JsonWriter` classes.
 The last package contain the `Queries` class with static 
@@ -113,8 +113,8 @@ development.
 
 In your code you'll typically write something like this 
 when your want to start with 
-
-    Reader r = ...;
+```java
+    Reader r;
     try(var rdr = new JsonReader(r)) { // auto-closeable
         JsonValue elem = rdr.readJsonValue(); 
         // switch over elem
@@ -134,10 +134,10 @@ when your want to start with
         // or you may want to query some leaves in the JSON structure 
         Path.of("[1..3]/a/#x.*y/c").apply(elem).forEach(...);
     }
-
+```
 Writing data into a JSON stream works either through the builders
-
-    Writer out = ...;
+```java
+    Writer out;
     JsonObject jo = Aggregate.objectBuilder()
         .named("x", JsonBoolean.TRUE)
         .named("y", new JsonNumber(5d))
@@ -145,17 +145,17 @@ Writing data into a JSON stream works either through the builders
     try(var w = JsonWriter.createDefaultWriter(out)) {
         w.write(jo);
     }
-
+```
 or through standard conversions from an object of a `Record` subclass
-
-    Writer out = ...;
+```java
+    Writer out;
     record Rec(boolean x, double y) {}
     Rec r = new Rec(true, 5d);
     JsonValue jo = JsonValue.of(r);
     try(var w = JsonWriter.createDefaultWriter(out)) {
         w.write(jo); // {"x": true, "y": "5.0"}
     }
-
+```
 The entire API is designed such that it never returns
 `null` as an `JsonValue` reference, but is, however, resilient
 towards `null` as an argument wherever reasonable.
@@ -173,19 +173,18 @@ and objects which are basically
 maps of names (strings) and values of primitive or aggregate types).
 
 ### Example:
-
+```json
     [{
         "name": "Gaius",
         "age": 41,
         "pro": false,
-        "publications": ["De bello gallico"],
-        "
+        "publications": ["De bello gallico"]
     }, {
         "name": "Cicero",
         "senator": true,
         "children": null
     }]
-
+```
 This text represents an array of two objects; the
 outer form reads `[a, b]` where `a` and `b` are the 
 objects.
@@ -231,13 +230,13 @@ types as in `[null, true, false, 1, {"x":5}, [2, 3, 4]]`
 In lieu with the JSON specification which differentiates
 between primitive and structured types, we differentiate
 between basic and aggregate types like so:
-
+```java
     public sealed interface JsonValue permits Basic, Aggregate {...}
     public sealed interface Basic extends JsonValue permits
         JsonBoolean, JsonNull, JsonNumber, JsonString {}
     public sealed interace Aggregate extends JsonValue permits
         JsonArray, JsonObject {...}
-
+```
 Naming primitive types "basic" and structured types "aggregates" has
 been a deliberate decision since the term primitive would collide with
 the notion of primitive types in the Java language.
@@ -246,12 +245,12 @@ the notion of primitive types in the Java language.
 
 The implementation of the four basic types is straightforward as `record`s
 of the respective JSON basic types:
-
+```java
     record JsonBoolean(boolean boolVal) {}
     record JsonNumber(BigDecimal numVal) {}
     record JsonNull() {}
     record JsonString(String value){}
-
+```
 Both `BigDecimal` and `String` record components will never be `null`.
 The `Basic` interface defines the generic method `T value();` which 
 are implemented by all four basic types.
@@ -263,13 +262,13 @@ are implemented by all four basic types.
 As with strings we need to wrap the array in some
 container - a final class or a record - plus
 we want to make sure the contents is immutable:
-
+```java
     public record JsonArray(List<JsonValue> elements) implements JsonValue {
         public JsonArray {
             elements = List.copyOf(elements); // defensive copy
         }
     }
-
+```
 The canonical constructor is overridden such that
 it uses a copy of the list provided;
 that method is clever enough _not_ to copy the list
@@ -286,13 +285,13 @@ The same is true for `JsonObject`s. We model the properties
 or attributes or members as a map of `String`s (not `JsonString`s since
 this wouldn't add any value and is much easier to use by clients)
 to `JsonValue`s:
-
+```
     public record JsonObject(Map<String, JsonValue> members) implements JsonValue {
         public JsonObject {
             members = Map.copyOf(members); // defensive copy
         }
     }
-
+```
 `Map.copyOf` provides a copy but returns the original map
 when that is already immutable, especially when instantiated using
 `Map.of(...)`.
@@ -302,21 +301,22 @@ shallowly immutable (or unmodifiable) and all basic types
 are immutable, the aggregate types are effectively immutable as well.
 This makes instance of the entire hierarchy immutable.
 
-
 ## Aggregates are Functions
 
 Both aggregate types serve as functions: `JsonObject`s are
 functions of `String`s and `JsonArray`s are functions of
 an `int` index:
-
+```java
     Map<String, JsonValue> members; // given
     var obj = new JsonObject(members);
     Function<String, JsonValue> fun = obj; // legal
-    
+```
+and
+```java
     List<JsonValue> lst; // given
     var arr = new JsonArray(lst);
     IntFunction<JsonValue> ifun = arr; // legal
-
+```
 That said, the hierarchy of the data classes is this:
 
 ![Hierarchy](hierarchy.png "Data Classes Hierarchy")
@@ -327,34 +327,32 @@ The query API uses structural patterns for validating JSON data
 before mapping it to some target Java object.
 The fact that every `JsonValue` already _is_ a pattern comes in handy 
 for this purpose. Consider this array of numbers
-
-    [1, 2, 3]
-
+```json
+    [1, 2, 2, 3]
+```
 which is parsed into
-
-    var a = new JsonArray(List.of(new JsonNumber(1), new JsonNumber(2), new JsonNumber(3));
-
+```java
+    var a = new JsonArray(1, 2, 2, 3);
+```
 This `a` can now easily be filtered like
-
-    assert 1 == a.stream().filter(new JsonNumber(2)).count();
-
-More advanced 
-
+```java
+    assert 2 == a.stream().filter(new JsonNumber(2)).count();
+```
 # Builders
 
 The [Builder pattern](https://en.wikipedia.org/wiki/Builder_pattern)
 allows for a piecemeal construction of
 immutable data and works like this:
-
+```java
     var immutable = new Builder(...).add(...).add(...).build();
-
+```
 It does not make much sense to provide builders for the basic data
 types; yet very much so for the aggregate types.
 This is another reason why we introduced the distinction between the two.
 
 The `Builder` interface has been implemented as an inner interface
 class of the `Aggregate` interface with two implementations:
-
+```java
     public sealed interface Aggregate permits JsonArray, JsonObject {
         sealed interface Builder<T extends Aggregate> {
             T build();
@@ -364,14 +362,14 @@ class of the `Aggregate` interface with two implementations:
         final class ObjectBuilder implements Builder<JsonObject>{...}
         // ...
     }
-
+```
 Since the implementing classes reside within the same compilation unit
 as the `Builder` there is no need for the `permits` clause.
 
 ## ArrayBuilder
 
 The array builder simply provides a method that adds an `JsonValue`:
-
+```java
     final class ArrayBuilder implements Builder<JsonArray> {
         item(JsonValue e) {
             // add to mutable list
@@ -380,11 +378,11 @@ The array builder simply provides a method that adds an `JsonValue`:
             return new JsonArray(List.of(mutableList));
         }
     }
-
+```
 ## ObjectBuilder
 
 The object builder is not so different:
-
+```java
     final class ObjectBuilder implements Builder<JsonObject> {
         named(String name, JsonValue e) {
             // put into mutable map
@@ -393,7 +391,7 @@ The object builder is not so different:
             return new JsonObject(Map.of(mutableMap));
         }
     }
-
+```
 Both builders are instantiable through static methods in the 
 `JsonValue` interface exclusively:
 
@@ -408,24 +406,79 @@ add data their internal structures.
 
 # IO: Reading and Writing JSON Data
 
-## JsonReader
+## From JSON
 
 The parser implementation named `JsonReader` in package
 `io.github.ralfspoeth.json.io` implements the `AutoCloseable` interface and is
-meant to be used in try-with-resources statements like so:
-
-    Reader src = ...
+meant to be used in try-with-resources statements.
+Given 
+```java
+    Reader src = new StringReader("""
+        {"make": "BMW", "year": 1971}"""
+    );
+```
+then
+```java 
     try(var rdr = new JsonReader(src)) {
-        return rdr.readJsonValue();
+        return rdr.readElement();
     }
+```
+produces `new JsonObject(Map.of("make", new JsonString("BMW"), "year", new JsonNumber(1971)))`.
+When we want to read the JSON into a Java object of some type, say `record Car(String make, int year) {}`
+we'd write:
+```java 
+    import static io.github.ralfspoeth.json.query.Queries.*;
+    // ... later
+    try(var rdr = new JsonReader(src)) {
+        return rdr.read() // Optional<JsonValue>
+          .map(jv -> new Car(
+              stringValue(members(jv).get("make")),
+              intValue(members(jv).get("year"))
+          )) // Optional<Car>
+          .orElseThrow(); // Car
+    }
+```
+Consider now that we want to reject JSON data that is not - at least - a
+JSON object:
+```java 
+    try(var rdr = new JsonReader(src)) {
+        return rdr.read() // Optional<JsonValue>
+          .filter(jv -> jv instanceof JsonObject)
+        // ...
+    }
+```
+or, with the help of the `Validation` class, we might enforce a structure
+and a mandatory set of keys:
+```java 
+    import static io.github.ralfspoeth.json.query.Validation.*;
+```
 
-It uses a `Lexer` internally which tokenizes a character stream
-into tokens like braces, brackets, comma, colon, number literals, 
-string literals, and `null`, `true`, and `false`.
-The parser uses a stack of nodes which encapsulate builders, special tokens, or an element. 
-It utilizes an inner sealed interface to cater for this limited set of stack elements.
+```java
+    try(var rdr = new JsonReader(src)){
+        return rdr.read() // Optional<JsonValue>
+          .filter(is(JsonObject.class)
+            .and(requiredKeys("make", "year"))
+            .and(matches(Map.of("make", is(JsonString.class)), "year", is(JsonNumber.class)")))
+            // ...
+    }
+```
+The `Validation` class even helps us build and reuse predicates as well as
+provide useful explanations:
 
-## JsonWriter
+```java 
+    var predicate = is(JsonObject.class).and(...);
+    try(rdr = new JsonReader(src)) {
+        return rdr.read() // Optional<JsonValue>
+            .map(jv -> check(jv, predicate)) // Optional<Result>
+            .map(result -> explainIfFailed(result)) // Optional<Result>
+            .map(result -> valueOrThrow(result)) // Optional<JsonValue>
+            .map(jv -> new Car(<see above>)) // Optional<Car>
+            .orElseThrow(); // Car
+    }
+```
+
+
+## To JSON
 
 The `JsonWriter` class is instantiated with its 
 default behavior of indenting the members of JSON 

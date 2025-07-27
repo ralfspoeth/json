@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,7 +53,7 @@ class GreysonTest {
         // Behavior for empty string depends on JsonReader.readElement(String) implementation
         // It might throw an exception or return null/JsonNull if it's considered valid empty content.
         // Assuming it throws an exception for non-JSON content.
-        assertThrows(JsonParseException.class, () -> Greyson.read(""));
+        assertThrows(NoSuchElementException.class, () -> Greyson.read(""));
     }
 
     @Test

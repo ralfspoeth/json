@@ -1,8 +1,8 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
+import io.github.ralfspoeth.json.JsonValue;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -91,9 +91,9 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
         @Override
         Stream<JsonValue> evalThis(JsonValue elem) {
-            return elem instanceof JsonObject(
-                    Map<String, JsonValue> members
-            ) ? Stream.of(members.get(memberName)) : Stream.of();
+            return elem instanceof JsonObject(var members) && members.containsKey(memberName) ?
+                    Stream.of(members.get(memberName)) :
+                    Stream.of();
         }
 
         @Override

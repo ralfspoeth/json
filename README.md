@@ -22,10 +22,12 @@ THIS ALPHA VERSION OF 1.2 IS CURRENTLY UNDER ACTIVE DEVELOPMENT.
 
 The current version of the library is 1.2.0.
 It contains two breaking changes compared to version 1.1.x:
-* The common interface has been renamed from `Element` to `JsonValue`
+* The common interface has been renamed from `JsonValue` to `JsonValue`
   because that naming pattern seems to be more in line with other libraries.
 * `JsonNumber` uses `BigDecimal` instead of `double` for its payload; 
   cf. [numbers](numbers.md) for a detailed discussion.
+* `JsonBoolean` and `JsonNull` are implemented as `record`s, no longer as an `enum` or 
+  singleton, respectively.
 
 ## The Greyson Workflow
 
@@ -103,7 +105,7 @@ may use in your application:
     import io.github.ralfspoeth.json.io.*;    // reader and writer
     import io.github.ralfspoeth.json.query.*; // Queries and Path API
 
-The first package contains the data types (`Element` and its descendants)
+The first package contains the data types (`JsonValue` and its descendants)
 and the second contains the `JsonReader` and `JsonWriter` classes.
 The last package contain the `Queries` class with static 
 query functions and the `Path` API, both of which are under active 
@@ -114,7 +116,7 @@ when your want to start with
 
     Reader r = ...;
     try(var rdr = new JsonReader(r)) { // auto-closeable
-        Element elem = rdr.readElement(); 
+        JsonValue elem = rdr.readJsonValue(); 
         // switch over elem
         double dbl = switch(elem) {
             case JsonNumber(double d) -> d;
@@ -149,13 +151,13 @@ or through standard conversions from an object of a `Record` subclass
     Writer out = ...;
     record Rec(boolean x, double y) {}
     Rec r = new Rec(true, 5d);
-    Element jo = Element.of(r);
+    JsonValue jo = JsonValue.of(r);
     try(var w = JsonWriter.createDefaultWriter(out)) {
         w.write(jo); // {"x": true, "y": "5.0"}
     }
 
 The entire API is designed such that it never returns
-`null` as an `Element` reference, but is, however, resilient
+`null` as an `JsonValue` reference, but is, however, resilient
 towards `null` as an argument wherever reasonable.
 
 ## JSON
@@ -224,91 +226,68 @@ types as in `[null, true, false, 1, {"x":5}, [2, 3, 4]]`
 
 # Modeling the Data
 
-## Modelling `Boolean` as Enum
+## Differentiating between Aggregate and Basic Types
 
-The two only instances of type `Boolean` are `true` and 
-`false` in JSON notation; we model them as an enum
-because it is implicitly final and the behavior
-of its `equals` and `hashCode` methods comes without
-any surprises.
+In lieu with the JSON specification which differentiates
+between primitive and structured types, we differentiate
+between basic and aggregate types like so:
 
-    public enum JsonBoolean implements Element {
-        TRUE, FALSE
-    }
+    public sealed interface JsonValue permits Basic, Aggregate {...}
+    public sealed interface Basic extends JsonValue permits
+        JsonBoolean, JsonNull, JsonNumber, JsonString {}
+    public sealed interace Aggregate extends JsonValue permits
+        JsonArray, JsonObject {...}
 
-## Modelling `null` as Singleton
+Naming primitive types "basic" and structured types "aggregates" has
+been a deliberate decision since the term primitive would collide with
+the notion of primitive types in the Java language.
 
-As with booleans we decided to implement the `null`
-as a singleton class.
-The singleton pattern goes like 
+## Basic Types
 
-    final class Singleton {
-        static final Singleton INSTANCE = new Singleton();
-        private Singleton(){}
-    }
+The implementation of the four basic types is straightforward as `record`s
+of the respective JSON basic types:
 
-and translates into
+    record JsonBoolean(boolean boolVal) {}
+    record JsonNumber(BigDecimal numVal) {}
+    record JsonNull() {}
+    record JsonString(String value){}
 
-    public final class JsonNull implements Element {
-        private JsonNull() {} // prevent instantiation
-        public static final JsonNull INSTANCE = new JsonNull(); 
-    }
+Both `BigDecimal` and `String` record components will never be `null`.
+The `Basic` interface defines the generic method `T value();` which 
+are implemented by all four basic types.
 
-## Modelling `String` as Record of String
+## Aggregate Types
 
-There is strictly speaking no need to wrap JSON strings into 
-records with a single component of type string.
-But in order to make JSON strings part of the sealed
-hierarchy we have to do so:
-
-    public record JsonString(String value) implements Element {}
-
-This comes in handy once we deal with aggregate
-types like arrays of `Element` rather than 
-arrays of `Element` &bigcup; `String` which we 
-cannot express in Java.
-
-## Modelling `Number` as Record of `double`
-
-With the same reasoning we model numbers like this:
-
-    public record JsonNumber(double value) implements Element {}
-
-Note that JavaScript doesn't cater for differences
-between numerical data types &ndash; which is enormously
-limiting &ndash; and that we use the primitive Java type
-because `null` values are invalid.
-
-## Modelling `Array` as Record of an Immutable `List`
+### Modelling `Array` as `record` of an Immutable `List`
 
 As with strings we need to wrap the array in some
 container - a final class or a record - plus
 we want to make sure the contents is immutable:
 
-    public record JsonArray(List<Element> elements) implements Element {
+    public record JsonArray(List<JsonValue> elements) implements JsonValue {
         public JsonArray {
             elements = List.copyOf(elements); // defensive copy
         }
     }
 
-The canonical constructor is overridden such that 
-it uses a copy of the list provided; 
+The canonical constructor is overridden such that
+it uses a copy of the list provided;
 that method is clever enough _not_ to copy the list
 parameter if it can be sure that that parameter
-is already an immutable instance &ndash; most notably if 
+is already an immutable instance &ndash; most notably if
 it has been instantiated using `List.of(...)`.
 This method also makes sure no actual `null` instance
 is passed in within the list of elements.
 (`JsonNull`s are acceptable of course.)
 
-## Modelling `Object` as Record of an Immutable `Map`
+### Modelling `Object` as `record` of an Immutable `Map`
 
-The same is true for `JsonObject`s. We model the properties 
+The same is true for `JsonObject`s. We model the properties
 or attributes or members as a map of `String`s (not `JsonString`s since
-this wouldn't add any value and is much easier to use by clients) 
-to `Element`s:
+this wouldn't add any value and is much easier to use by clients)
+to `JsonValue`s:
 
-    public record JsonObject(Map<String, Element> members) implements Element {
+    public record JsonObject(Map<String, JsonValue> members) implements JsonValue {
         public JsonObject {
             members = Map.copyOf(members); // defensive copy
         }
@@ -318,46 +297,48 @@ to `Element`s:
 when that is already immutable, especially when instantiated using
 `Map.of(...)`.
 
-Since both aggregate types `JsonObject` and `JsonArray` are 
+Since both aggregate types `JsonObject` and `JsonArray` are
 shallowly immutable (or unmodifiable) and all basic types  
 are immutable, the aggregate types are effectively immutable as well.
 This makes instance of the entire hierarchy immutable.
 
-## Differentiating between Aggregate and Basic Types
-
-In lieu with the JSON specification which differentiates
-between primitive and structured types, we differentiate
-between basic and aggregate types like so:
-
-    public sealed interface Element permits Basic, Aggregate {...}
-    public sealed interface Basic extends Element permits
-        JsonBoolean, JsonNull, JsonNumber, JsonString {}
-    public sealed interace Aggregate extends Element permits
-        JsonArray, JsonObject {...}
-
-Naming primitive types basic and structured types aggregates has 
-been a deliberate decision since the term primitive collides with
-the notion of primitive types in the Java language.
 
 ## Aggregates are Functions
 
-Both aggregate types serve as functions: `JsonObject`s are 
+Both aggregate types serve as functions: `JsonObject`s are
 functions of `String`s and `JsonArray`s are functions of
 an `int` index:
 
-    Map<String, Element> members; // given
+    Map<String, JsonValue> members; // given
     var obj = new JsonObject(members);
-    Function<String, Element> fun = obj; // legal
+    Function<String, JsonValue> fun = obj; // legal
     
-    List<Element> lst; // given
+    List<JsonValue> lst; // given
     var arr = new JsonArray(lst);
-    IntFunction<Element> ifun = arr; // legal
+    IntFunction<JsonValue> ifun = arr; // legal
 
 That said, the hierarchy of the data classes is this:
 
 ![Hierarchy](hierarchy.png "Data Classes Hierarchy")
 
-Some strategic considerations are outlined [here](strategic-considerations.md)
+## All `JsonValue`s are `Predicate`s
+
+The query API uses structural patterns for validating JSON data
+before mapping it to some target Java object.
+The fact that every `JsonValue` already _is_ a pattern comes in handy 
+for this purpose. Consider this array of numbers
+
+    [1, 2, 3]
+
+which is parsed into
+
+    var a = new JsonArray(List.of(new JsonNumber(1), new JsonNumber(2), new JsonNumber(3));
+
+This `a` can now easily be filtered like
+
+    assert 1 == a.stream().filter(new JsonNumber(2)).count();
+
+More advanced 
 
 # Builders
 
@@ -389,10 +370,10 @@ as the `Builder` there is no need for the `permits` clause.
 
 ## ArrayBuilder
 
-The array builder simply provides a method that adds an `Element`:
+The array builder simply provides a method that adds an `JsonValue`:
 
     final class ArrayBuilder implements Builder<JsonArray> {
-        item(Element e) {
+        item(JsonValue e) {
             // add to mutable list
         }
         JsonArray build() {
@@ -405,7 +386,7 @@ The array builder simply provides a method that adds an `Element`:
 The object builder is not so different:
 
     final class ObjectBuilder implements Builder<JsonObject> {
-        named(String name, Element e) {
+        named(String name, JsonValue e) {
             // put into mutable map
         }
         JsonObject build() {
@@ -414,15 +395,15 @@ The object builder is not so different:
     }
 
 Both builders are instantiable through static methods in the 
-`Element` interface exclusively:
+`JsonValue` interface exclusively:
 
     JsonObjectBuilder objectBuilder();
     JsonArrayBuilder arrayBuilder();
 
 The implementing classes both need to be public because they provide
 different methods for adding intermediate data;
-`JsonArray` provides an `item(Element)` method and
-`JsonObject` a `named(String, Element)` method in order to
+`JsonArray` provides an `item(JsonValue)` method and
+`JsonObject` a `named(String, JsonValue)` method in order to
 add data their internal structures.
 
 # IO: Reading and Writing JSON Data
@@ -435,7 +416,7 @@ meant to be used in try-with-resources statements like so:
 
     Reader src = ...
     try(var rdr = new JsonReader(src)) {
-        return rdr.readElement();
+        return rdr.readJsonValue();
     }
 
 It uses a `Lexer` internally which tokenizes a character stream
@@ -456,7 +437,7 @@ The usage is similar to that of the `JsonReader` with
 the exception that it uses a single factory method currently
 but not constructor:
 
-    Element object = ... 
+    JsonValue object = ... 
     Writer w = ... 
     try(var wrt = JsonWriter.createDefaultWriter(w)){
         wrt.write(object);
@@ -491,7 +472,7 @@ Given the statement above, we obtain the equivalent of
 
 where the second parameter is the parent path.
 We then use `Path::evaluate` which returns a stream
-of `Element`s. Consider this root object `root`
+of `JsonValue`s. Consider this root object `root`
 
     {
         "a": {
@@ -530,12 +511,12 @@ the stream of `5d`.
 
 The package `io.github.ralfspoeth.json.query` 
 contains the utility class `Queries`,
-which converts `Element`s into primitive types `int`, `long`, `double` or 
+which converts `JsonValue`s into primitive types `int`, `long`, `double` or 
 `boolean` and to `String` or a given `Enum` type, and `Path`, which
 builds on `Queries` and combines the navigation to elements in a 
 JSON structure and the conversions provided by `Queries`.
 
-All functions take any `Element` type as an argument and may
+All functions take any `JsonValue` type as an argument and may
 throw `IllegalArgumentException` for the sake of simplicity.
 The functions respects 
 that many JSON authors put all values into double-quotes, even `null`, `true`, and `false`
@@ -587,7 +568,7 @@ for `JsonNumber`s. `JsonBoolean` are converted to 1 and 0 for `TRUE` and `FALSE`
 respectively.
 
 These functions are provided with and without a default value as their second parameter.
-`intValue(Element elem, int def)` accepts `null` elements and return the `def`ault instead;
+`intValue(JsonValue elem, int def)` accepts `null` elements and return the `def`ault instead;
 the method fails with `IllegalArgumentException` for `Aggregate`s. The companion methods work likewise.
 
 There is no direct support for `byte`, `char`, `short` and `float` 
@@ -607,7 +588,7 @@ and `JsonString`.
 ### Enum Conversion
 
 The `enumValue...` methods takes two arguments: a class declared with the `enum` 
-keyword, and the `Element` which must be of type `JsonString`. 
+keyword, and the `JsonValue` which must be of type `JsonString`. 
 While `enumValue` uses the `Enum::valueOf` method, the `enumValueIgnoreCase`
 converts the value and all the constants' names defined in the enum class 
 to uppercase strings before selecting the enum constant.
@@ -615,7 +596,7 @@ to uppercase strings before selecting the enum constant.
 ### JsonArray to Primitive Array
 
 A `JsonArray` can be converted into an array of primitives; 
-all elements are converted using `Queries.{int|long|double|...}Array(Element)`.
+all elements are converted using `Queries.{int|long|double|...}Array(JsonValue)`.
 
 
 # Usage in Clojure
@@ -630,11 +611,11 @@ In order to use this Java library, include this in your `deps.edn` file:
         io.github.ralfspoeth/json {:mvn/version "1.2.0"}
         }}
 
-Import the `Element` and IO classes into your namespace like this
+Import the `JsonValue` and IO classes into your namespace like this
 
     (ns your.name.space
         (:import 
-            (io.github.ralfspoeth.json Element Basic JsonNull JsonArray JsonObject)
+            (io.github.ralfspoeth.json JsonValue Basic JsonNull JsonArray JsonObject)
             (java.io Reader)
             (io.github.ralfspoeth.json.io JsonReader))
         (:require [clojure.java.io :as io]))
@@ -645,12 +626,12 @@ Use this function in order to read JSON data from some
 
     (defn read-elem [^Reader rdr]
         (with-open [jsrd (JsonReader. rdr)]
-        (.readElement jsrd)))
+        (.readJsonValue jsrd)))
 
-and then to turn the resulting `Element` into
+and then to turn the resulting `JsonValue` into
 a clojure map
 
-    (defn map-json ([^Element elem]
+    (defn map-json ([^JsonValue elem]
         (cond
           (instance? JsonNull elem) nil,             ; special case JsonNull
           (instance? Basic elem) (.value elem)       ; basic types

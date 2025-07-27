@@ -18,6 +18,10 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
         this(List.of());
     }
 
+    public JsonArray(Object... o) {
+        this(Stream.of(o).map(JsonValue::of).toList());
+    }
+
     public static JsonArray of(Object o) {
         return switch(o) {
             case Iterable<?> it -> ofIterable(it);

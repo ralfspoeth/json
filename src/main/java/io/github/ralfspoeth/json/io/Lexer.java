@@ -305,11 +305,11 @@ class Lexer implements AutoCloseable {
     }
 
     private int row = 1, column = 1;
-
-    record Coordinates(int row, int column) {}
-
-    Coordinates coordinates() {
-        return new Coordinates(row, column);
+    int row() {
+        return row;
+    }
+    int column() {
+        return column;
     }
 
     @Override

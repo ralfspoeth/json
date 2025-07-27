@@ -81,8 +81,8 @@ public class JsonReader implements AutoCloseable {
     public JsonValue readElement() throws IOException {
         return read().orElseThrow(
                 () -> new JsonParseException("No JSON element in the source",
-                        lexer.coordinates().row(),
-                        lexer.coordinates().column()
+                        lexer.row(),
+                        lexer.column()
                 )
         );
     }
@@ -96,7 +96,7 @@ public class JsonReader implements AutoCloseable {
     public Optional<JsonValue> read() throws IOException {
         var result = readNextElement();
         if (lexer.hasNext()) {
-            throw new JsonParseException("Input contains tokens after the first element", lexer.coordinates().row(), lexer.coordinates().column());
+            throw new JsonParseException("Input contains tokens after the first element", lexer.row(), lexer.column());
         } else {
             return Optional.ofNullable(result);
         }
@@ -117,7 +117,7 @@ public class JsonReader implements AutoCloseable {
                     if (stack.top() instanceof Elem.NameElem) {
                         stack.push(colon);
                     } else {
-                        parseException("unexpected token : " + tkn, lexer.coordinates());
+                        parseException("unexpected token : " + tkn, lexer.row(), lexer.column());
                     }
                 }
                 // a comma separates elements in an aggregate,
@@ -127,7 +127,7 @@ public class JsonReader implements AutoCloseable {
                     switch (stack.top()) {
                         case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(comma);
                         case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> stack.push(comma);
-                        case null, default -> parseException("unexpected token: " + tkn, lexer.coordinates());
+                        case null, default -> parseException("unexpected token: " + tkn, lexer.row(), lexer.column());
                     }
                 }
                 // opening braces (as well as opening brackets, see below)
@@ -139,7 +139,7 @@ public class JsonReader implements AutoCloseable {
                         case Elem.ArrBuilderElem(var builder)
                                 when builder.isEmpty() -> stack.push(Elem.ObjBuilderElem.empty());
                         case Elem.Char ignored -> stack.push(Elem.ObjBuilderElem.empty());
-                        default -> parseException("unexpected token " + tkn.value(), lexer.coordinates());
+                        default -> parseException("unexpected token " + tkn.value(), lexer.row(), lexer.column());
                     }
                 }
                 // opens an array, otherwise like a brace
@@ -149,7 +149,7 @@ public class JsonReader implements AutoCloseable {
                         case Elem.Char ignored -> stack.push(Elem.ArrBuilderElem.empty());
                         case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ->
                                 stack.push(Elem.ArrBuilderElem.empty());
-                        default -> parseException("unexpected token " + tkn.value(), lexer.coordinates());
+                        default -> parseException("unexpected token " + tkn.value(), lexer.row(), lexer.column());
                     }
                 }
                 // closes a json object
@@ -161,7 +161,7 @@ public class JsonReader implements AutoCloseable {
                             yield obe.builder.build();
                         }
                         case null, default -> {
-                            parseException("unexpected token: " + tkn, lexer.coordinates());
+                            parseException("unexpected token: " + tkn, lexer.row(), lexer.column());
                             yield null;
                         }
                     };
@@ -175,7 +175,7 @@ public class JsonReader implements AutoCloseable {
                         var jsonArray = builder.build();
                         handle(tkn.value(), jsonArray);
                     } else {
-                        parseException("unexpected token: " + tkn, lexer.coordinates());
+                        parseException("unexpected token: " + tkn, lexer.row(), lexer.column());
                     }
                 }
                 // literal tokens including null, true, false, number, string
@@ -190,7 +190,8 @@ public class JsonReader implements AutoCloseable {
                         switch (stack.top()) {
                             case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(val));
                             case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(val));
-                            case null, default -> parseException("Unexpected value: " + val, lexer.coordinates());
+                            case null, default ->
+                                    parseException("Unexpected value: " + val, lexer.row(), lexer.column());
                         }
                     } else {
                         var literalToken = token2Value(tkn);
@@ -209,7 +210,7 @@ public class JsonReader implements AutoCloseable {
             return elem;
         } else {
             // otherwise, something went wrong
-            parseException("stack not empty or top-most element not a JsonElement", lexer.coordinates());
+            parseException("stack not empty or top-most element not a JsonElement", lexer.row(), lexer.column());
             return null;
         }
     }
@@ -235,7 +236,7 @@ public class JsonReader implements AutoCloseable {
                             // add name-value-pair to the object builder
                             builder.named(name, v);
                         } else {
-                            parseException("unexpected token: " + token, lexer.coordinates());
+                            parseException("unexpected token: " + token, lexer.row(), lexer.column());
                         } // in every other case, something went wrong
                     }
                     // comma on top
@@ -244,13 +245,13 @@ public class JsonReader implements AutoCloseable {
                         if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
                             builder.item(v);
                         } else {
-                            parseException("unexpected token " + token, lexer.coordinates());
+                            parseException("unexpected token " + token, lexer.row(), lexer.column());
                         }
                     }
                 }
             }
             case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> builder.item(v);
-            default -> parseException("unexpected token " + token, lexer.coordinates());
+            default -> parseException("unexpected token " + token, lexer.row(), lexer.column());
         }
     }
 
@@ -267,9 +268,9 @@ public class JsonReader implements AutoCloseable {
         };
     }
 
-    private void parseException(String msg, Lexer.Coordinates coordinates) {
+    private void parseException(String msg, int row, int column) {
         //while(!stack.isEmpty()) System.err.println(stack.pop());
-        throw new JsonParseException(msg, coordinates.row(), coordinates.column());
+        throw new JsonParseException(msg, row, column);
     }
 
     private static class ElementIterator implements Iterator<JsonValue> {

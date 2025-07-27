@@ -97,7 +97,7 @@ class Lexer implements AutoCloseable {
 
     private Token nextToken;
     private State state = State.INITIAL;
-    private final StringBuilder buffer = new StringBuilder();
+    private final StringBuilder buffer = new StringBuilder(1_024);
     private final CharBuffer unicodeSequence = CharBuffer.allocate(4);
 
     boolean hasNext() throws IOException {
@@ -284,14 +284,14 @@ class Lexer implements AutoCloseable {
 
     private Lexer.State stringLiteral() {
         var text = buffer.toString();
-        buffer.delete(0, buffer.capacity());
+        buffer.setLength(0);
         nextToken = new LiteralToken(Type.STRING, text);
         return State.INITIAL;
     }
 
     private Lexer.State literal() {
         var text = buffer.toString();
-        buffer.delete(0, buffer.capacity());
+        buffer.setLength(0);
         nextToken = switch (text) {
             case "null" -> new LiteralToken(Type.NULL, text);
             case "true" -> new LiteralToken(Type.TRUE, text);

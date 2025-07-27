@@ -2,10 +2,7 @@ package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static java.util.function.Predicate.not;
@@ -14,9 +11,19 @@ import static java.util.stream.Collectors.toMap;
 public class Validation {
 
     public record Result(JsonValue value, Predicate<JsonValue> failed, List<Result> details) {
+        public Result {
+            details = List.copyOf(Objects.requireNonNullElse(details, List.of()));
+            Objects.requireNonNull(value);
+        }
+
         public Result(JsonValue value, Predicate<JsonValue> failed) {
             this(value, failed, List.of());
         }
+
+        public boolean success() {
+            return failed == null;
+        }
+
     }
 
     sealed interface Structured extends Predicate<JsonValue> {
@@ -153,7 +160,19 @@ public class Validation {
         }
     }
 
-    private Validation() {
+    private Validation() {}
+
+    public static Result check(JsonValue value, Predicate<JsonValue> predicate) {
+        return predicate.test(value) ? new Result(value, null) : new Result(value, predicate);
+    }
+
+    public static Result explainIfFailed(Result result) {
+        if (!result.success()) {
+            //return explain(result.value, result.failed);
+        } else {
+            return result;
+        }
+        return result;
     }
 
     public static Predicate<JsonValue> matchesOrThrow(Predicate<JsonValue> predicate)

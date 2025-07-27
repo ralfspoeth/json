@@ -18,6 +18,8 @@ Find more on the motivation [here](motivation.md).
 
 ## Current Status
 
+THIS ALPHA VERSION OF 1.2 IS CURRENTLY UNDER ACTIVE DEVELOPMENT.
+
 The current version of the library is 1.2.0.
 It contains two breaking changes compared to version 1.1.x:
 * The common interface has been renamed from `Element` to `JsonValue`

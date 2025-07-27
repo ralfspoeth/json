@@ -209,7 +209,6 @@ class ValidationTest {
         // when
         var arr = read(src);
         // then
-        System.out.println(explain(arr.orElseThrow(), all(is(JsonNumber.class))));
         assertAll(
                 () -> assertEquals(10, arr.stream()
                         .filter(is(JsonArray.class).and(any(is(JsonObject.class))))
@@ -223,5 +222,25 @@ class ValidationTest {
                 () -> assertThrows(ValidationException.class, () -> arr.filter(matchesOrThrow(is(JsonObject.class)))),
                 () -> assertTrue(arr.filter(matches(List.of(is(JsonObject.class), always(), always(), always()))).isPresent())
         );
+    }
+
+    @Test
+    void testStandardInvocationChain() {
+        // given
+        record Point(int x, int y){}
+        var src = """
+                [{"x":10}, {"x":11, "y": -11}, {"y":12}]""";
+        // when
+        var array = read(src);
+        // then
+        var points = array.filter(all(is(JsonObject.class))).stream()
+                .map(Queries::elements)
+                .flatMap(l -> l.stream())
+                .map(jv -> new Point(
+                        Path.intValue(Path.of("x"), jv, 0),
+                        Path.intValue(Path.of("y"), jv, 1)
+                )).toList();
+        System.out.println(points);
+
     }
 }

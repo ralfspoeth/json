@@ -10,7 +10,7 @@ import static java.util.stream.Collectors.toMap;
 
 public class Validation {
 
-    public record Result(JsonValue value, Predicate<JsonValue> failed, List<Result> details) {
+    public record Result(JsonValue value, Predicate<JsonValue> predicate, List<Result> details) {
         public Result {
             details = List.copyOf(Objects.requireNonNullElse(details, List.of()));
             Objects.requireNonNull(value);
@@ -20,10 +20,9 @@ public class Validation {
             this(value, failed, List.of());
         }
 
-        public boolean success() {
-            return failed == null;
+        public boolean failed() {
+            return predicate != null;
         }
-
     }
 
     sealed interface Structured extends Predicate<JsonValue> {
@@ -147,10 +146,7 @@ public class Validation {
 
             @Override
             public Result explain(JsonValue value) {
-                return switch (predicate) {
-                    case Structured s -> s.explain(value);
-                    default -> new Result(value, predicate);
-                };
+                return predicate instanceof Structured s? s.explain(value):new Result(value, predicate);
             }
 
             @Override
@@ -167,12 +163,19 @@ public class Validation {
     }
 
     public static Result explainIfFailed(Result result) {
-        if (!result.success()) {
-            //return explain(result.value, result.failed);
+        if (result.failed()) {
+            return explain(result.value, result.predicate);
         } else {
             return result;
         }
-        return result;
+    }
+
+    public static JsonValue throwIfFailed(Result result) throws ValidationException {
+        if (result.failed()) {
+            throw new ValidationException("Predicate %s does not match %s".formatted(result.predicate, result.value),
+                    result);
+        }
+        return result.value;
     }
 
     public static Predicate<JsonValue> matchesOrThrow(Predicate<JsonValue> predicate)

@@ -219,11 +219,11 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return parent == null ? this.evalThis(root) : parent.apply(root).flatMap(this::evalThis);
     }
 
-    Optional<JsonValue> first(JsonValue root) {
+    public Optional<JsonValue> first(JsonValue root) {
         return apply(root).findFirst();
     }
 
-    Optional<JsonValue> single(JsonValue root) {
+    public Optional<JsonValue> single(JsonValue root) {
         var l = apply(root).toList();
         return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
     }
@@ -274,6 +274,10 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
     public static int intValue(Path p, JsonValue root) {
         return p.single(root).map(Queries::intValue).orElse(0);
+    }
+
+    public static int intValue(Path p, JsonValue root, int def) {
+        return p.single(root).map(Queries::intValue).orElse(def);
     }
 
     public static <E extends Enum<E>> Enum<E> enumValue(Path p, JsonValue root, Class<E> enumClass) {

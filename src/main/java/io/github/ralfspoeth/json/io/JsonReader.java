@@ -87,9 +87,13 @@ public class JsonReader implements AutoCloseable {
      * @return the element representing the source string
      */
     public static JsonValue readElement(String s) {
-        try (var rdr = new JsonReader(new StringReader(s))) {
-            return rdr.readElement();
-        } catch (IOException ioex) {
+        return read(s).orElseThrow();
+    }
+
+    public static Optional<JsonValue> read(String s) {
+        try(var rdr = new JsonReader(new StringReader(s))) {
+            return rdr.read();
+        }catch (IOException ioex) {
             throw new RuntimeException(ioex);
         }
     }

@@ -13,6 +13,7 @@ import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.JsonBoolean.FALSE;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
 import static io.github.ralfspoeth.json.JsonNull.INSTANCE;
+import static io.github.ralfspoeth.json.io.JsonReader.read;
 import static io.github.ralfspoeth.json.query.Validation.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -197,6 +198,30 @@ class ValidationTest {
         assertAll(
                 () -> assertThrows(ValidationException.class, () -> matchesOrThrow(FALSE).test(value)),
                 () -> assertDoesNotThrow(() -> matchesOrThrow(TRUE).test(value))
+        );
+    }
+
+    @Test
+    void testSimpleExplain() {
+        // given
+        var src = """
+                [{"x":10}, 1, true, null]""";
+        // when
+        var arr = read(src);
+        // then
+        System.out.println(explain(arr.orElseThrow(), all(is(JsonNumber.class))));
+        assertAll(
+                () -> assertEquals(10, arr.stream()
+                        .filter(is(JsonArray.class).and(any(is(JsonObject.class))))
+                        .map(Queries::elements)
+                        .flatMap(List::stream)
+                        .filter(is(JsonObject.class))
+                        .mapToInt(v -> Path.intValue(Path.of("x"), v))
+                        .findFirst().orElseThrow()
+                ),
+                () -> assertDoesNotThrow(() -> arr.filter(matchesOrThrow(is(JsonArray.class)))),
+                () -> assertThrows(ValidationException.class, () -> arr.filter(matchesOrThrow(is(JsonObject.class)))),
+                () -> assertTrue(arr.filter(matches(List.of(is(JsonObject.class), always(), always(), always()))).isPresent())
         );
     }
 }

@@ -264,4 +264,19 @@ public class Validation {
     public static Predicate<JsonValue> is(Class<? extends JsonValue> type) {
         return type::isInstance;
     }
+
+    public static Predicate<JsonValue> always() {
+        return jv -> true;
+    }
+
+    public static Predicate<JsonValue> never() {
+        return jv -> false;
+    }
+
+    public static Result explain(JsonValue jsonValue, Predicate<JsonValue> predicate) {
+        return switch (predicate) {
+            case Structured structured -> structured.explain(jsonValue);
+            case null, default -> new Result(jsonValue, predicate);
+        };
+    }
 }

@@ -128,10 +128,10 @@ public class JsonReader implements AutoCloseable {
     }
 
     private JsonValue readNextElement() throws IOException {
-        // repeat to take the next token while the lexer has more tokens available
+        // repeat to take the next token while the lexer has more tokens available,
         // and either the stack is empty or,
         // in case we expect to read more than one JSON element from the potentially unbounded source,
-        // the top element is not a root element
+        // the top element is not a root element.
         while (lexer.hasNext() && (stackEmpty() || !top().getClass().equals(Elem.Root.class))) {
             var tkn = lexer.next();
             // we switch over the type of the token as the primary level compound state

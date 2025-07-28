@@ -3,15 +3,14 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.*;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
 import static io.github.ralfspoeth.json.Greyson.read;
+import static io.github.ralfspoeth.json.query.Queries.members;
 import static io.github.ralfspoeth.json.query.Validation.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -196,11 +195,21 @@ class ValidationTest {
         // given
         record Point(int x, int y){}
         var src = """
-                [{"x":10}, {"x":11, "y": -11}, {"y":12}]""";
+                [{"x":10}, {"x":11, "y": -11}, {"y":12},
+                 {"y":13, "z":14, "str":"hello"}]""";
         // when
-        var array = read(src);
+        Optional<JsonValue> array = read(src);
+        Map<String, Predicate<JsonValue>> structureOfObjects = Map.of(
+                "x", is(JsonNumber.class),
+                "y", is(JsonNumber.class),
+                "z", is(JsonNumber.class)
+        );
         // then
-        var points = array.filter(all(is(JsonObject.class))).stream()
+        var points = array
+                .filter(all(is(JsonObject.class)
+                        .and(matches(structureOfObjects))
+                        .and(o -> Stream.of("x", "y").anyMatch(members(o).keySet()::contains))))
+                .stream()
                 .map(Queries::elements)
                 .flatMap(Collection::stream)
                 .map(jv -> new Point(

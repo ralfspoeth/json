@@ -30,7 +30,7 @@ class LexerTest {
             assertTrue(lexer.hasNext());
             var token = lexer.next();
             assertEquals(Lexer.Type.STRING, token instanceof Lexer.LiteralToken(var type, var ignored) ? type : null);
-            assertEquals("\uabcd", token.value());
+            assertEquals("ꯍ", token.value());
         }
     }
 

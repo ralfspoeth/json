@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json.io;
 
+import io.github.ralfspoeth.basix.coll.Stack;
 import io.github.ralfspoeth.json.*;
 import io.github.ralfspoeth.json.Aggregate.JsonArrayBuilder;
 import io.github.ralfspoeth.json.Aggregate.JsonObjectBuilder;
@@ -7,7 +8,6 @@ import io.github.ralfspoeth.json.Aggregate.JsonObjectBuilder;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
-import java.util.Iterator;
 import java.util.Optional;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
@@ -40,12 +40,7 @@ public class JsonReader implements AutoCloseable {
      * @param src the character source
      */
     public JsonReader(Reader src) {
-        this(src, false);
-    }
-
-    private JsonReader(Reader src, boolean piped) {
         this.lexer = new Lexer(src);
-        this.usedInStreamPipeline = piped;
     }
 
     sealed interface Elem {
@@ -69,34 +64,9 @@ public class JsonReader implements AutoCloseable {
         }
     }
 
-    // the lines below replace a more generic
-    // pointer-based stack implementation from
-    // basix. this implementation is ugly but faster.
-
-    private int pointer = 0;
-    private Elem[] stackElements = new Elem[128];
+    // return to the stack from basix
+    private final Stack<Elem> stack = new Stack<>();
     
-    private void push(Elem e) {
-        if (pointer == stackElements.length) {
-            Elem[] tmp = new Elem[stackElements.length * 2];
-            System.arraycopy(stackElements, 0, tmp, 0, stackElements.length);
-            stackElements = tmp;
-        }
-        stackElements[pointer++] = e;
-    }
-    
-    private Elem pop() {
-        return stackElements[--pointer];
-    }
-    
-    private Elem top() {
-        return pointer==0?null:stackElements[pointer - 1];
-    }
-    
-    private boolean stackEmpty() {
-        return pointer == 0;
-    }
-
     /**
      * Reads the first and only JSON element from the source.
      *
@@ -128,65 +98,64 @@ public class JsonReader implements AutoCloseable {
     }
 
     private JsonValue readNextElement() throws IOException {
-        // repeat to take the next token while the lexer has more tokens available,
+        // repeat to take the next token while the lexer has more tokens available.
         // and either the stack is empty or,
         // in case we expect to read more than one JSON element from the potentially unbounded source,
         // the top element is not a root element.
-        while (lexer.hasNext() && (stackEmpty() || !top().getClass().equals(Elem.Root.class))) {
+        while (lexer.hasNext() && (stack.isEmpty() || !stack.top().getClass().equals(Elem.Root.class))) {
             var tkn = lexer.next();
             // we switch over the type of the token as the primary level compound state
             switch (tkn) {
                 // a colon is acceptable if and only if the current element at the
                 // top of the stack is a name-value-pair
                 case COLON -> {
-                    if (top() instanceof Elem.NameElem) {
-                        push(colon);
+                    if (stack.top() instanceof Elem.NameElem) {
+                        stack.push(colon);
                     } else {
-                        parseException("unexpected token : " + tkn, lexer.row(), lexer.column());
+                        parseEx("unexpected token : " + tkn);
                     }
                 }
-                // a comma separates elements in an aggregate,
+                // a comma separates elements in an aggregate
                 // that is, the top of the stack must be a non-empty
                 // aggregate element
                 case COMMA -> {
-                    switch (top()) {
-                        case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> push(comma);
-                        case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> push(comma);
-                        case null, default -> parseException("unexpected token: " + tkn, lexer.row(), lexer.column());
+                    switch (stack.top()) {
+                        case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(comma);
+                        case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> stack.push(comma);
+                        case null, default -> parseEx("unexpected token: " + tkn);
                     }
                 }
                 // opening braces (as well as opening brackets, see below)
-                // start json aggregate which an appear wherever a value may appear,
                 // that is, at the start, in an empty array, and after a colon or a comma.
                 case OPENING_BRACE -> {
-                    switch (top()) {
-                        case null -> push(Elem.ObjBuilderElem.empty());
+                    switch (stack.top()) {
+                        case null -> stack.push(Elem.ObjBuilderElem.empty());
                         case Elem.ArrBuilderElem(var builder)
-                                when builder.isEmpty() -> push(Elem.ObjBuilderElem.empty());
-                        case Elem.Char ignored -> push(Elem.ObjBuilderElem.empty());
-                        default -> parseException("unexpected token " + tkn.value(), lexer.row(), lexer.column());
+                                when builder.isEmpty() -> stack.push(Elem.ObjBuilderElem.empty());
+                        case Elem.Char ignored -> stack.push(Elem.ObjBuilderElem.empty());
+                        default -> parseEx("unexpected token " + tkn.value());
                     }
                 }
                 // opens an array, otherwise like a brace
                 case OPENING_BRACKET -> {
-                    switch (top()) {
-                        case null -> push(Elem.ArrBuilderElem.empty());
-                        case Elem.Char ignored -> push(Elem.ArrBuilderElem.empty());
+                    switch (stack.top()) {
+                        case null -> stack.push(Elem.ArrBuilderElem.empty());
+                        case Elem.Char ignored -> stack.push(Elem.ArrBuilderElem.empty());
                         case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ->
-                                push(Elem.ArrBuilderElem.empty());
-                        default -> parseException("unexpected token " + tkn.value(), lexer.row(), lexer.column());
+                                stack.push(Elem.ArrBuilderElem.empty());
+                        default -> parseEx("unexpected token " + tkn.value());
                     }
                 }
-                // closes a json object
+                // closes a JSON object
                 // there should be an object builder on top of the stack
                 case CLOSING_BRACE -> {
-                    var obj = switch (top()) {
+                    var obj = switch (stack.top()) {
                         case Elem.ObjBuilderElem obe -> {
-                            pop();
+                            stack.pop();
                             yield obe.builder.build();
                         }
                         case null, default -> {
-                            parseException("unexpected token: " + tkn, lexer.row(), lexer.column());
+                            parseEx("unexpected token: " + tkn);
                             yield null;
                         }
                     };
@@ -195,28 +164,28 @@ public class JsonReader implements AutoCloseable {
                 // closing a JSON array
                 // the array builder should be on top of the stack
                 case CLOSING_BRACKET -> {
-                    if (top() instanceof Elem.ArrBuilderElem(var builder)) {
-                        pop();
+                    if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
+                        stack.pop();
                         var jsonArray = builder.build();
                         handle(tkn.value(), jsonArray);
                     } else {
-                        parseException("unexpected token: " + tkn, lexer.row(), lexer.column());
+                        parseEx("unexpected token: " + tkn);
                     }
                 }
                 // literal tokens including null, true, false, number, string
                 // where string is a special case because it can be the name part of a name-value-pair
                 case Lexer.LiteralToken(var type, var val) -> {
                     if (type == STRING &&
-                            top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
+                            stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
                     ) {
-                        push(new Elem.NameElem(val));
-                    } else if (type == STRING && comma.equals(top())) {
-                        pop();
-                        switch (top()) {
-                            case Elem.ObjBuilderElem ignored -> push(new Elem.NameElem(val));
+                        stack.push(new Elem.NameElem(val));
+                    } else if (type == STRING && comma.equals(stack.top())) {
+                        stack.pop();
+                        switch (stack.top()) {
+                            case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(val));
                             case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(val));
                             case null, default ->
-                                    parseException("Unexpected value: " + val, lexer.row(), lexer.column());
+                                    parseEx("Unexpected value: " + val);
                         }
                     } else {
                         var literalToken = token2Value(tkn);
@@ -228,14 +197,14 @@ public class JsonReader implements AutoCloseable {
 
         // an empty stack is okay, signaling
         // that the input stream contains nothing but whitespace
-        if (stackEmpty()) {
+        if (stack.isEmpty()) {
             return null;
-        } else if (pop() instanceof Elem.Root(var elem)) {
+        } else if (stack.pop() instanceof Elem.Root(var elem)) {
             // standard case: stack contains a single element at its top
             return elem;
         } else {
             // otherwise, something went wrong
-            parseException("stack not empty or top-most element not a JsonElement", lexer.row(), lexer.column());
+            parseEx("stack not empty or top-most element not a JsonElement");
             return null;
         }
     }
@@ -243,40 +212,40 @@ public class JsonReader implements AutoCloseable {
     // handle tokens UNLESS these are element names
     // in a JSON object
     private void handle(String token, JsonValue v) {
-        switch (top()) {
+        switch (stack.top()) {
             // stack is empty
-            case null -> push(new Elem.Root(v));
+            case null -> stack.push(new Elem.Root(v));
             // colon or comma at the top
             case Elem.Char nc -> {
                 switch (nc) {
                     // colon: name-value-pair is second on top
                     case colon -> {
                         // pop colon
-                        pop();
+                        stack.pop();
                         // the topmost element must be an NVP with a null element,
                         // and the next stack element must be an object builder
-                        if (!stackEmpty()
-                                && pop() instanceof Elem.NameElem(String name)
-                                && top() instanceof Elem.ObjBuilderElem(var builder)) {
+                        if (!stack.isEmpty()
+                                && stack.pop() instanceof Elem.NameElem(String name)
+                                && stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
                             // add name-value-pair to the object builder
                             builder.named(name, v);
                         } else {
-                            parseException("unexpected token: " + token, lexer.row(), lexer.column());
+                            parseEx("unexpected token: " + token);
                         } // in every other case, something went wrong
                     }
                     // comma on top
                     case comma -> {
-                        pop(); // pop comma
-                        if (top() instanceof Elem.ArrBuilderElem(var builder)) {
+                        stack.pop(); // pop comma
+                        if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
                             builder.item(v);
                         } else {
-                            parseException("unexpected token " + token, lexer.row(), lexer.column());
+                            parseEx("unexpected token " + token);
                         }
                     }
                 }
             }
             case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> builder.item(v);
-            default -> parseException("unexpected token " + token, lexer.row(), lexer.column());
+            default -> parseEx("unexpected token " + token);
         }
     }
 
@@ -293,41 +262,12 @@ public class JsonReader implements AutoCloseable {
         };
     }
 
-    private void parseException(String msg, int row, int column) {
-        //while(!isEmpty()) System.err.println(pop());
-        throw new JsonParseException(msg, row, column);
+    private void parseEx(String msg) {
+        throw new JsonParseException(msg, lexer.row(), lexer.column());
     }
-
-    private static class ElementIterator implements Iterator<JsonValue> {
-
-        private final JsonReader jr;
-        private JsonValue next = null;
-
-        private ElementIterator(JsonReader jr) {
-            this.jr = jr;
-        }
-
-        @Override
-        public boolean hasNext() {
-            try {
-                return (next = jr.readNextElement()) != null;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public JsonValue next() {
-            var ret = next;
-            next = null;
-            return ret;
-        }
-    }
-
-    private final boolean usedInStreamPipeline;
 
     @Override
     public void close() throws IOException {
-        if (!usedInStreamPipeline) lexer.close();
+        lexer.close();
     }
 }

@@ -93,7 +93,7 @@
         <dependency>
             <groupId>io.github.ralfspoeth</groupId>
             <artifactId>basix</artifactId>
-            <version>1.0.13</version>
+            <version>1.0.15</version>
         </dependency>
         <!-- testing -->
         <dependency>

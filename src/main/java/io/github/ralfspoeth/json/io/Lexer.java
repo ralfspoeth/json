@@ -2,8 +2,8 @@ package io.github.ralfspoeth.json.io;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PushbackReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Spliterator;
@@ -45,13 +45,30 @@ class Lexer implements AutoCloseable {
         }
     }
 
-    private final PushbackReader source;
+    private final Reader source;
+
+    private int ch;
+    private boolean readCh;
+
+    private int read() throws IOException {
+        if (readCh) {
+            readCh = false;
+            return ch;
+        } else {
+            return source.read();
+        }
+    }
+
+    private void unread(int ch) {
+        this.ch = ch;
+        readCh = true;
+    }
 
     Lexer(Reader rdr) {
         this.source = switch (rdr) {
-            case PushbackReader pr -> pr;
-            case BufferedReader br -> new PushbackReader(br);
-            default -> new PushbackReader(new BufferedReader(rdr));
+            case StringReader sr -> sr;
+            case BufferedReader br -> br;
+            default -> new BufferedReader(rdr);
         };
     }
 
@@ -151,7 +168,7 @@ class Lexer implements AutoCloseable {
 
     private void readNextToken() throws IOException {
         while (state != State.EOF && nextToken == null) {
-            int r = source.read();
+            int r = read();
             // special case -1 (EOF)
             if (r == -1) {
                 state = switch (state) {
@@ -205,7 +222,7 @@ class Lexer implements AutoCloseable {
                             yield State.NUM_LIT;
                         }
                         case 'n', 't', 'f', 'u', 'r', 'a', 'l', 's', ',', ':', '}', ']', '\"', '{', '[' -> {
-                            source.unread(c);
+                            unread(c);
                             yield literal();
                         }
                         case ' ', '\t', '\r', '\n' -> literal();
@@ -219,7 +236,7 @@ class Lexer implements AutoCloseable {
                             yield State.CONST_LIT;
                         }
                         case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
-                            source.unread(c);
+                            unread(c);
                             yield literal();
                         }
                         case ' ', '\t', '\r', '\n' -> literal();

@@ -12,11 +12,6 @@ public record JsonNull() implements Basic<Object> {
     public Object value() {return null;}
 
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[value=null]";
-    }
-
-    @Override
     public boolean test(JsonValue o) {
         return o instanceof JsonNull;
     }

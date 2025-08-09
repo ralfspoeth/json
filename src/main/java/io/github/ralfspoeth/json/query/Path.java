@@ -63,8 +63,8 @@ import static java.util.Objects.requireNonNull;
  * List<JsonValue> result = p.apply(given).toList();
  * assert result.size() == 3; // three JSON objects...
  * assert result.get(0) == JsonBoolean.TRUE; // the "aa" member of the third object
- * assert result.get(1).equals(new JsonNumber(2)); // the "ab" member of the fourth
- * assert result.get(2).equals(new JsonNumber(3)); // the "ac" member of the fifth
+ * assert result.get(1).equals(Basic.of(2)); // the "ab" member of the fourth
+ * assert result.get(2).equals(Basic.of(3)); // the "ac" member of the fifth
  *}
  * <p>
  * The class implements {@link Function} such that it may be used in stream

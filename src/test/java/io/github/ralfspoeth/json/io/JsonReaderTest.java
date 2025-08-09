@@ -32,7 +32,7 @@ class JsonReaderTest {
     @Test
     void nume01(){
         var result = parse("0e+1");
-        assertEquals(new JsonNumber(0), result.elem);
+        assertEquals(Basic.of(0), result.elem);
     }
 
     @Test
@@ -156,7 +156,7 @@ class JsonReaderTest {
             var o = r.readElement();
             assertAll(() -> assertInstanceOf(JsonObject.class, o),
                     () -> assertEquals(1, o instanceof JsonObject(var members) ? members.size() : -1),
-                    () -> assertEquals(new JsonObject(Map.of("n", new JsonNumber(5d))), o)
+                    () -> assertEquals(new JsonObject(Map.of("n", Basic.of(5d))), o)
             );
         }
     }
@@ -191,7 +191,7 @@ class JsonReaderTest {
                     () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(1, ((JsonArray) a).elements().size()),
                     () -> assertTrue(((JsonArray) a).elements().contains(
-                            new JsonObject(Map.of("n", new JsonNumber(55)))
+                            new JsonObject(Map.of("n", Basic.of(55)))
                     ))
             );
         }
@@ -206,7 +206,7 @@ class JsonReaderTest {
                     () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(2, ((JsonArray) a).elements().size()),
                     () -> assertTrue(((JsonArray) a).elements().contains(
-                            new JsonObject(Map.of("m", new JsonNumber(7)))
+                            new JsonObject(Map.of("m", Basic.of(7)))
                     ))
             );
         }

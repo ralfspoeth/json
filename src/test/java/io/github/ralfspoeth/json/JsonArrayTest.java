@@ -27,7 +27,7 @@ class JsonArrayTest {
 
     @Test
     void testIntFunction() {
-        List<JsonValue> elems = List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, new JsonNumber(5d));
+        List<JsonValue> elems = List.of(JsonNull.INSTANCE, JsonBoolean.TRUE, Basic.of(5d));
         var ja = new JsonArray(elems);
         assertAll(
                 () -> assertEquals(elems.size(), ja.elements().size()),

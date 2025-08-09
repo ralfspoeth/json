@@ -34,7 +34,7 @@ class GreysonTest {
         assertInstanceOf(JsonObject.class, element);
         JsonObject jo = (JsonObject) element;
         assertEquals(new JsonString("test"), jo.members().get("name"));
-        assertEquals(new JsonNumber(123), jo.members().get("value"));
+        assertEquals(Basic.of(123), jo.members().get("value"));
     }
 
     @Test

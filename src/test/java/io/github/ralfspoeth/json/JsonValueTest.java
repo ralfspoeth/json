@@ -26,7 +26,7 @@ class JsonValueTest {
         var je = new JsonArray(
                 List.of(
                         JsonNull.INSTANCE, JsonBoolean.FALSE, JsonBoolean.TRUE,
-                        new JsonNumber(5), new JsonString("five"),
+                        Basic.of(5), new JsonString("five"),
                         new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", new JsonObject(Map.of())))
                 )
         );
@@ -72,7 +72,7 @@ class JsonValueTest {
         record R(Object x) {}
         assertAll(
                 () -> assertEquals(JsonNull.INSTANCE, JsonValue.of(null)),
-                () -> assertEquals(new JsonNumber(5), JsonValue.of(5)),
+                () -> assertEquals(Basic.of(5), JsonValue.of(5)),
                 () -> assertEquals(new JsonObject(Map.of("x", JsonNull.INSTANCE)), JsonValue.of(new R(null))),
                 () -> assertEquals(new JsonArray(List.of(JsonBoolean.FALSE)), JsonValue.of(new Object[]{false}))
         );

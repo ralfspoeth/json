@@ -141,7 +141,7 @@ Writing data into a JSON stream works either through the builders
     Writer out;
     JsonObject jo = Aggregate.objectBuilder()
         .named("x", JsonBoolean.TRUE)
-        .named("y", new JsonNumber(5d))
+        .named("y", Basic.of(5d))
         .build();
     try(var w = JsonWriter.createDefaultWriter(out)) {
         w.write(jo);
@@ -337,7 +337,7 @@ which is parsed into
 ```
 This `a` can now easily be filtered like
 ```java
-    assert 2 == a.stream().filter(new JsonNumber(2)).count();
+    assert 2 == a.stream().filter(Basic.of(2)).count();
 ```
 # Builders
 
@@ -424,7 +424,7 @@ then
         return rdr.readElement();
     }
 ```
-produces `new JsonObject(Map.of("make", new JsonString("BMW"), "year", new JsonNumber(1971)))`.
+produces `new JsonObject(Map.of("make", new JsonString("BMW"), "year", Basic.of(1971)))`.
 When we want to read the JSON into a Java object of some type, say `record Car(String make, int year) {}`
 we'd write:
 ```java 

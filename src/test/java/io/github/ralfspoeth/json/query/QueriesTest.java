@@ -18,8 +18,8 @@ class QueriesTest {
     @Test
     void testIntValue() {
         assertAll(
-                () -> assertEquals(1, intValue(new JsonNumber(1), 0)),
-                () -> assertEquals(1, intValue(new JsonNumber(1.1d), 0)),
+                () -> assertEquals(1, intValue(Basic.of(1), 0)),
+                () -> assertEquals(1, intValue(Basic.of(1.1d), 0)),
                 () -> assertEquals(1, intValue(new JsonString("1"), 0)),
                 () -> assertEquals(1, intValue(JsonBoolean.TRUE, 0)),
                 () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1)),
@@ -30,8 +30,8 @@ class QueriesTest {
     @Test
     void testLongValue() {
         assertAll(
-                () -> assertEquals(1L, longValue(new JsonNumber(1), 0)),
-                () -> assertEquals(1L, longValue(new JsonNumber(1.1d), 0)),
+                () -> assertEquals(1L, longValue(Basic.of(1), 0)),
+                () -> assertEquals(1L, longValue(Basic.of(1.1d), 0)),
                 () -> assertEquals(1L, longValue(new JsonString("1"), 0)),
                 () -> assertEquals(1L, longValue(JsonBoolean.TRUE, 0)),
                 () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1)),
@@ -42,8 +42,8 @@ class QueriesTest {
     @Test
     void testDoubleValue() {
         assertAll(
-                () -> assertEquals(1d, doubleValue(new JsonNumber(1), 0)),
-                () -> assertEquals(1.1d, doubleValue(new JsonNumber(1.1d), 0)),
+                () -> assertEquals(1d, doubleValue(Basic.of(1), 0)),
+                () -> assertEquals(1.1d, doubleValue(Basic.of(1.1d), 0)),
                 () -> assertEquals(1d, doubleValue(new JsonString("1"), 0)),
                 () -> assertEquals(1.5d, doubleValue(new JsonString("1.5"), 0)),
                 () -> assertEquals(1d, doubleValue(JsonBoolean.TRUE, 0)),
@@ -56,9 +56,9 @@ class QueriesTest {
     void testStringValue() {
         assertAll(
                 () -> assertEquals("one", stringValue(new JsonString("one"), null)),
-                () -> assertEquals("1.0", stringValue(new JsonNumber(1d), null)),
-                () -> assertEquals("1.1", stringValue(new JsonNumber(1.1d), null)),
-                () -> assertEquals("1.123", stringValue(new JsonNumber(1.123d), null)),
+                () -> assertEquals("1", stringValue(Basic.of(1d), null)),
+                () -> assertEquals("1.1", stringValue(Basic.of(1.1d), null)),
+                () -> assertEquals("1.123", stringValue(Basic.of(1.123d), null)),
                 () -> assertEquals("true", stringValue(JsonBoolean.TRUE, null)),
                 () -> assertEquals("false", stringValue(JsonBoolean.FALSE, null)),
                 () -> assertEquals("null", stringValue(JsonNull.INSTANCE, null)),

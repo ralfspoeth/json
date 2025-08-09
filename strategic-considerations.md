@@ -110,7 +110,7 @@ in a CRM or similar system:
 The representation in Java after parsing is this
 
     var person = new JsonObject(Map.of(
-        "id", new JsonNumber(12341234),
+        "id", Basic.of(12341234),
         "ssn", new JsonString("123-45-678"),
         "addresses", new JsonArray(List.of(
             new JsonObject(Map.of(

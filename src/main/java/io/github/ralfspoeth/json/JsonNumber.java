@@ -7,11 +7,7 @@ public record JsonNumber(BigDecimal numVal) implements Basic<BigDecimal> {
     public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
 
     public JsonNumber {
-        Objects.requireNonNull(numVal);
-    }
-
-    public JsonNumber(double d) {
-        this(BigDecimal.valueOf(d));
+        numVal = Objects.requireNonNull(numVal).stripTrailingZeros();
     }
 
     @Override
@@ -26,20 +22,6 @@ public record JsonNumber(BigDecimal numVal) implements Basic<BigDecimal> {
 
     @Override
     public boolean test(JsonValue other) {
-        return other instanceof JsonNumber(BigDecimal bd) && bd.compareTo(value())==0;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if(o instanceof JsonNumber(BigDecimal other)) {
-            return numVal.compareTo(other) == 0;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return Double.hashCode(numVal.doubleValue());
+        return other instanceof JsonNumber(BigDecimal bd) && bd.equals(numVal);
     }
 }

@@ -15,7 +15,7 @@ class JsonWriterTest {
     @Test
     void test1() throws Exception {
         var orig = Aggregate.objectBuilder()
-                .named("a", new JsonNumber(5))
+                .named("a", Basic.of(5))
                 .basic("bb", 6d)
                 .basic("fuck", null)
                 .named("arr", Aggregate.arrayBuilder()
@@ -49,7 +49,7 @@ class JsonWriterTest {
     void testBasics() throws IOException {
         try(var w = new StringWriter(); var jw = new JsonWriter(w)) {
             int len = 0;
-            jw.write(new JsonNumber(1.2));
+            jw.write(Basic.of(1.2));
             assertEquals("1.2", w.getBuffer().substring(len, len+=3));
             jw.write(JsonNull.INSTANCE);
             assertEquals("null", w.getBuffer().substring(len, len+=4));
@@ -66,7 +66,7 @@ class JsonWriterTest {
     void testAggregates() throws IOException {
         try(var w = new StringWriter(); var jw = new JsonWriter(w)) {
             int len = 0;
-            jw.write(new JsonNumber(1.2));
+            jw.write(Basic.of(1.2));
             assertEquals("1.2", w.getBuffer().substring(len, len+=3));
             jw.write(JsonNull.INSTANCE);
             assertEquals("null", w.getBuffer().substring(len, len+=4));

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
@@ -119,5 +120,13 @@ class JsonValueTest {
                                 .build()
                         ).build()
                 ).build(), JsonValue.of(o));
+    }
+
+    @Test
+    void testIntValue() {
+        assertAll(
+                () -> assertEquals(1, JsonValue.of(1).intValue().orElseThrow()),
+                () -> assertThrows(NoSuchElementException.class, () -> JsonValue.of(null).intValue().orElseThrow())
+        );
     }
 }

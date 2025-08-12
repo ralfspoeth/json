@@ -1,9 +1,6 @@
 package io.github.ralfspoeth.json;
 
 import java.math.BigDecimal;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
 
 public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 
@@ -30,29 +27,5 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
             case Boolean b -> JsonBoolean.of(b);
             default -> new JsonString(o.toString());
         };
-    }
-
-    default OptionalInt intValue() {
-        return OptionalInt.empty();
-    }
-
-    default int intValue(int def) {
-        return intValue().orElse(def);
-    }
-
-    default OptionalLong longValue() {
-        return OptionalLong.empty();
-    }
-
-    default long longValue(long def) {
-        return longValue().orElse(def);
-    }
-
-    default OptionalDouble doubleValue() {
-        return OptionalDouble.empty();
-    }
-
-    default double doubleValue(double def) {
-        return doubleValue().orElse(def);
     }
 }

@@ -57,6 +57,10 @@ All these features make these libraries quite large. Greyson is intentionally
 small both in terms of package size and in terms of classes and methods. 
 Here are some thoughts about [why not GSON or Jackson](whynot.md)]
 
+Greyson is not intended to be the fastest JSON parsing library on the planet,
+nor is it. Microbenchmarks show that parsing and writing is much slower than
+GSON or Jackson in its current incarnation.
+
 ## JSON Test Suite
 
 Beginning with version 1.1.25, we've added a number of tests

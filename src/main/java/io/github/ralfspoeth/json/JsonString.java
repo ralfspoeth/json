@@ -1,6 +1,8 @@
 package io.github.ralfspoeth.json;
 
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public record JsonString(String value) implements Basic<String> {
     public JsonString {
@@ -9,10 +11,16 @@ public record JsonString(String value) implements Basic<String> {
 
     @Override
     public String json() {
-        return "\"%s\"".formatted(escape(value));
+        return "\"%s\"".formatted(escaped(value));
     }
 
-    public static String escape(String s) {
+    private static final ConcurrentMap<String, String> cachedEscaped = new ConcurrentHashMap<>();
+
+    private static String escaped(String s) {
+        return cachedEscaped.computeIfAbsent(s, JsonString::escape);
+    }
+
+    private static String escape(String s) {
         var tmp = s.replaceAll("\\\\", "\\\\\\\\")
                 .replaceAll("\"", "\\\\\"")
                 .replaceAll("/", "\\\\/")

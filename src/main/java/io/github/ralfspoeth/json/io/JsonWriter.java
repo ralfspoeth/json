@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
-import static io.github.ralfspoeth.json.JsonString.escape;
+import static io.github.ralfspoeth.json.JsonString.escaped;
 
 public class JsonWriter implements AutoCloseable {
 
@@ -66,7 +66,7 @@ public class JsonWriter implements AutoCloseable {
 
     private void writeMember(int level, Iterator<Map.Entry<String, JsonValue>> memberIterator) {
         var member = memberIterator.next();
-        write(escape(member.getKey()), member.getValue(), level + 1);
+        write(escaped(member.getKey()), member.getValue(), level + 1);
     }
 
     private char[] indentationChars(int level) {

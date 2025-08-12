@@ -16,7 +16,7 @@ public record JsonString(String value) implements Basic<String> {
 
     private static final ConcurrentMap<String, String> cachedEscaped = new ConcurrentHashMap<>();
 
-    private static String escaped(String s) {
+    public static String escaped(String s) {
         return cachedEscaped.computeIfAbsent(s, JsonString::escape);
     }
 

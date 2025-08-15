@@ -45,16 +45,6 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
     }
 
     @Override
-    default Optional<JsonValue> get(int index) {
-        return Optional.empty();
-    }
-
-    @Override
-    default Optional<JsonValue> get(String name) {
-        return Optional.empty();
-    }
-
-    @Override
     default Optional<String> stringValue() {
         return Optional.ofNullable(value())
                 .map(Object::toString)

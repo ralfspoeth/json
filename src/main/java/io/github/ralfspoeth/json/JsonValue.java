@@ -12,7 +12,9 @@ import static java.util.Objects.requireNonNull;
  * {@link Basic} and {@link Aggregate}, which are sealed interfaces themselves.
  * All instances are immutable, {@link Predicate}s, have a {@link #depth()}
  * and a {@link #json()} representation.
- *
+ * Every value can report its {@code boolean}, {@link BigDecimal decimal} (and all primitive cousins),
+ * {@code String string} value or the element at a given index (empty if out of bounds or not an array)
+ * and the value of a given key (in an object) if it exists.
  */
 public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate, Basic {
 
@@ -114,9 +116,13 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
         return stringValue().orElse(requireNonNull(def));
     }
 
-    Optional<JsonValue> get(int index);
+    default Optional<JsonValue> get(int index) {
+        return Optional.empty();
+    }
 
-    Optional<JsonValue> get(String name);
+    default Optional<JsonValue> get(String name) {
+        return Optional.empty();
+    }
 
     default List<JsonValue> elements() {
         return List.of();

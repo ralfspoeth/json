@@ -52,14 +52,4 @@ public sealed interface Aggregate extends JsonValue permits JsonArray, JsonObjec
     default Optional<String> stringValue() {
         return Optional.empty();
     }
-
-    @Override
-    default Optional<JsonValue> get(int index){
-        return Optional.empty();
-    }
-
-    @Override
-    default Optional<JsonValue> get(String name) {
-        return Optional.empty();
-    }
 }

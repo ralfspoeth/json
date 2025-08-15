@@ -280,7 +280,7 @@ public sealed interface Builder<T extends JsonValue> {
          * Remove all name-value pairs with a name in the given set of keys.
          *
          * @param keys the keys to be removed, may not be {@code null}
-         * @returnl {@code this}
+         * @return {@code this}
          */
         public JsonObjectBuilder removeAll(Collection<String> keys) {
             keys.forEach(data::remove);

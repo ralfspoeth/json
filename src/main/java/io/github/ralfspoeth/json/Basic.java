@@ -87,13 +87,14 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
             case Number n -> new JsonNumber(BigDecimal.valueOf(n.doubleValue()));
             case Boolean b -> JsonBoolean.of(b);
             case String s -> new JsonString(s);
-            case Builder<?> b -> switch(b.build()) {
-                case Basic<?> bb -> bb;
-                default -> throw new IllegalArgumentException("cannot pass an aggregate builder to Basic.of");
-            };
+            case Builder<?> b -> b.build() instanceof Basic<?> bb?bb:illegalArgument("cannot pass an aggregate builder to Basic.of");
             case Basic<?> bb -> bb;
-            case Aggregate a -> throw new IllegalArgumentException("cannot pass an aggregate to Basic.of");
+            case Aggregate ignored -> illegalArgument("cannot pass an aggregate to Basic.of");
             default -> new JsonString(o.toString());
         };
+    }
+
+    private static Basic<?> illegalArgument(String msg) {
+        throw new IllegalArgumentException(msg);
     }
 }

@@ -221,7 +221,7 @@ public class Validation {
     }
 
     public static Predicate<JsonValue> matchesTypesOf(JsonArray array) {
-        return matches(array.stream().map(v -> switch (v) {
+        return matches(array.elements().stream().map(v -> switch (v) {
             case JsonBoolean ignored -> is(JsonBoolean.class);
             case Basic<?> b -> is(b.getClass());
             case JsonArray a -> matchesTypesOf(a);

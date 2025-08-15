@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
-import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
+import static io.github.ralfspoeth.json.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -85,7 +85,7 @@ class QueriesTest {
     void testEnumValue() {
         enum E {ONE, TWO}
         var obj = objectBuilder()
-                .named("e", new JsonString("onet"))
+                .put("e", new JsonString("onet"))
                 .build();
 
         // extracts the member named "e", first three letters of the value, then to upper case
@@ -111,11 +111,11 @@ class QueriesTest {
         String[] sixes = {"six", "six"};
         Object[] nulls = {null};
         assertAll(
-                () -> assertEquals(arrayBuilder().item(JsonBoolean.TRUE).item(JsonBoolean.FALSE).build(), JsonArray.of(trueFalse)),
-                () -> assertEquals(arrayBuilder().element(1).element(2).element(3).build(), JsonArray.of(one23)),
-                () -> assertEquals(arrayBuilder().element(4d).element(5d).build(), JsonArray.of(four5)),
-                () -> assertEquals(arrayBuilder().element("six").element("six").build(), JsonArray.of(sixes)),
-                () -> assertEquals(arrayBuilder().item(JsonNull.INSTANCE).build(), JsonArray.of(nulls))
+                () -> assertEquals(arrayBuilder().add(JsonBoolean.TRUE).add(JsonBoolean.FALSE).build(), JsonArray.of(trueFalse)),
+                () -> assertEquals(arrayBuilder().addBasic(1).addBasic(2).addBasic(3).build(), JsonArray.of(one23)),
+                () -> assertEquals(arrayBuilder().addBasic(4d).addBasic(5d).build(), JsonArray.of(four5)),
+                () -> assertEquals(arrayBuilder().addBasic("six").addBasic("six").build(), JsonArray.of(sixes)),
+                () -> assertEquals(arrayBuilder().add(JsonNull.INSTANCE).build(), JsonArray.of(nulls))
         );
     }
 
@@ -188,7 +188,7 @@ class QueriesTest {
 
     @Test
     void testPrimitiveArrays() {
-        var ja = arrayBuilder().element(0).element(1).build();
+        var ja = arrayBuilder().addBasic(0).addBasic(1).build();
         assertAll(
                 () -> assertArrayEquals(new int[]{0, 1}, intArray(ja)),
                 () -> assertArrayEquals(new boolean[]{false, true}, booleanArray(ja)),

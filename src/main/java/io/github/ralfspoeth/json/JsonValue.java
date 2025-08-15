@@ -1,15 +1,32 @@
 package io.github.ralfspoeth.json;
 
-import java.util.Map;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.function.Predicate;
 
+import static java.util.Objects.requireNonNull;
+
+/**
+ * The root interface of the JSON hierarchy.
+ * {@code JsonValue} is a sealed interface which allows for two subtypes
+ * {@link Basic} and {@link Aggregate}, which are sealed interfaces themselves.
+ * All instances are immutable, {@link Predicate}s, have a {@link #depth()}
+ * and a {@link #json()} representation.
+ *
+ */
 public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate, Basic {
 
+    /**
+     * The JSON representation of the value.
+     * @return a JSON string, never {@code null}, which adheres to the JSON specification.
+     */
     String json();
 
+    /**
+     * The depth of tree of nested values.
+     * The depth of each leaf node is 1.
+     * The depth of container nodes is 1 + the maximum depth of its descendants.
+     */
     int depth();
 
     static JsonValue of(Object o) {
@@ -22,14 +39,43 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
         };
     }
 
+    /**
+     * See {@link #equals(Object)}
+     */
     @Override
     int hashCode();
 
+    /**
+     * Both methods {@code equals(Object)} and {@link #hashCode} need to be overwritten
+     * such that for two {@code JsonValue} instances {@code a} and {@code b}:
+     * <ul>
+     *     <li>{@code a.getClass()==b.getClass()}</li>
+     *     <li>for numerical values in {@code JsonNumber}s: numerical equality</li>
+     *     <li>for all other basic values that {@code a.value().equals(b.value())}</li>
+     *     <li>for arrays that the contained list of elements equal in order and by value,
+     *         or {@code a.elements().size()==b.elements().size()} and for each {@code 0<= i < a.elements().size()}
+     *         {@code a.elements().get(i).equals(b.elements().get(i))}
+     *     </li>
+     *     <li>for objects that they contain the same set of keys
+     *         {@code a.members().keySet().containsAll(b.members().keySet()) && b.members().keySet().containsAll(a.members().keySet())}
+     *         and the equality of the associated values, such that {@code a.members().get(k).equals(b.members().get(k))} for each {@code k}
+     *     </li>
+     * </ul>
+     * See {@link Object#equals(Object)} and {@link Object#hashCode()}
+     */
     @Override
     boolean equals(Object o);
 
+    Optional<Boolean> booleanValue();
+
+    default boolean booleanValue(boolean def) {
+        return booleanValue().orElse(def);
+    }
+
     default OptionalInt intValue() {
-        return OptionalInt.empty();
+        return decimalValue()
+                .map(dv -> OptionalInt.of(dv.intValue()))
+                .orElse(OptionalInt.empty());
     }
 
     default int intValue(int def) {
@@ -37,7 +83,9 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
     }
 
     default OptionalLong longValue() {
-        return OptionalLong.empty();
+        return decimalValue()
+                .map(dv -> OptionalLong.of(dv.longValue()))
+                .orElse(OptionalLong.empty());
     }
 
     default long longValue(long def) {
@@ -45,10 +93,36 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
     }
 
     default OptionalDouble doubleValue() {
-        return OptionalDouble.empty();
+        return decimalValue()
+                .map(dv -> OptionalDouble.of(dv.doubleValue()))
+                .orElse(OptionalDouble.empty());
     }
 
     default double doubleValue(double def) {
         return doubleValue().orElse(def);
+    }
+
+    Optional<BigDecimal> decimalValue();
+
+    default BigDecimal decimalValue(BigDecimal def) {
+        return decimalValue().orElse(requireNonNull(def));
+    }
+
+    Optional<String> stringValue();
+
+    default String stringValue(String def) {
+        return stringValue().orElse(requireNonNull(def));
+    }
+
+    Optional<JsonValue> get(int index);
+
+    Optional<JsonValue> get(String name);
+
+    default List<JsonValue> elements() {
+        return List.of();
+    }
+
+    default Map<String, JsonValue> members() {
+        return Map.of();
     }
 }

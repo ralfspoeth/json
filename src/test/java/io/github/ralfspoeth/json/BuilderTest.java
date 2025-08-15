@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
-import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
+import static io.github.ralfspoeth.json.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,14 +16,14 @@ class BuilderTest {
     void testObjectBuilderMergeUpdateRemove() {
         var one = objectBuilder().basic("a", 1).basic("b", 2).build();
         var two = objectBuilder().basic("b", 3).basic("c", 4).build();
-        var merged = Aggregate.objectBuilder(one).merge(two).build();
+        var merged = objectBuilder(one).merge(two).build();
         var expectedMerged = objectBuilder().basic("a", 1).basic("b", 3).basic("c", 4).build();
         var expectedA = objectBuilder().basic("a", 1).build();
         assertAll(
                 () -> assertEquals(expectedMerged, merged),
-                () -> assertEquals(expectedA, Aggregate.objectBuilder(one).remove("b").build()),
-                () -> assertEquals(expectedA, Aggregate.objectBuilder(one).removeAll(two).build()),
-                () -> assertEquals(objectBuilder().basic("a", 1).basic("b", 3).build(), Aggregate.objectBuilder(one).update(two).build())
+                () -> assertEquals(expectedA, objectBuilder(one).remove("b").build()),
+                () -> assertEquals(expectedA, objectBuilder(one).removeAll(two.members().keySet()).build()),
+                () -> assertEquals(objectBuilder().basic("a", 1).basic("b", 3).build(), objectBuilder(one).update(two).build())
         );
 
     }
@@ -34,15 +34,14 @@ class BuilderTest {
                 .basic("name", "Ralf")
                 .basic("income", 5)
                 .basic("sex", true)
-                .named("seven", new JsonString("murks"))
+                .put("seven", new JsonString("murks"))
                 .basic("nix", null)
-                .named("adr", arrayBuilder()
-                        .element(5)
-                        .item(objectBuilder().basic("sowat", "nix").build())
-                        .element(true)
-                        .element(false)
-                        .nullItem()
-                        .build()
+                .put("adr", arrayBuilder()
+                        .addBasic(5)
+                        .add(objectBuilder().basic("sowat", "nix"))
+                        .addBasic(true)
+                        .addBasic(false)
+                        .add(JsonNull.INSTANCE)
                 )
                 .build();
         assertAll(
@@ -66,8 +65,8 @@ class BuilderTest {
     @Test
     void testDuplicateName() {
         var aIsFalse = objectBuilder()
-                .named("a", Basic.of(true))
-                .named("a", Basic.of(false))
+                .put("a", Basic.of(true))
+                .put("a", Basic.of(false))
                 .build();
         Assertions.assertEquals(JsonBoolean.FALSE, aIsFalse.get("a", JsonBoolean.class));
     }
@@ -105,11 +104,11 @@ class BuilderTest {
     @Test
     void testArrayBuilder() {
         var array = arrayBuilder()
-                .item(JsonBoolean.TRUE)
-                .item(JsonNull.INSTANCE)
-                .item(JsonBoolean.FALSE)
-                .item(Basic.of("hallo"))
-                .item(Basic.of(1d))
+                .add(JsonBoolean.TRUE)
+                .add(JsonNull.INSTANCE)
+                .add(JsonBoolean.FALSE)
+                .add(Basic.of("hallo"))
+                .add(Basic.of(1d))
                 .build();
         assertAll(
                 () -> assertEquals(5, array.elements().size()),
@@ -128,8 +127,8 @@ class BuilderTest {
     @Test
     void testArrayBuilderItem() {
         var array = arrayBuilder()
-                .builder(objectBuilder().namedNull("a"))
-                .builder(arrayBuilder().basic(1))
+                .add(objectBuilder().put("a", JsonNull.INSTANCE).build())
+                .add(arrayBuilder().addBasic(1).build())
                 .build();
         assertAll(
                 () -> assertEquals(2, array.elements().size()),

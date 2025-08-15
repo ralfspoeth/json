@@ -2,16 +2,14 @@ package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.basix.coll.Stack;
 import io.github.ralfspoeth.json.*;
-import io.github.ralfspoeth.json.Aggregate.JsonArrayBuilder;
-import io.github.ralfspoeth.json.Aggregate.JsonObjectBuilder;
+import io.github.ralfspoeth.json.Builder.JsonArrayBuilder;
+import io.github.ralfspoeth.json.Builder.JsonObjectBuilder;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.colon;
-import static io.github.ralfspoeth.json.io.JsonReader.Elem.Char.comma;
 import static io.github.ralfspoeth.json.io.Lexer.FixToken.*;
 import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
 
@@ -43,16 +41,16 @@ public class JsonReader implements AutoCloseable {
         this.lexer = new Lexer(src);
     }
 
-    sealed interface Elem {
+    private sealed interface Elem {
         record ObjBuilderElem(JsonObjectBuilder builder) implements Elem {
             static ObjBuilderElem empty() {
-                return new ObjBuilderElem(Aggregate.objectBuilder());
+                return new ObjBuilderElem(Builder.objectBuilder());
             }
         }
 
         record ArrBuilderElem(JsonArrayBuilder builder) implements Elem {
             static ArrBuilderElem empty() {
-                return new ArrBuilderElem(Aggregate.arrayBuilder());
+                return new ArrBuilderElem(Builder.arrayBuilder());
             }
         }
 
@@ -110,7 +108,7 @@ public class JsonReader implements AutoCloseable {
                 // top of the stack is a name-value-pair
                 case COLON -> {
                     if (stack.top() instanceof Elem.NameElem) {
-                        stack.push(colon);
+                        stack.push(Elem.Char.colon);
                     } else {
                         parseEx("unexpected token : " + tkn);
                     }
@@ -120,8 +118,8 @@ public class JsonReader implements AutoCloseable {
                 // aggregate element
                 case COMMA -> {
                     switch (stack.top()) {
-                        case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(comma);
-                        case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> stack.push(comma);
+                        case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(Elem.Char.comma);
+                        case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> stack.push(Elem.Char.comma);
                         case null, default -> parseEx("unexpected token: " + tkn);
                     }
                 }
@@ -179,11 +177,11 @@ public class JsonReader implements AutoCloseable {
                             stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
                     ) {
                         stack.push(new Elem.NameElem(val));
-                    } else if (type == STRING && comma.equals(stack.top())) {
+                    } else if (type == STRING && Elem.Char.comma.equals(stack.top())) {
                         stack.pop();
                         switch (stack.top()) {
                             case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(val));
-                            case Elem.ArrBuilderElem abe -> abe.builder.item(new JsonString(val));
+                            case Elem.ArrBuilderElem abe -> abe.builder.add(new JsonString(val));
                             case null, default ->
                                     parseEx("Unexpected value: " + val);
                         }
@@ -228,7 +226,7 @@ public class JsonReader implements AutoCloseable {
                                 && stack.pop() instanceof Elem.NameElem(String name)
                                 && stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
                             // add name-value-pair to the object builder
-                            builder.named(name, v);
+                            builder.put(name, v);
                         } else {
                             parseEx("unexpected token: " + token);
                         } // in every other case, something went wrong
@@ -237,14 +235,14 @@ public class JsonReader implements AutoCloseable {
                     case comma -> {
                         stack.pop(); // pop comma
                         if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
-                            builder.item(v);
+                            builder.add(v);
                         } else {
                             parseEx("unexpected token " + token);
                         }
                     }
                 }
             }
-            case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> builder.item(v);
+            case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> builder.add(v);
             default -> parseEx("unexpected token " + token);
         }
     }

@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
-import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
+import static io.github.ralfspoeth.json.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Path.intValue;
 import static io.github.ralfspoeth.json.query.Path.of;
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,7 +23,7 @@ class PathTest {
     @Test
     void ofSingle() {
         var five = Basic.of(5);
-        var singleElem = objectBuilder().named("one", five).build();
+        var singleElem = objectBuilder().put("one", five).build();
         assertAll(
                 () -> assertEquals(of("one"), of("one")),
                 () -> assertTrue(of("one").apply(singleElem).allMatch(five::equals))
@@ -63,8 +63,8 @@ class PathTest {
     @Test
     void ofRange() {
         var five = Basic.of(5);
-        var singleElemArray = Aggregate.arrayBuilder().item(five).build();
-        var multiElemArray = Aggregate.arrayBuilder().item(five).item(five).item(five).build();
+        var singleElemArray = Builder.arrayBuilder().add(five).build();
+        var multiElemArray = Builder.arrayBuilder().add(five).add(five).add(five).build();
         assertAll(
                 () -> assertEquals(of("[0..-5]"), of("[0..-1]")),
                 () -> assertTrue(of("[0..-1]").apply(singleElemArray).allMatch(five::equals)),
@@ -81,7 +81,7 @@ class PathTest {
     @Test
     void ofNameRangeRegex() {
         var root = objectBuilder()
-                .named("one", new JsonArray(List.of(
+                .put("one", new JsonArray(List.of(
                         new JsonObject(Map.of("two", Basic.of(5)))
                 )))
                 .build();
@@ -93,7 +93,7 @@ class PathTest {
     void ofRegex() {
         var path = of("#o.*e");
         var five = Basic.of(5);
-        var singleElem = objectBuilder().named("oe", five).build();
+        var singleElem = objectBuilder().put("oe", five).build();
         assertEquals(five, path.apply(singleElem).findFirst().orElseThrow());
     }
 
@@ -106,14 +106,14 @@ class PathTest {
                 .allMatch(JsonNumber.class::isInstance));
 
         var obj = objectBuilder()
-                .named("a",
+                .put("a",
                         objectBuilder()
-                                .named("b", objectBuilder()
-                                        .named("c", Basic.of("Zeh"))
+                                .put("b", objectBuilder()
+                                        .put("c", Basic.of("Zeh"))
                                         .build()
                                 ).build()
                 )
-                .named("x", Basic.of(null))
+                .put("x", Basic.of(null))
                 .build();
 
         var l = Stream.of(obj)
@@ -140,7 +140,7 @@ class PathTest {
     void testSingle() {
         // given
         var obj = objectBuilder()
-                .builder("a", objectBuilder().builder("b", objectBuilder().named("c", Basic.of(5))))
+                .put("a", objectBuilder().put("b", objectBuilder().basic("c", 5).build()).build())
                 .build();
         // when
         var path = of("a/b/c");
@@ -183,13 +183,13 @@ class PathTest {
         var rect = new Rect(new Point(1, 2), new Point(3, 4));
         // when
         var obj1 = objectBuilder()
-                .builder("bl", objectBuilder().basic("x", 1).basic("y", 2))
-                .builder("tr", objectBuilder().basic("x", 3).basic("y", 4))
+                .put("bl", objectBuilder().basic("x", 1).basic("y", 2))
+                .put("tr", objectBuilder().basic("x", 3).basic("y", 4))
                 .build();
-        var obj2 = objectBuilder().named("x1", Basic.of(1)).named("y1", Basic.of(2))
-                .named("x2", Basic.of(3)).named("y2", Basic.of(4)).build();
-        var arr1 = arrayBuilder().item(Basic.of(1)).item(Basic.of(2)).item(Basic.of(3)).item(Basic.of(4)).build();
-        var arr2 = arrayBuilder().item(Basic.of(1)).item(Basic.of(3)).item(Basic.of(2)).item(Basic.of(4)).build();
+        var obj2 = objectBuilder().put("x1", Basic.of(1)).put("y1", Basic.of(2))
+                .put("x2", Basic.of(3)).put("y2", Basic.of(4)).build();
+        var arr1 = arrayBuilder().add(Basic.of(1)).add(Basic.of(2)).add(Basic.of(3)).add(Basic.of(4)).build();
+        var arr2 = arrayBuilder().add(Basic.of(1)).add(Basic.of(3)).add(Basic.of(2)).add(Basic.of(4)).build();
         // then
         assertAll(
                 () -> assertEquals(rect, new Rect(

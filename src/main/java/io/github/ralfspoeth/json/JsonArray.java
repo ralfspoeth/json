@@ -2,24 +2,21 @@ package io.github.ralfspoeth.json;
 
 import java.lang.reflect.Array;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.IntFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
+import static io.github.ralfspoeth.json.Builder.arrayBuilder;
 import static java.util.Objects.requireNonNullElse;
+import static java.util.stream.Collectors.joining;
 
+/**
+ * The array aggregate type in the JSON hierarchy.
+ *
+ * @param elements the elements; if {@code null} substituted by an empty list
+ */
 public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunction<JsonValue> {
     public JsonArray {
         elements = List.copyOf(requireNonNullElse(elements, List.of()));
-    }
-
-    public JsonArray() {
-        this(List.of());
-    }
-
-    public JsonArray(Object... o) {
-        this(Stream.of(o).map(JsonValue::of).toList());
     }
 
     public static JsonArray of(Object o) {
@@ -36,7 +33,7 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     public static JsonArray ofIterable(Iterable<?> iterable) {
         var ab = arrayBuilder();
         for (var it : iterable) {
-            ab.item(JsonValue.of(it));
+            ab.add(JsonValue.of(it));
         }
         return ab.build();
     }
@@ -44,7 +41,7 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     public static JsonArray ofArray(Object o) {
         var ab = arrayBuilder();
         for (int i = 0, len = Array.getLength(o); i < len; i++) {
-            ab.item(JsonValue.of(Array.get(o, i)));
+            ab.add(JsonValue.of(Array.get(o, i)));
         }
         return ab.build();
     }
@@ -61,7 +58,7 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     public String json() {
         return elements.stream()
                 .map(JsonValue::json)
-                .collect(Collectors.joining(",", "[", "]"));
+                .collect(joining(", ", "[", "]"));
     }
 
     @Override
@@ -71,15 +68,19 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
 
     @Override
     public int depth() {
-        return elements.stream().mapToInt(JsonValue::depth).max().orElse(0) + 1;
-    }
-
-    public Stream<JsonValue> stream() {
-        return elements.stream();
+        return elements.stream()
+                .mapToInt(JsonValue::depth)
+                .max()
+                .orElse(0) + 1;
     }
 
     @Override
     public JsonValue apply(int index) {
-        return elements.get(index);
+        return get(index).orElseThrow();
+    }
+
+    @Override
+    public Optional<JsonValue> get(int index) {
+        return index<elements.size() ? Optional.of(elements.get(index)) : Optional.empty();
     }
 }

@@ -146,7 +146,7 @@ public class Queries {
      * <p>
      * The result is:
      * <ul>
-     *     <li>(int){@link JsonNumber#numVal()}</li>
+     *     <li>(int){@link JsonNumber#value()}</li>
      *     <li>{@link JsonBoolean#TRUE}: 1</li>
      *     <li>{@link JsonBoolean#FALSE}: 0</li>
      *     <li>{@link JsonNull}: 0</li>

@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -45,16 +46,18 @@ class BasicTest {
 
     @Test
     void testOfNums() {
+        Basic<BigDecimal> five = new JsonNumber(BigDecimal.valueOf(5));
+
         assertAll(
-                () -> assertEquals(Basic.of(5), Basic.of(5)),
-                () -> assertEquals(Basic.of(5), Basic.of(5L)),
-                () -> assertEquals(Basic.of(5), Basic.of((short)5)),
-                () -> assertEquals(Basic.of(5), Basic.of((char)5)),
-                () -> assertEquals(Basic.of(5), Basic.of((byte)5)),
-                () -> assertEquals(Basic.of(5), Basic.of(5.0f)),
-                () -> assertEquals(Basic.of(5), Basic.of(5.0)),
-                () -> assertEquals(Basic.of(5), Basic.of(BigDecimal.valueOf(5)))
+                () -> assertEquals(five, Basic.of(5)),
+                () -> assertEquals(five, Basic.of(5L)),
+                () -> assertEquals(five, Basic.of((short)5)),
+                () -> assertEquals(five, Basic.of((char)5)),
+                () -> assertEquals(five, Basic.of((byte)5)),
+                () -> assertEquals(five, Basic.of(5.0f)),
+                () -> assertEquals(five, Basic.of(5.0)),
+                () -> assertEquals(five, Basic.of(BigDecimal.valueOf(5))),
+                () -> assertEquals(five, Basic.of(BigInteger.valueOf(5)))
         );
     }
-
 }

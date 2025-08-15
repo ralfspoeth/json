@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
+import static io.github.ralfspoeth.json.Builder.arrayBuilder;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonObjectTest {
@@ -34,14 +34,14 @@ class JsonObjectTest {
         var s = new S("hallo", true, r, new Object[]{null});
         var jo = JsonObject.ofRecord(s);
         assertEquals(
-                Aggregate.objectBuilder()
-                        .named("s", Basic.of("hallo"))
-                        .named("b", JsonBoolean.TRUE)
-                        .named("r", Aggregate.objectBuilder()
-                                .named("x", Basic.of(5))
+                Builder.objectBuilder()
+                        .put("s", Basic.of("hallo"))
+                        .put("b", JsonBoolean.TRUE)
+                        .put("r", Builder.objectBuilder()
+                                .put("x", Basic.of(5))
                                 .build()
                         )
-                        .named("array", arrayBuilder().item(JsonNull.INSTANCE).build())
+                        .put("array", arrayBuilder().add(JsonNull.INSTANCE).build())
                         .build(),
                 jo
         );

@@ -6,40 +6,35 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-public record JsonNumber(BigDecimal numVal) implements Basic<BigDecimal> {
+public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
 
     public JsonNumber {
-        numVal = Objects.requireNonNull(numVal).stripTrailingZeros();
+        value = Objects.requireNonNull(value).stripTrailingZeros();
     }
 
     @Override
     public String json() {
-        return numVal.toString();
-    }
-
-    @Override
-    public BigDecimal value() {
-        return numVal();
+        return value.toString();
     }
 
     @Override
     public boolean test(JsonValue other) {
-        return other instanceof JsonNumber(BigDecimal bd) && bd.equals(numVal);
+        return other instanceof JsonNumber(BigDecimal bd) && bd.equals(value);
     }
 
     @Override
     public OptionalDouble doubleValue() {
-        return OptionalDouble.of(numVal.doubleValue());
+        return OptionalDouble.of(value.doubleValue());
     }
 
     @Override
     public OptionalInt intValue() {
-        return OptionalInt.of(numVal.intValue());
+        return OptionalInt.of(value.intValue());
     }
 
     @Override
     public OptionalLong longValue() {
-        return OptionalLong.of(numVal.longValue());
+        return OptionalLong.of(value.longValue());
     }
 }

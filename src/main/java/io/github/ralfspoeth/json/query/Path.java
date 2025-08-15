@@ -75,7 +75,7 @@ import static java.util.Objects.requireNonNull;
  * import io.github.ralfspoeth.json.*;
  * Path p = Path.of("..."); // @replace regex='"..."' replacement="..."
  * JsonArray a = new JsonArray(List.of()); // @replace regex='new JsonArray(List.of())' replacement='...'
- * List<JsonValue> result = a.stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
+ * List<JsonValue> result = a.elements().stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
  *}
  */
 public sealed abstract class Path implements Function<JsonValue, Stream<JsonValue>> {

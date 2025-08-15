@@ -103,9 +103,9 @@ class GreysonTest {
     @Test
     void testWrite_jsonArray() {
         // given
-        JsonArray jsonArray = Aggregate.arrayBuilder()
-                .item(JsonBoolean.TRUE)
-                .item(JsonNull.INSTANCE)
+        JsonArray jsonArray = Builder.arrayBuilder()
+                .add(JsonBoolean.TRUE)
+                .add(JsonNull.INSTANCE)
                 .build();
         // when
         var result = Greyson.write(new StringBuilder(), jsonArray).toString();
@@ -122,8 +122,8 @@ class GreysonTest {
 
     @Test
     void testWriteToSystemOut() {
-        JsonObject jsonObject = Aggregate.objectBuilder()
-                .named("message", new JsonString("hello"))
+        JsonObject jsonObject = Builder.objectBuilder()
+                .put("message", new JsonString("hello"))
                 .build();
         Greyson.writeToSystemOut(jsonObject);
 
@@ -136,8 +136,8 @@ class GreysonTest {
     void testWriteStringBuilder() {
         // given
         var sb = new StringBuilder();
-        var jsonObject = Aggregate.objectBuilder()
-                .named("message", new JsonString("hello"))
+        var jsonObject = Builder.objectBuilder()
+                .put("message", new JsonString("hello"))
                 .basic("num", 5)
                 .build();
         // when

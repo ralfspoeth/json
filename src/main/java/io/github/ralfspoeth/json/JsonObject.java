@@ -5,7 +5,7 @@ import java.lang.reflect.RecordComponent;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.github.ralfspoeth.json.Aggregate.objectBuilder;
+import static io.github.ralfspoeth.json.Builder.objectBuilder;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
@@ -28,7 +28,7 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
             var name = comp.getName();
             try {
                 var value = comp.getAccessor().invoke(r);
-                ob.named(name, JsonValue.of(value));
+                ob.put(name, JsonValue.of(value));
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }

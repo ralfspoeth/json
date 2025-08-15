@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Aggregate.arrayBuilder;
+import static io.github.ralfspoeth.json.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.Greyson.read;
 import static io.github.ralfspoeth.json.query.Queries.members;
 import static io.github.ralfspoeth.json.query.Validation.*;
@@ -95,10 +95,10 @@ class ValidationTest {
     @Test
     void testSimpleArrayTypeStructure() {
         // given
-        var array = arrayBuilder().basic(1).basic(true).build();
+        var array = arrayBuilder().addBasic(1).addBasic(true).build();
         // when
         var structure = matchesTypesOf(array);
-        var matching = arrayBuilder().basic(2).basic(true).build();
+        var matching = arrayBuilder().addBasic(2).addBasic(true).build();
         // then
         assertAll(
                 () -> assertTrue(structure.test(matching))

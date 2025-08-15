@@ -14,15 +14,15 @@ class JsonWriterTest {
 
     @Test
     void test1() throws Exception {
-        var orig = Aggregate.objectBuilder()
-                .named("a", Basic.of(5))
+        var orig = Builder.objectBuilder()
+                .put("a", Basic.of(5))
                 .basic("bb", 6d)
                 .basic("fuck", null)
-                .named("arr", Aggregate.arrayBuilder()
-                        .item(Basic.of(null))
-                        .item(Basic.of(7.5))
-                        .item(Aggregate.objectBuilder().build())
-                        .item(Aggregate.objectBuilder().basic("a", 5d).build())
+                .put("arr", Builder.arrayBuilder()
+                        .add(Basic.of(null))
+                        .add(Basic.of(7.5))
+                        .add(Builder.objectBuilder().build())
+                        .add(Builder.objectBuilder().basic("a", 5d).build())
                         .build())
                 .build();
 

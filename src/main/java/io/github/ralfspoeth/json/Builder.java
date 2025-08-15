@@ -250,8 +250,8 @@ public sealed interface Builder<T extends JsonValue> {
         /**
          * Insert entries into the current map of name-value pairs.
          *
-         * @param map
-         * @return
+         * @param map a map of name-value pairs
+         * @return {@code this}
          */
         public JsonObjectBuilder insert(Map<String, ? extends JsonValue> map) {
             map.entrySet()

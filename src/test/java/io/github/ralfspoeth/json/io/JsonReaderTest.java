@@ -189,8 +189,8 @@ class JsonReaderTest {
             var a = p.readElement();
             assertAll(
                     () -> assertInstanceOf(JsonArray.class, a),
-                    () -> assertEquals(1, ((JsonArray) a).elements().size()),
-                    () -> assertTrue(((JsonArray) a).elements().contains(
+                    () -> assertEquals(1, a.elements().size()),
+                    () -> assertTrue(a.elements().contains(
                             new JsonObject(Map.of("n", Basic.of(55)))
                     ))
             );
@@ -204,8 +204,8 @@ class JsonReaderTest {
             var a = p.readElement();
             assertAll(
                     () -> assertInstanceOf(JsonArray.class, a),
-                    () -> assertEquals(2, ((JsonArray) a).elements().size()),
-                    () -> assertTrue(((JsonArray) a).elements().contains(
+                    () -> assertEquals(2, a.elements().size()),
+                    () -> assertTrue(a.elements().contains(
                             new JsonObject(Map.of("m", Basic.of(7)))
                     ))
             );

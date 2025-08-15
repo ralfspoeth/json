@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json;
 
 import java.util.*;
+import java.util.stream.Collector;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.in;
 import static java.util.Objects.requireNonNull;
@@ -48,6 +49,18 @@ public sealed interface Builder<T extends JsonValue> {
      */
     static JsonArrayBuilder arrayBuilder() {
         return new JsonArrayBuilder();
+    }
+
+    /**
+     * to be used in the stream pipeline.
+     */
+    static Collector<JsonValue, JsonArrayBuilder, JsonArray> arrayCollector() {
+        return Collector.of(
+                Builder::arrayBuilder,
+                Builder.JsonArrayBuilder::add,
+                Builder.JsonArrayBuilder::addAllOf,
+                Builder::build
+        );
     }
 
     /**
@@ -106,6 +119,11 @@ public sealed interface Builder<T extends JsonValue> {
 
         public JsonArrayBuilder add(Builder<?> b) {
             data.add(b);
+            return this;
+        }
+
+        JsonArrayBuilder addAllOf(JsonArrayBuilder ab) {
+            data.addAll(ab.data);
             return this;
         }
 

@@ -138,7 +138,7 @@ class GreysonTest {
         var sb = new StringBuilder();
         var jsonObject = Builder.objectBuilder()
                 .put("message", new JsonString("hello"))
-                .basic("num", 5)
+                .putBasic("num", 5)
                 .build();
         // when
         var serial = Greyson.write(sb, jsonObject).toString();

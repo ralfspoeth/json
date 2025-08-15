@@ -140,7 +140,7 @@ class PathTest {
     void testSingle() {
         // given
         var obj = objectBuilder()
-                .put("a", objectBuilder().put("b", objectBuilder().basic("c", 5).build()).build())
+                .put("a", objectBuilder().put("b", objectBuilder().putBasic("c", 5).build()).build())
                 .build();
         // when
         var path = of("a/b/c");
@@ -183,8 +183,8 @@ class PathTest {
         var rect = new Rect(new Point(1, 2), new Point(3, 4));
         // when
         var obj1 = objectBuilder()
-                .put("bl", objectBuilder().basic("x", 1).basic("y", 2))
-                .put("tr", objectBuilder().basic("x", 3).basic("y", 4))
+                .put("bl", objectBuilder().putBasic("x", 1).putBasic("y", 2))
+                .put("tr", objectBuilder().putBasic("x", 3).putBasic("y", 4))
                 .build();
         var obj2 = objectBuilder().put("x1", Basic.of(1)).put("y1", Basic.of(2))
                 .put("x2", Basic.of(3)).put("y2", Basic.of(4)).build();

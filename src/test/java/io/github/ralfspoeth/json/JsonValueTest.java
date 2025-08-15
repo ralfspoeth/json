@@ -90,9 +90,9 @@ class JsonValueTest {
         var b = new B(a, true);
         var c = new C(b, "Bb");
         // json pendants
-        var jsonA = objectBuilder().basic("x", 5).build();
-        var jsonB = objectBuilder().put("a", jsonA).basic("b", true).build();
-        var jsonC = objectBuilder().put("b", jsonB).basic("s", "Bb").build();
+        var jsonA = objectBuilder().putBasic("x", 5).build();
+        var jsonB = objectBuilder().put("a", jsonA).putBasic("b", true).build();
+        var jsonC = objectBuilder().put("b", jsonB).putBasic("s", "Bb").build();
 
         assertAll(
                 () -> assertEquals(jsonA, JsonValue.of(a)),

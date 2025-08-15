@@ -14,16 +14,16 @@ class BuilderTest {
 
     @Test
     void testObjectBuilderMergeUpdateRemove() {
-        var one = objectBuilder().basic("a", 1).basic("b", 2).build();
-        var two = objectBuilder().basic("b", 3).basic("c", 4).build();
+        var one = objectBuilder().putBasic("a", 1).putBasic("b", 2).build();
+        var two = objectBuilder().putBasic("b", 3).putBasic("c", 4).build();
         var merged = objectBuilder(one).merge(two).build();
-        var expectedMerged = objectBuilder().basic("a", 1).basic("b", 3).basic("c", 4).build();
-        var expectedA = objectBuilder().basic("a", 1).build();
+        var expectedMerged = objectBuilder().putBasic("a", 1).putBasic("b", 3).putBasic("c", 4).build();
+        var expectedA = objectBuilder().putBasic("a", 1).build();
         assertAll(
                 () -> assertEquals(expectedMerged, merged),
                 () -> assertEquals(expectedA, objectBuilder(one).remove("b").build()),
                 () -> assertEquals(expectedA, objectBuilder(one).removeAll(two.members().keySet()).build()),
-                () -> assertEquals(objectBuilder().basic("a", 1).basic("b", 3).build(), objectBuilder(one).update(two).build())
+                () -> assertEquals(objectBuilder().putBasic("a", 1).putBasic("b", 3).build(), objectBuilder(one).update(two).build())
         );
 
     }
@@ -31,14 +31,14 @@ class BuilderTest {
     @Test
     void testObjectBuilder() {
         var obj = objectBuilder()
-                .basic("name", "Ralf")
-                .basic("income", 5)
-                .basic("sex", true)
+                .putBasic("name", "Ralf")
+                .putBasic("income", 5)
+                .putBasic("sex", true)
                 .put("seven", new JsonString("murks"))
-                .basic("nix", null)
+                .putBasic("nix", null)
                 .put("adr", arrayBuilder()
                         .addBasic(5)
-                        .add(objectBuilder().basic("sowat", "nix"))
+                        .add(objectBuilder().putBasic("sowat", "nix"))
                         .addBasic(true)
                         .addBasic(false)
                         .add(JsonNull.INSTANCE)

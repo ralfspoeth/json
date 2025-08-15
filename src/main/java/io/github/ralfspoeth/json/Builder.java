@@ -200,7 +200,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param o    an object, may not be {@code null}, will be passed to {@link Basic#of(Object)}
          * @return {@code this}
          */
-        public JsonObjectBuilder basic(String name, Object o) {
+        public JsonObjectBuilder putBasic(String name, Object o) {
             return put(name, Basic.of(o));
         }
 

@@ -1,5 +1,7 @@
 package io.github.ralfspoeth.json;
 
+import org.jspecify.annotations.Nullable;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Optional;
@@ -62,7 +64,7 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
      * @param o an object
      * @return a {@code Basic} instance, never {@code null}
      */
-    static Basic<?> of(Object o) {
+    static Basic<?> of(@Nullable Object o) {
         return switch(o) {
             case null -> JsonNull.INSTANCE;
             case BigDecimal bd -> new JsonNumber(bd);

@@ -166,7 +166,8 @@ class LexerTest {
             var grp = tmp.stream().collect(Collectors.groupingBy(Lexer.Token::getClass, Collectors.counting()));
             assertAll(
                     () -> assertEquals(0L, tmp.stream().filter(Objects::isNull).count()),
-                    () -> assertTrue(grp.keySet().containsAll(Set.of(Lexer.LiteralToken.class, Lexer.FixToken.class)))
+                    () -> assertTrue(grp.containsKey(Lexer.LiteralToken.class)),
+                    () -> assertTrue(grp.containsKey(Lexer.FixToken.class))
             );
         }
     }

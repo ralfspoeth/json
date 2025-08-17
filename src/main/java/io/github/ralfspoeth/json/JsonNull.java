@@ -1,5 +1,7 @@
 package io.github.ralfspoeth.json;
 
+import org.jspecify.annotations.Nullable;
+
 public record JsonNull() implements Basic<Object> {
     public static final JsonNull INSTANCE = new JsonNull();
 
@@ -9,7 +11,7 @@ public record JsonNull() implements Basic<Object> {
     }
 
     @Override
-    public Object value() {return null;}
+    public @Nullable Object value() {return null;}
 
     @Override
     public boolean test(JsonValue o) {

@@ -16,14 +16,13 @@ import static java.util.stream.Collectors.joining;
  */
 public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunction<JsonValue> {
     public JsonArray {
-        elements = List.copyOf(requireNonNullElse(elements, List.of()));
+        elements = List.copyOf(elements);
     }
 
     public static JsonArray of(Object o) {
         return switch(o) {
             case Iterable<?> it -> ofIterable(it);
             case Object ar when ar.getClass().isArray() -> ofArray(ar);
-            case null -> new JsonArray(List.of());
             default -> throw new IllegalArgumentException(
                     "Conversion of %s into %s not supported".formatted(o, JsonArray.class)
             );
@@ -50,7 +49,7 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     public boolean test(JsonValue jv) {
         return switch (jv) {
             case JsonArray(var elems) -> elems.equals(elements());
-            case null, default -> false;
+            default -> false;
         };
     }
 

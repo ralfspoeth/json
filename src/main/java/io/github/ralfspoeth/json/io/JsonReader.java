@@ -4,6 +4,7 @@ import io.github.ralfspoeth.basix.coll.Stack;
 import io.github.ralfspoeth.json.*;
 import io.github.ralfspoeth.json.Builder.JsonArrayBuilder;
 import io.github.ralfspoeth.json.Builder.JsonObjectBuilder;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -95,7 +96,7 @@ public class JsonReader implements AutoCloseable {
         }
     }
 
-    private JsonValue readNextElement() throws IOException {
+    private @Nullable JsonValue readNextElement() throws IOException {
         // repeat to take the next token while the lexer has more tokens available.
         // and either the stack is empty or,
         // in case we expect to read more than one JSON element from the potentially unbounded source,

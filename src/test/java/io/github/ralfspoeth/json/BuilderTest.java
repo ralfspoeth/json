@@ -3,10 +3,11 @@ package io.github.ralfspoeth.json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Builder.arrayBuilder;
-import static io.github.ralfspoeth.json.Builder.objectBuilder;
+import static io.github.ralfspoeth.json.Builder.*;
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -135,6 +136,32 @@ class BuilderTest {
                 () -> assertEquals(JsonNull.INSTANCE, members(array.elements().getFirst()).get("a")),
                 () -> assertEquals(1, intValue(elements(array.elements().getLast()).getFirst()))
         );
+    }
+
+    @Test
+    void testToJsonArray() {
+        // given
+        var l = List.of(Basic.of(5), JsonNull.INSTANCE, JsonBoolean.TRUE,
+                new JsonArray(List.of()), new JsonObject(Map.of()));
+        var s = l.stream();
+        // when
+        var r = s.collect(toJsonArray());
+        // then
+        assertAll(
+                () -> assertInstanceOf(JsonArray.class, r),
+                () -> assertEquals(l, r.elements())
+        );
+    }
+
+    @Test
+    void testBuildersToJsonArray() {
+        // given
+        var point = new JsonObject(Map.of("x", Basic.of(1), "y", Basic.of(2)));
+        var array = new JsonArray(List.of(Basic.of(7), Basic.of(11)));
+        // when
+        var result = arrayBuilder().add(objectBuilder(point)).add(arrayBuilder(array)).build();
+        // then
+        assertEquals(result, Stream.of(objectBuilder(point), arrayBuilder(array)).collect(buildersToJsonArray()));
     }
 
 }

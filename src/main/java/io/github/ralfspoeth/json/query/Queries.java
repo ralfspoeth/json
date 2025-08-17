@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -93,7 +94,7 @@ public class Queries {
      * @param def  the default value if {@code elem} is {@code null}
      * @return as in {@link #value(JsonValue)}
      */
-    public static Object value(JsonValue elem, Object def) {
+    public static Object value(@Nullable JsonValue elem, Object def) {
         return ofNullable(elem).map(Queries::value).orElse(def);
     }
 
@@ -347,7 +348,7 @@ public class Queries {
      * @param def  the default value
      * @return the string value
      */
-    public static String stringValue(JsonValue elem, String def) {
+    public static @Nullable String stringValue(@Nullable JsonValue elem, @Nullable String def) {
         return switch (elem) {
             case null -> def;
             case JsonString(var s)-> s ;
@@ -362,8 +363,8 @@ public class Queries {
     /**
      * {@link #stringValue(JsonValue, String)} with a default value of {@code null}.
      */
-    public static String stringValue(JsonValue elem) {
-        return stringValue(requireNonNull(elem), null);
+    public static @Nullable String stringValue(JsonValue elem) {
+        return stringValue(elem, null);
     }
 
     /**

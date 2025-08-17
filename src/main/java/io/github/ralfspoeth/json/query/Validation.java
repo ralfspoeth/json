@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -10,14 +11,13 @@ import static java.util.stream.Collectors.toMap;
 
 public class Validation {
 
-    public record Result(JsonValue value, Predicate<JsonValue> predicate, List<Result> details) {
+    public record Result(JsonValue value, @Nullable Predicate<JsonValue> predicate, List<Result> details) {
         public Result {
-            details = List.copyOf(Objects.requireNonNullElse(details, List.of()));
-            Objects.requireNonNull(value);
+            details = List.copyOf(details);
         }
 
-        public Result(JsonValue value, Predicate<JsonValue> failed) {
-            this(value, failed, List.of());
+        public Result(JsonValue value, @Nullable Predicate<JsonValue> predicate) {
+            this(value, predicate, List.of());
         }
 
         public boolean failed() {
@@ -35,7 +35,7 @@ public class Validation {
                     case JsonObject(var members) -> members.entrySet().stream()
                             .filter(e -> structure.containsKey(e.getKey()))
                             .allMatch(e -> structure.get(e.getKey()).test(e.getValue()));
-                    case null, default -> false;
+                    default -> false;
                 };
             }
 
@@ -56,7 +56,7 @@ public class Validation {
                                 });
                         yield new Result(value, this, details);
                     }
-                    case null, default -> new Result(value, this);
+                    default -> new Result(value, this);
                 };
             }
         }
@@ -71,7 +71,7 @@ public class Validation {
                         }
                         yield true;
                     }
-                    case null, default -> false;
+                    default -> false;
                 };
             }
 
@@ -91,7 +91,7 @@ public class Validation {
                         }
                         yield new Result(value, this, details);
                     }
-                    case null, default -> new Result(value, this);
+                    default -> new Result(value, this);
                 };
             }
         }
@@ -112,7 +112,7 @@ public class Validation {
                         });
                         yield new Result(value, this, details);
                     }
-                    case null, default -> new Result(value, this);
+                    default -> new Result(value, this);
                 };
             }
 
@@ -120,7 +120,7 @@ public class Validation {
             public boolean test(JsonValue jsonValue) {
                 return switch (jsonValue) {
                     case JsonArray(var elems) -> elems.stream().allMatch(predicate);
-                    case null, default -> false;
+                    default -> false;
                 };
             }
         }
@@ -136,7 +136,7 @@ public class Validation {
             public boolean test(JsonValue jsonValue) {
                 return switch (jsonValue) {
                     case JsonArray(var elems) -> elems.stream().anyMatch(predicate);
-                    case null, default -> false;
+                    default -> false;
                 };
             }
 
@@ -191,7 +191,7 @@ public class Validation {
     public static Predicate<JsonValue> required(Collection<String> keys) {
         return jv -> switch (jv) {
             case JsonObject(var members) -> members.keySet().containsAll(keys);
-            case null, default -> false;
+            default -> false;
         };
     }
 
@@ -260,7 +260,7 @@ public class Validation {
     public static Predicate<JsonValue> regex(String regex) {
         return jv -> switch (jv) {
             case JsonString(String s) -> s.matches(regex);
-            case null, default -> false;
+            default -> false;
         };
     }
 
@@ -276,7 +276,7 @@ public class Validation {
         return jv -> false;
     }
 
-    public static Result explain(JsonValue jsonValue, Predicate<JsonValue> predicate) {
+    public static Result explain(JsonValue jsonValue, @Nullable Predicate<JsonValue> predicate) {
         return switch (predicate) {
             case Structured structured -> structured.explain(jsonValue);
             case null, default -> new Result(jsonValue, predicate);

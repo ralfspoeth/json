@@ -1,5 +1,7 @@
 package io.github.ralfspoeth.json.io;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -112,7 +114,7 @@ class Lexer implements AutoCloseable {
         EOF
     }
 
-    private Token nextToken;
+    private @Nullable Token nextToken;
     private State state = State.INITIAL;
     // the buffer
     private char[] buffer = new char[1_024];

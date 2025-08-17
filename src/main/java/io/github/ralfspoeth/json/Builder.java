@@ -1,5 +1,7 @@
 package io.github.ralfspoeth.json;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.*;
 import java.util.stream.Collector;
 
@@ -54,11 +56,20 @@ public sealed interface Builder<T extends JsonValue> {
     /**
      * to be used in the stream pipeline.
      */
-    static Collector<JsonValue, JsonArrayBuilder, JsonArray> arrayCollector() {
+    static Collector<JsonValue, JsonArrayBuilder, JsonArray> toJsonArray() {
         return Collector.of(
                 Builder::arrayBuilder,
                 Builder.JsonArrayBuilder::add,
-                Builder.JsonArrayBuilder::addAllOf,
+                Builder.JsonArrayBuilder::combine,
+                Builder::build
+        );
+    }
+
+    static Collector<Builder<?>, JsonArrayBuilder, JsonArray> buildersToJsonArray() {
+        return Collector.of(
+                Builder::arrayBuilder,
+                Builder.JsonArrayBuilder::add,
+                Builder.JsonArrayBuilder::combine,
                 Builder::build
         );
     }
@@ -122,7 +133,7 @@ public sealed interface Builder<T extends JsonValue> {
             return this;
         }
 
-        JsonArrayBuilder addAllOf(JsonArrayBuilder ab) {
+        JsonArrayBuilder combine(JsonArrayBuilder ab) {
             data.addAll(ab.data);
             return this;
         }
@@ -218,7 +229,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param o    an object, may not be {@code null}, will be passed to {@link Basic#of(Object)}
          * @return {@code this}
          */
-        public JsonObjectBuilder putBasic(String name, Object o) {
+        public JsonObjectBuilder putBasic(String name, @Nullable Object o) {
             return put(name, Basic.of(o));
         }
 

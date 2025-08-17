@@ -37,7 +37,7 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
             case Map<?, ?> m -> JsonObject.ofMap(m);
             case Iterable<?> it -> JsonArray.ofIterable(it);
             case Object array when array.getClass().isArray() -> JsonArray.ofArray(array);
-            case null, default -> Basic.of(o);
+            default -> Basic.of(o);
         };
     }
 

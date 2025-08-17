@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json;
 
 import io.github.ralfspoeth.json.io.JsonParseException;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,7 +88,7 @@ class GreysonTest {
     void testReadFromReader_ioExceptionDuringRead() throws IOException {
         try (Reader faultyReader = new Reader() {
             @Override
-            public int read(char[] cbuf, int off, int len) throws IOException {
+            public int read(char @NonNull [] cbuf, int off, int len) throws IOException {
                 throw new IOException("Simulated read error");
             }
 

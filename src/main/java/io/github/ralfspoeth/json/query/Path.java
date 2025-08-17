@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 import io.github.ralfspoeth.json.JsonValue;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -208,9 +209,9 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
     }
 
-    private final Path parent;
+    private final @Nullable Path parent;
 
-    protected Path(Path parent) {
+    protected Path(@Nullable Path parent) {
         this.parent = parent;
     }
 

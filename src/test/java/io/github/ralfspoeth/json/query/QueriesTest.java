@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -89,7 +90,7 @@ class QueriesTest {
                 .build();
 
         // extracts the member named "e", first three letters of the value, then to upper case
-        Function<JsonValue, String> extr = elem -> elem instanceof JsonObject(Map<String, JsonValue> members)
+        Function<JsonValue, @Nullable String> extr = elem -> elem instanceof JsonObject(Map<String, JsonValue> members)
                 ? stringValue(members.get("e"), null).substring(0, 3).toUpperCase()
                 : null;
 

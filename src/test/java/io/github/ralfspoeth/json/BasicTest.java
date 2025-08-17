@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -46,7 +47,7 @@ class BasicTest {
 
     @Test
     void testOfNums() {
-        Basic<BigDecimal> five = new JsonNumber(BigDecimal.valueOf(5));
+        Basic<@NonNull BigDecimal> five = new JsonNumber(BigDecimal.valueOf(5));
 
         assertAll(
                 () -> assertEquals(five, Basic.of(5)),

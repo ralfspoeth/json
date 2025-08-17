@@ -72,7 +72,7 @@ class JsonValueTest {
     void testOf() {
         record R(Object x) {}
         assertAll(
-                () -> assertEquals(JsonNull.INSTANCE, JsonValue.of(null)),
+                () -> assertEquals(JsonNull.INSTANCE, Basic.of(null)),
                 () -> assertEquals(Basic.of(5), JsonValue.of(5)),
                 () -> assertEquals(new JsonObject(Map.of("x", JsonNull.INSTANCE)), JsonValue.of(new R(null))),
                 () -> assertEquals(new JsonArray(List.of(JsonBoolean.FALSE)), JsonValue.of(new Object[]{false}))
@@ -126,7 +126,7 @@ class JsonValueTest {
     void testIntValue() {
         assertAll(
                 () -> assertEquals(1, JsonValue.of(1).intValue().orElseThrow()),
-                () -> assertThrows(NoSuchElementException.class, () -> JsonValue.of(null).intValue().orElseThrow())
+                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).intValue().orElseThrow())
         );
     }
 

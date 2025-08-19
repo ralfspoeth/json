@@ -1,5 +1,7 @@
 package io.github.ralfspoeth.json;
 
+import org.jspecify.annotations.Nullable;
+
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Predicate;
@@ -31,13 +33,13 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
      */
     int depth();
 
-    static JsonValue of(Object o) {
+    static JsonValue of(@Nullable Object o) {
         return switch(o) {
             case Record r -> JsonObject.ofRecord(r);
             case Map<?, ?> m -> JsonObject.ofMap(m);
             case Iterable<?> it -> JsonArray.ofIterable(it);
             case Object array when array.getClass().isArray() -> JsonArray.ofArray(array);
-            default -> Basic.of(o);
+            case null, default -> Basic.of(o);
         };
     }
 

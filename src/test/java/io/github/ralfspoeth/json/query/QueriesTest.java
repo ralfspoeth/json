@@ -64,7 +64,7 @@ class QueriesTest {
                 () -> assertEquals("false", stringValue(JsonBoolean.FALSE, null)),
                 () -> assertEquals("null", stringValue(JsonNull.INSTANCE, null)),
                 () -> assertEquals("one", stringValue(new JsonString("one"))),
-                () -> assertThrows(NullPointerException.class, () -> stringValue(null))
+                () -> assertNull(stringValue(null))
         );
     }
 

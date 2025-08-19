@@ -3,7 +3,12 @@ package io.github.ralfspoeth.json;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static java.util.Objects.requireNonNull;
+
 public record JsonString(String value) implements Basic<String> {
+    public JsonString {
+        value = requireNonNull(value);
+    }
 
     @Override
     public String json() {

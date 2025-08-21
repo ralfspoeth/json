@@ -6,7 +6,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
+public value record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
 
     public JsonNumber {

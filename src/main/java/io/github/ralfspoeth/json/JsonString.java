@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static java.util.Objects.requireNonNull;
 
-public record JsonString(String value) implements Basic<String> {
+public value record JsonString(String value) implements Basic<String> {
     public JsonString {
         value = requireNonNull(value);
     }

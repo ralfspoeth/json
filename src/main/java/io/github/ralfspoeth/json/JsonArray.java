@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.function.IntFunction;
 
 import static io.github.ralfspoeth.json.Builder.arrayBuilder;
-import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.joining;
 
 /**

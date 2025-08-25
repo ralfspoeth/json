@@ -12,8 +12,8 @@ import static java.util.stream.Collectors.toMap;
 
 /**
  * A JSON object comprised of an immutable map of name-value pairs.
+ * The members map is immutable by utilizing {@link Map#copyOf(Map)}.
  *
- * @implNote the members map is immutable by utilizing {@link Map#copyOf(Map)}
  * @param members a non-{code null} map of name-value pairs
  */
 public record JsonObject(Map<String, JsonValue> members) implements Aggregate, Function<String, @Nullable JsonValue> {

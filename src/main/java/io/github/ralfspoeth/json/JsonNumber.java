@@ -1,10 +1,7 @@
 package io.github.ralfspoeth.json;
 
 import java.math.BigDecimal;
-import java.util.Objects;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
+import java.util.*;
 
 public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
@@ -36,5 +33,10 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     @Override
     public OptionalLong longValue() {
         return OptionalLong.of(value.longValue());
+    }
+
+    @Override
+    public Optional<BigDecimal> decimalValue() {
+        return Optional.of(value);
     }
 }

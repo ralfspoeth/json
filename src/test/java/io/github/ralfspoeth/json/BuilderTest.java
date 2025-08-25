@@ -47,7 +47,7 @@ class BuilderTest {
                 .build();
         assertAll(
                 () -> assertEquals(6, obj.members().size()),
-                () -> Assertions.assertEquals(5, obj.get("adr", JsonArray.class).elements().size())
+                () -> Assertions.assertEquals(5, obj.get("adr").map(v -> v.elements().size()).orElse(-1))
         );
     }
 
@@ -69,7 +69,7 @@ class BuilderTest {
                 .put("a", Basic.of(true))
                 .put("a", Basic.of(false))
                 .build();
-        Assertions.assertEquals(JsonBoolean.FALSE, aIsFalse.get("a", JsonBoolean.class));
+        Assertions.assertEquals(JsonBoolean.FALSE, aIsFalse.get("a").orElse(JsonNull.INSTANCE));
     }
 
     @Test

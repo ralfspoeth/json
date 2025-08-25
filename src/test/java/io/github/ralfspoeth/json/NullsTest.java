@@ -37,7 +37,7 @@ class NullsTest {
                 () -> assertThrows(NullPointerException.class, () -> objectBuilder().put(null, JsonNull.INSTANCE)),
                 () -> assertEquals(JsonNull.INSTANCE, objectBuilder().putBasic("nix", null)
                         .build()
-                        .get("nix", Basic.class)
+                        .get("nix").orElseThrow()
                 ),
                 () -> {}
         );

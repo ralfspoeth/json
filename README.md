@@ -31,6 +31,30 @@ It contains two breaking changes compared to version 1.1.x:
   cf. [numbers](numbers.md) for a detailed discussion.
 * `JsonBoolean` and `JsonNull` are implemented as `record`s, no longer as an `enum` or 
   singleton, respectively.
+* Conversions from `record`s have been removed in attempt to get rid of deep
+  reflection.
+* It utilizes `JSpecify` nullness annotations.
+
+Beginning with version 1.2, the `Builder`s are the mutable duals of
+their immutable `JsonValue` counterparts, such that
+
+    var jo = new JsonObject(...);
+    var builder = Builder.objectBuilder(jo);
+    assert jo.equals(builder.build());
+
+and most naturally 
+
+    var ja = new JsonArray(...);
+    var builder = Builder.arrayBuilder(ja);
+    assert ja.equals(builder.build());
+
+plus 
+
+    var jv = Basic.of(...);
+    var builder = Builder.valueBuilder(jv);
+    assert jv.equals(builder.build());
+
+
 
 ## The Greyson Workflow
 

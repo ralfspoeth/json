@@ -45,8 +45,7 @@ import static java.util.Objects.requireNonNull;
  * {@snippet :
  * import io.github.ralfspoeth.json.JsonValue;
  * import io.github.ralfspoeth.json.JsonBoolean;
- * import io.github.ralfspoeth.json.JsonNumber;
- * import io.github.ralfspoeth.json.io.JsonReader;
+ * *import io.github.ralfspoeth.json.io.JsonReader;
  *
  * import java.util.List;
  *
@@ -54,7 +53,7 @@ import static java.util.Objects.requireNonNull;
  * var given = """
  *       [1, 2, {"aa": true}, {"xy": 5, "ab": 2}, {"ac": 3}]
  *       """;
- * var elem = JsonReader.readElement(given);
+ * var elem = JsonReader.readValue(given);
  *
  * // when p matches any element beginning with the third
  * // and then each member starts with 'a'

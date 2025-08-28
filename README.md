@@ -89,8 +89,15 @@ important: concepts.
 Here are some thoughts about [why not GSON or Jackson](whynot.md)]
 
 Greyson is not intended to be the fastest JSON parsing library on the planet,
-nor is it. Microbenchmarks show that parsing and writing is much slower than
-GSON or Jackson in its current incarnation.
+nor is it. Micro benchmarks and profiling tests show that 
+both parsing and writing is much slower than
+GSON or Jackson in its current incarnation. These two libraries
+use a lot of tricks to gain maximum performance.  The Greyson library, however,
+uses algebraic data types even for the internal intermediate representation
+of the parsed data, which lead to a very clean lexer and parser as well as
+writer designs, at the expense of degraded performance.
+We assume that value class will help Greyson to close the gap to GSON and Jackson
+in the future without compromising the current simplicity of the implementation.
 
 ## JSON Test Suite
 
@@ -98,7 +105,8 @@ Beginning with version 1.1.25, we've added a number of tests
 from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite) 
 which revealed some issues 
 parsing especially non-well-formed JSON documents; current progress
-improves upon the current stability. The API surface, however, doesn't change.
+improves upon the current stability.
+
 
 ## Getting Started
 

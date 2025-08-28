@@ -17,7 +17,7 @@ class JsonReaderTest {
 
     Result parse(String text) {
         try(var jr = new JsonReader(new StringReader(text))) {
-            return new Result(jr.readElement(), null);
+            return new Result(jr.readValue(), null);
         } catch (Exception e) {
             return new Result(null, e);
         }
@@ -81,7 +81,7 @@ class JsonReaderTest {
         JsonValue result = null;
         Exception ex = null;
         try(var rdr = new JsonReader(new StringReader(src))) {
-            result = rdr.readElement();
+            result = rdr.readValue();
         } catch (Exception e) {
             ex = e;
         }
@@ -98,7 +98,7 @@ class JsonReaderTest {
         var source = "{}";
         try (var rdr = new StringReader(source);
              var parser = new JsonReader(rdr)) {
-            var result = parser.readElement();
+            var result = parser.readValue();
             assertAll(
                     () -> assertNotNull(result),
                     () -> assertTrue(result instanceof JsonObject(var members) && members.isEmpty())
@@ -111,7 +111,7 @@ class JsonReaderTest {
         var source = "[]";
         try (var rdr = new StringReader(source);
              var parser = new JsonReader(rdr)) {
-            var result = parser.readElement();
+            var result = parser.readValue();
             assertAll(
                     () -> assertNotNull(result),
                     () -> assertTrue(result instanceof JsonArray(var elements) && elements.isEmpty())
@@ -124,7 +124,7 @@ class JsonReaderTest {
         var sources = List.of("1", "true", "null", "false", "\"str\"");
         sources.forEach(source -> {
             try (var parser = new JsonReader(new StringReader(source))) {
-                var v = parser.readElement();
+                var v = parser.readValue();
                 assertAll(() -> assertInstanceOf(Basic.class, v));
             } catch (IOException ioex) {
                 assertNull(ioex);
@@ -138,7 +138,7 @@ class JsonReaderTest {
         sources.forEach(source -> {
             try (var rdr = new StringReader(source);
                  var parser = new JsonReader(rdr)) {
-                var result = parser.readElement();
+                var result = parser.readValue();
                 assertAll(
                         () -> assertNotNull(result),
                         () -> assertTrue(result instanceof JsonArray(var elements) && elements.size() == 1)
@@ -153,7 +153,7 @@ class JsonReaderTest {
     void testSingleMemberObject() throws IOException {
         var source = "{\"n\":5}";
         try (var r = new JsonReader(new StringReader(source))) {
-            var o = r.readElement();
+            var o = r.readValue();
             assertAll(() -> assertInstanceOf(JsonObject.class, o),
                     () -> assertEquals(1, o instanceof JsonObject(var members) ? members.size() : -1),
                     () -> assertEquals(new JsonObject(Map.of("n", Basic.of(5d))), o)
@@ -165,7 +165,7 @@ class JsonReaderTest {
     void testDualMemberObject() throws Exception {
         var source = "{\"n\":5, \"m\": 7}";
         try (var r = new JsonReader(new StringReader(source))) {
-            r.readElement();
+            r.readValue();
         }
     }
 
@@ -173,7 +173,7 @@ class JsonReaderTest {
     void testArrayOfValues() throws IOException {
         String source = "[5, 6, 7, false, null, true, \"str\"]";// "[{\"n\":5}, {\"m\":6}]";
         try (var p = new JsonReader(new StringReader(source))) {
-            var a = p.readElement();
+            var a = p.readValue();
             assertAll(
                     () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(7, a instanceof JsonArray(var elements) ? elements.size() : -1),
@@ -186,7 +186,7 @@ class JsonReaderTest {
     void testArrayOfObject() throws IOException {
         String source = "[{\"n\":55}]";
         try (var p = new JsonReader(new StringReader(source))) {
-            var a = p.readElement();
+            var a = p.readValue();
             assertAll(
                     () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(1, a.elements().size()),
@@ -201,7 +201,7 @@ class JsonReaderTest {
     void testArrayOfTwoObjects() throws IOException {
         String source = "[{\"n\":55}, {\"m\":7}]";
         try (var p = new JsonReader(new StringReader(source))) {
-            var a = p.readElement();
+            var a = p.readValue();
             assertAll(
                     () -> assertInstanceOf(JsonArray.class, a),
                     () -> assertEquals(2, a.elements().size()),
@@ -216,7 +216,7 @@ class JsonReaderTest {
     void testNestedObjectDepth1() throws IOException {
         String source = "{\"a\":{\"b\":[]}}";
         try (var p = new JsonReader(new StringReader(source))) {
-            var e = p.readElement();
+            var e = p.readValue();
             if (e instanceof JsonObject(var members)) {
                 assertAll(
                         () -> assertEquals(1, members.size()),
@@ -240,14 +240,14 @@ class JsonReaderTest {
     @Test
     void testParseString() throws Exception {
         try(var src = new StringReader("null"); var rdr = new JsonReader(src)) {
-            assertEquals(JsonNull.INSTANCE, rdr.readElement());
+            assertEquals(JsonNull.INSTANCE, rdr.readValue());
         }
     }
 
     @Test
     void testParseLarge() throws Exception {
         try (var src = largeFile(); var rdr = new JsonReader(src)) {
-            var result = rdr.readElement();
+            var result = rdr.readValue();
             assertNotNull(result);
         }
     }

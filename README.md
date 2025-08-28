@@ -25,13 +25,13 @@ THIS ALPHA VERSION OF 1.2 IS CURRENTLY UNDER ACTIVE DEVELOPMENT.
 
 The current version of the library is 1.2.0.
 It contains two breaking changes compared to version 1.1.x:
-* The common interface has been renamed from `JsonValue` to `JsonValue`
+* The common interface has been renamed from `Element` to `JsonValue`
   because that naming pattern seems to be more in line with other libraries.
 * `JsonNumber` uses `BigDecimal` instead of `double` for its payload; 
   cf. [numbers](numbers.md) for a detailed discussion.
 * `JsonBoolean` and `JsonNull` are implemented as `record`s, no longer as an `enum` or 
   singleton, respectively.
-* Conversions from `record`s have been removed in attempt to get rid of deep
+* Conversions from `record`s have been removed in an attempt to get rid of deep
   reflection.
 * It utilizes `JSpecify` nullness annotations.
 
@@ -54,18 +54,24 @@ plus
     var builder = Builder.valueBuilder(jv);
     assert jv.equals(builder.build());
 
-
+The conversions from `JsonValue` to `Builder` are recursive in both directions.
+A `JsonArray` of `JsonObject`s is turned into a `JsonArrayBuilder` 
+with mutable `JsonObjectBuilder` instances in its mutable `ArrayList` data collection.
+The `build` method turns it into a fresh, immutable `JsonArray` instance
+of `JsonObject`s.
 
 ## The Greyson Workflow
 
 The Greyson workflow has been designed around the JSON in memory object representation
 described below:
 
-* The Greyson library parses a JSON document into a JsonValue instance.
-* User Code uses the Greyson query API to instantiate target class instances for this value.
-* User Code transforms an arbitrary class instance (or array or collection of objects) into a JsonValue 
-  using the Greyson builder API.
-* The Greyson library serializes this JSON value into a JSON file.
+* The Greyson library parses a JSON document into a `JsonValue` instance.
+* User Code uses the _Greyson Query API_ to instantiate target class instances
+  for this value.
+* User Code transforms an arbitrary class instance 
+  (or array or collection of objects) into a `JsonValue`
+  using the _Greyson Builder API_.
+* The Greyson library serializes this `JsonValue` into a JSON file.
 
 ![workflow.png](workflow.png "Greyson Workflow")
 
@@ -78,7 +84,8 @@ Both libraries support a model similar to the Greyson workflow with
 an intermediate representation, and both libraries provide access to 
 their token stream parsers. Both provide extensive customization options.
 All these features make these libraries quite large. Greyson is intentionally
-small both in terms of package size and in terms of classes and methods. 
+small both in terms of package size and in terms of classes, methods and more
+important: concepts. 
 Here are some thoughts about [why not GSON or Jackson](whynot.md)]
 
 Greyson is not intended to be the fastest JSON parsing library on the planet,
@@ -111,13 +118,13 @@ In your `pom.xml` add
     </dependency>
 ```
 or, when using Gradle (Groovy)
-
+```groovy 
     implementation 'io.github.ralfspoeth:json:1.2.0'
-
+```
 or, with Gradle (Kotlin), put 
-
+```kotlin
     implementation("io.github.ralfspoeth:json:1.2.0")
-
+```
 in your build file.
 
 If you are using JPMS modules with a `module-info.java` file, add

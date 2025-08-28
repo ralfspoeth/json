@@ -19,7 +19,7 @@ It makes perfect sense to infer the numerical representation from the target typ
             "no": 1,
             "name": "Thingy",
             "amount": 123.45,
-            "percentage":23.79
+            "percentage": 23.79
         }""";
 ```
 The `json` string can be easily parsed into a `String` to `String` map

@@ -31,7 +31,7 @@ It contains two breaking changes compared to version 1.1.x:
   cf. [numbers](numbers.md) for a detailed discussion.
 * `JsonBoolean` and `JsonNull` are implemented as `record`s, no longer as an `enum` or 
   singleton, respectively.
-* Conversions from `record`s have been removed in an attempt to get rid of deep
+* Conversions from and to `record`s have been removed in an attempt to get rid of deep
   reflection.
 * It utilizes `JSpecify` nullness annotations.
 
@@ -62,7 +62,7 @@ of `JsonObject`s.
 
 ## The Greyson Workflow
 
-The Greyson workflow has been designed around the JSON in memory object representation
+The Greyson workflow has been designed around the JSON in-memory object representation
 described below:
 
 * The Greyson library parses a JSON document into a `JsonValue` instance.

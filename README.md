@@ -1,4 +1,4 @@
-# Greyso - Java JSON IO Library
+# Greyson - Java JSON IO Library
 
 ![greyson.png](greyson.png "JSON")
 
@@ -35,7 +35,7 @@ It contains two breaking changes compared to version 1.1.x:
   reflection.
 * It utilizes `JSpecify` nullness annotations.
 
-Beginning with version 1.2, the `Builder`s are the mutable duals of
+Beginning with version 1.2.0, the `Builder`s are the mutable duals of
 their immutable `JsonValue` counterparts, such that
 
     var jo = new JsonObject(...);
@@ -85,28 +85,28 @@ an intermediate representation, and both libraries provide access to
 their token stream parsers. Both provide extensive customization options.
 All these features make these libraries quite large. Greyson is intentionally
 small both in terms of package size and in terms of classes, methods and more
-important: concepts. 
+important: conceptual design. 
 Here are some thoughts about [why not GSON or Jackson](whynot.md)]
 
 Greyson is not intended to be the fastest JSON parsing library on the planet,
 nor is it. Micro benchmarks and profiling tests show that 
 both parsing and writing is much slower than
 GSON or Jackson in its current incarnation. These two libraries
-use a lot of tricks to gain maximum performance.  The Greyson library, however,
+use a lot of (sometimes dirty and ugly) tricks to gain maximum performance.
+The Greyson library, however,
 uses algebraic data types even for the internal intermediate representation
 of the parsed data, which lead to a very clean lexer and parser as well as
-writer designs, at the expense of degraded performance.
+writer designs -- yet at the expense of degraded performance.
 We assume that value class will help Greyson to close the gap to GSON and Jackson
 in the future without compromising the current simplicity of the implementation.
 
 ## JSON Test Suite
 
 Beginning with version 1.1.25, we've added a number of tests
-from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite) 
-which revealed some issues 
-parsing especially non-well-formed JSON documents; current progress
-improves upon the current stability.
-
+from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite). 
+This test suite revealed some minor and even larger issues 
+parsing especially non-well-formed JSON documents, which have been fixed 
+in the 1.1.x branches.
 
 ## Getting Started
 
@@ -136,15 +136,16 @@ or, with Gradle (Kotlin), put
 in your build file.
 
 If you are using JPMS modules with a `module-info.java` file, add
+
 ```java    
     module your.module {
-        requires io.github.ralfspoeth.json;
-        // more
-    }
+    requires io.github.ralfspoeth.greyson;
+    // more
+}
 ```
 ### Basic Usage
 
-The module `io.github.ralfspoeth.json` exports three packages that you 
+The module `io.github.ralfspoeth.greyson` exports three packages that you 
 may use in your application:
 ```java
     import io.github.ralfspoeth.json.*;       // class hierarchy

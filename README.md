@@ -54,6 +54,11 @@ plus
     var builder = Builder.valueBuilder(jv);
     assert jv.equals(builder.build());
 
+or simply
+
+    JsonValue value; // given
+    assert value.equals(Builder.of(value).build());
+
 The conversions from `JsonValue` to `Builder` are recursive in both directions.
 A `JsonArray` of `JsonObject`s is turned into a `JsonArrayBuilder` 
 with mutable `JsonObjectBuilder` instances in its mutable `ArrayList` data collection.
@@ -86,27 +91,27 @@ their token stream parsers. Both provide extensive customization options.
 All these features make these libraries quite large. Greyson is intentionally
 small both in terms of package size and in terms of classes, methods and more
 important: conceptual design. 
-Here are some thoughts about [why not GSON or Jackson](whynot.md)]
+Here are some thoughts about [why&when not GSON or Jackson](whynot.md)
 
-Greyson is not intended to be the fastest JSON parsing library on the planet,
+Greyson is not intended to be the fastest JSON parsing library on the planet...
 nor is it. Micro benchmarks and profiling tests show that 
-both parsing and writing is much slower than
+both parsing and writing is slower than
 GSON or Jackson in its current incarnation. These two libraries
 use a lot of (sometimes dirty and ugly) tricks to gain maximum performance.
 The Greyson library, however,
 uses algebraic data types even for the internal intermediate representation
-of the parsed data, which lead to a very clean lexer and parser as well as
-writer designs -- yet at the expense of degraded performance.
+of the parsed data, which leads to a very clean lexer and parser as well as
+writer designs -- yet at the expense of performance.
 We assume that value class will help Greyson to close the gap to GSON and Jackson
 in the future without compromising the current simplicity of the implementation.
 
 ## JSON Test Suite
 
 Beginning with version 1.1.25, we've added a number of tests
-from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite). 
+from the **nst** [JSON Test Suite](https://github.com/nst/JSONTestSuite). 
 This test suite revealed some minor and even larger issues 
 parsing especially non-well-formed JSON documents, which have been fixed 
-in the 1.1.x branches.
+in the 1.1.x branches as well as in the current 1.2 branch.
 
 ## Getting Started
 
@@ -139,9 +144,9 @@ If you are using JPMS modules with a `module-info.java` file, add
 
 ```java    
     module your.module {
-    requires io.github.ralfspoeth.greyson;
-    // more
-}
+        requires io.github.ralfspoeth.greyson;
+        // more
+    }
 ```
 ### Basic Usage
 
@@ -161,12 +166,12 @@ This API allows for mapping operations like this:
 ```java
     Reader r;
     try(var rdr = new JsonReader(r)) { // auto-closeable
-        JsonValue elem = rdr.readJsonValue(); 
+        JsonValue elem = rdr.readValue(); 
         // switch over elem
         double dbl = switch(elem) {
             case JsonNumber(double d) -> d;
-            null, default -> throw new IllegalArgumentException("...");
-        }
+            case null, default -> throw new IllegalArgumentException("...");
+        };
 
         // often, you may easily convert the element into a simple record
         // {"x": 1, "y": 2}
@@ -191,14 +196,17 @@ Writing data into a JSON stream works either through the builders
         w.write(jo);
     }
 ```
-or through standard conversions from an object of a `Record` subclass
+or through conversions from a `record`
 ```java
     Writer out;
     record Rec(boolean x, double y) {}
     Rec r = new Rec(true, 5d);
-    JsonValue jo = JsonValue.of(r);
-    try(var w = JsonWriter.createDefaultWriter(out)) {
-        w.write(jo); // {"x": true, "y": "5.0"}
+    JsonValue jo = Aggregate.objectBuilder()
+            .named("x", Basic.of(true))
+            .named("y", Basic.of(5))
+            .build();
+    try(var w = new JsonWriter(out)) {
+        w.write(jo); // {"x": true, "y": 5.0}
     }
 ```
 The entire API is designed such that it never returns

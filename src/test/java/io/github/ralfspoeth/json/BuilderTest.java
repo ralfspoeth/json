@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Builder.*;
+import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -54,7 +55,7 @@ class BuilderTest {
     @Test
     void testObjectBuilderFromJsonObject() {
         // given
-        var jo = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE));
+        var jo = new JsonObject(Map.of("a", TRUE, "b", JsonBoolean.FALSE));
         // when
         var ob = objectBuilder(jo);
         // then
@@ -75,7 +76,7 @@ class BuilderTest {
     @Test
     void testInsertIntoEmpty() {
         // given
-        JsonObject jo = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE));
+        JsonObject jo = new JsonObject(Map.of("a", TRUE, "b", JsonBoolean.FALSE));
         // then
         assertAll(
                 () -> assertEquals(jo, objectBuilder().insert(jo).build()),
@@ -88,9 +89,9 @@ class BuilderTest {
     @Test
     void testInsertInto() {
         // given
-        JsonObject jo = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE));
+        JsonObject jo = new JsonObject(Map.of("a", TRUE, "b", JsonBoolean.FALSE));
         JsonObject simple = new JsonObject(Map.of("x", JsonNull.INSTANCE));
-        JsonObject built = new JsonObject(Map.of("a", JsonBoolean.TRUE, "b", JsonBoolean.FALSE, "x", JsonNull.INSTANCE));
+        JsonObject built = new JsonObject(Map.of("a", TRUE, "b", JsonBoolean.FALSE, "x", JsonNull.INSTANCE));
         // then
         assertAll(
                 () -> assertEquals(built, objectBuilder(simple).insert(jo).build()),
@@ -105,7 +106,7 @@ class BuilderTest {
     @Test
     void testArrayBuilder() {
         var array = arrayBuilder()
-                .add(JsonBoolean.TRUE)
+                .add(TRUE)
                 .add(JsonNull.INSTANCE)
                 .add(JsonBoolean.FALSE)
                 .add(Basic.of("hallo"))
@@ -141,7 +142,7 @@ class BuilderTest {
     @Test
     void testToJsonArray() {
         // given
-        var l = List.of(Basic.of(5), JsonNull.INSTANCE, JsonBoolean.TRUE,
+        var l = List.of(Basic.of(5), JsonNull.INSTANCE, TRUE,
                 new JsonArray(List.of()), new JsonObject(Map.of()));
         var s = l.stream();
         // when
@@ -162,6 +163,21 @@ class BuilderTest {
         var result = arrayBuilder().add(objectBuilder(point)).add(arrayBuilder(array)).build();
         // then
         assertEquals(result, Stream.of(objectBuilder(point), arrayBuilder(array)).collect(buildersToJsonArray()));
+    }
+
+    @Test
+    void testOfAny() {
+        var job = objectBuilder(new JsonObject(Map.of("a", TRUE)));
+        var jab = arrayBuilder(new JsonArray(List.of(TRUE)));
+        var vb = valueBuilder(TRUE);
+        assertAll(
+                () -> assertInstanceOf(Builder.class, job),
+                () -> assertInstanceOf(Builder.class, jab),
+                () -> assertInstanceOf(Builder.class, vb),
+                () -> assertEquals(TRUE, job.build().get("a").orElse(JsonNull.INSTANCE)),
+                () -> assertEquals(TRUE, jab.build().get(0).orElse(JsonNull.INSTANCE)),
+                () -> assertEquals(TRUE, vb.build())
+        );
     }
 
 }

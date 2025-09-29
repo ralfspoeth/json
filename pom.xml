@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>plumbum</artifactId>
-        <version>1.4.11</version>
+        <version>1.4.13</version>
     </parent>
 
     <artifactId>json</artifactId>
@@ -101,7 +101,7 @@
         <dependency>
             <groupId>io.github.ralfspoeth</groupId>
             <artifactId>basix</artifactId>
-            <version>1.1.4</version>
+            <version>1.1.5</version>
         </dependency>
         <!-- testing -->
         <dependency>

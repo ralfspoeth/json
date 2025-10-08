@@ -12,8 +12,12 @@ public class OptionalValue {
     private final @Nullable JsonValue value;
     public static final OptionalValue NULL = new OptionalValue(null);
 
-    OptionalValue(@Nullable JsonValue value) {
+    private OptionalValue(@Nullable JsonValue value) {
         this.value = value;
+    }
+
+    public static OptionalValue of(@Nullable JsonValue value){
+        return new OptionalValue(value);
     }
 
     public String stringValue(String def) {

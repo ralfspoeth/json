@@ -79,7 +79,7 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     @Override
     public OptionalValue get(int index) {
         if(index<= elements().size()) {
-            return new OptionalValue(elements().get(index));
+            return OptionalValue.of(elements().get(index));
         } else {
             return OptionalValue.NULL;
         }

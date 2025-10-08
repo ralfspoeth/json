@@ -58,7 +58,7 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
 
     @Override
     public OptionalValue get(String name) {
-        return new OptionalValue(members.get(name));
+        return OptionalValue.of(members.get(name));
     }
 
     @Override

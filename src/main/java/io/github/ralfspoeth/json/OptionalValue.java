@@ -4,13 +4,15 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Function;
 
 import static java.util.Optional.ofNullable;
 
 public class OptionalValue {
     private final @Nullable JsonValue value;
+    public static final OptionalValue NULL = new OptionalValue(null);
 
-    public OptionalValue(@Nullable JsonValue value) {
+    OptionalValue(@Nullable JsonValue value) {
         this.value = value;
     }
 
@@ -27,7 +29,7 @@ public class OptionalValue {
     }
 
     public long longValue(long def) {
-        return value.longValue(def);
+        return longValue().orElse(def);
     }
 
     public OptionalLong longValue() {
@@ -42,8 +44,11 @@ public class OptionalValue {
         return intValue().orElse(def);
     }
 
-    public Optional<JsonValue> get(int index) {
-        return value.get(index);
+    public OptionalValue get(int index) {
+        return switch (value) {
+            case JsonArray(var lst) when index < lst.size() && index > 0 -> new OptionalValue(lst.get(index));
+            case null, default -> NULL;
+        };
     }
 
     public OptionalValue get(String name) {
@@ -51,30 +56,42 @@ public class OptionalValue {
     }
 
     public OptionalDouble doubleValue() {
-        return value.doubleValue();
+        return ofNullable(value).map(JsonValue::doubleValue).orElse(OptionalDouble.empty());
     }
 
     public double doubleValue(double def) {
-        return value.doubleValue(def);
+        return doubleValue().orElse(def);
     }
 
     public List<JsonValue> elements() {
-        return value.elements();
+        return ofNullable(value).map(JsonValue::elements).orElse(List.of());
     }
 
     public Optional<Boolean> booleanValue() {
-        return value.booleanValue();
+        return ofNullable(value).flatMap(JsonValue::booleanValue);
     }
 
     public boolean booleanValue(boolean def) {
-        return value.booleanValue(def);
+        return value==null?def:value.booleanValue(def);
     }
 
     public Optional<BigDecimal> decimalValue() {
-        return value.decimalValue();
+        return ofNullable(value).flatMap(JsonValue::decimalValue);
     }
 
     public BigDecimal decimalValue(BigDecimal def) {
-        return value.decimalValue(def);
+        return decimalValue().orElse(def);
+    }
+
+    public <T> Optional<T> map(Function<? super JsonValue, T> f) {
+        return ofNullable(value).map(f);
+    }
+
+    public JsonValue orElse(JsonValue other) {
+        return ofNullable(value).orElse(other);
+    }
+
+    public JsonValue orElseThrow() {
+        return ofNullable(value).orElseThrow();
     }
 }

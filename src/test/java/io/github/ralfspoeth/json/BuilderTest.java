@@ -48,7 +48,7 @@ class BuilderTest {
                 .build();
         assertAll(
                 () -> assertEquals(6, obj.members().size()),
-                () -> Assertions.assertEquals(5, obj.get("adr").map(v -> v.elements().size()).orElse(-1))
+                () -> assertEquals(5, obj.get("adr").map(v -> v.elements().size()).orElse(-1))
         );
     }
 

@@ -151,8 +151,8 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      * @param index the index
      * @return the value at the given index, or an empty optional
      */
-    default Optional<JsonValue> get(int index) {
-        return Optional.empty();
+    default OptionalValue get(int index) {
+        return OptionalValue.NULL;
     }
 
     /**
@@ -162,8 +162,8 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      * @param name the name
      * @return the value of the member, or an empty optional
      */
-    default Optional<JsonValue> get(String name) {
-        return Optional.empty();
+    default OptionalValue get(String name) {
+        return OptionalValue.NULL;
     }
 
     /**

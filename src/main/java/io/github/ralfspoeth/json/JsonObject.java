@@ -3,10 +3,8 @@ package io.github.ralfspoeth.json;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
@@ -59,8 +57,8 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     }
 
     @Override
-    public Optional<JsonValue> get(String name) {
-        return ofNullable(members.get(name));
+    public OptionalValue get(String name) {
+        return new OptionalValue(members.get(name));
     }
 
     @Override

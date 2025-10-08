@@ -46,7 +46,8 @@ public class OptionalValue {
 
     public OptionalValue get(int index) {
         return switch (value) {
-            case JsonArray(var lst) when index < lst.size() && index > 0 -> new OptionalValue(lst.get(index));
+            case JsonArray(var lst) when index < 0 -> NULL;
+            case JsonArray(var lst) when index < lst.size() -> new OptionalValue(lst.get(index));
             case null, default -> NULL;
         };
     }

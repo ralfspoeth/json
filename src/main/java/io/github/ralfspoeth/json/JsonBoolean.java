@@ -1,6 +1,9 @@
 package io.github.ralfspoeth.json;
 
 import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     public static final JsonBoolean TRUE = new JsonBoolean(true);
@@ -28,5 +31,20 @@ public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     @Override
     public String json() {
         return Boolean.toString(boolValue);
+    }
+
+    @Override
+    public OptionalInt intValue() {
+        return OptionalInt.of(boolValue ? 1 : 0);
+    }
+
+    @Override
+    public OptionalLong longValue() {
+        return OptionalLong.of(boolValue ? 1L : 0L);
+    }
+
+    @Override
+    public OptionalDouble doubleValue() {
+        return OptionalDouble.of(boolValue ? 1d : 0d);
     }
 }

@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.joining;
@@ -57,8 +58,8 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     }
 
     @Override
-    public OptionalValue get(String name) {
-        return OptionalValue.of(members.get(name));
+    public Optional<JsonValue> get(String name) {
+        return Optional.of(members.get(name));
     }
 
     @Override

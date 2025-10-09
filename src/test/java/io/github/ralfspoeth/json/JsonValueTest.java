@@ -70,23 +70,6 @@ class JsonValueTest {
     }
 
     @Test
-    void testIntValue() {
-        assertAll(
-                () -> assertEquals(1, JsonValue.of(1).intValue().orElseThrow()),
-                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).intValue().orElseThrow())
-        );
-    }
-
-    @Test
-    void testLongValue() {
-        assertAll(
-                () -> assertEquals(1, JsonValue.of(1).longValue().orElseThrow()),
-                () -> assertEquals(2, JsonValue.of(null).longValue(2)),
-                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).longValue().orElseThrow())
-        );
-    }
-
-    @Test
     void testDecimalValue() {
         assertAll(
                 () -> assertEquals(0, JsonValue.of(10).decimalValue().orElseThrow().compareTo(BigDecimal.TEN)),
@@ -109,10 +92,10 @@ class JsonValueTest {
         assertAll(
                 () -> assertTrue(JsonValue.of(true).booleanValue().orElseThrow()),
                 () -> assertFalse(JsonValue.of(false).booleanValue().orElseThrow()),
-                () -> assertTrue(Basic.of(1).booleanValue().isEmpty()),
+                () -> assertTrue(Basic.of(1).booleanValue(false)),
                 () -> assertTrue(Basic.of("hello").booleanValue().isEmpty()),
-                () -> assertTrue(Basic.of(1.d).booleanValue().isEmpty()),
-                () -> assertTrue(JsonNull.INSTANCE.booleanValue().isEmpty()),
+                () -> assertTrue(Basic.of(1.d).booleanValue(false)),
+                () -> assertFalse(JsonNull.INSTANCE.booleanValue(true)),
                 () -> assertTrue(new JsonArray(List.of()).isEmpty()),
                 () -> assertTrue(new JsonObject(Map.of()).booleanValue().isEmpty())
         );

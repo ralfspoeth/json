@@ -24,7 +24,6 @@ class NullsTest {
         ab.add(bn);
         var ja = ab.build();
         var json = ja.json();
-        System.out.println(json);
         assertAll(
                 () -> assertEquals(JsonNull.INSTANCE, arrayBuilder().addBasic(null).build().elements().getFirst()),
                 () -> assertEquals(JsonNull.INSTANCE, arrayBuilder().addBasic(null).build().elements().getFirst())

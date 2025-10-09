@@ -2,6 +2,7 @@ package io.github.ralfspoeth.json;
 
 import java.lang.reflect.Array;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.IntFunction;
 
 import static io.github.ralfspoeth.json.Builder.arrayBuilder;
@@ -77,11 +78,11 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     }
 
     @Override
-    public OptionalValue get(int index) {
-        if(index<= elements().size()) {
-            return OptionalValue.of(elements().get(index));
+    public Optional<JsonValue> get(int index) {
+        if(index<elements().size()) {
+            return Optional.of(elements().get(index));
         } else {
-            return OptionalValue.NULL;
+            return Optional.empty();
         }
     }
 }

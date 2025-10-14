@@ -14,7 +14,7 @@ elements into any Java objects.
 *   **Fluent Builder API**: Construct complex JSON objects and arrays with ease.
 *   **Efficient Serialization**: Quickly serialize JSON elements into UTF-8 documents and streams.
 
-Greyson parses the original version of JSON only with the only relaxation
+Greyson parses the original version of JSON only with the relaxation
 that ALL values may be root elements, not just objects and arrays. There are 
 no options to customize the contents, to be more relaxed or even stricter at the 
 parsing level.
@@ -95,7 +95,7 @@ Here are some thoughts about [why&when not GSON or Jackson](whynot.md)
 
 Greyson is not intended to be the fastest JSON parsing library on the planet...
 nor is it. Micro benchmarks and profiling tests show that 
-both parsing and writing is slower than
+both parsing and writing using Greyson is slower than
 GSON or Jackson in its current incarnation. These two libraries
 use a lot of (sometimes dirty and ugly) tricks to gain maximum performance.
 The Greyson library, however,
@@ -104,6 +104,14 @@ of the parsed data, which leads to a very clean lexer and parser as well as
 writer designs -- yet at the expense of performance.
 We assume that value class will help Greyson to close the gap to GSON and Jackson
 in the future without compromising the current simplicity of the implementation.
+
+The Greyson library is really tiny: together with its dependencies on 
+`jspecify` nullness annotations (4kB) and my very own `basix` package (19kB) it's just about 100kB.
+Google's GSON packages including dependencies are as large as about 300kB, 
+which is three times the size.
+Jackson's core library weighs about 600kB, the databind package about 1.7MB,
+which is about 2.3 MB altogether or about 23 times
+the size of the Greyson package.
 
 ## JSON Test Suite
 

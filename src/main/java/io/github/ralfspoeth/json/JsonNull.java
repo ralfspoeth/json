@@ -2,6 +2,11 @@ package io.github.ralfspoeth.json;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+
 public value record JsonNull() implements Basic<Object> {
     public static final JsonNull INSTANCE = new JsonNull();
 

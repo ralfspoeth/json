@@ -15,7 +15,7 @@ import static java.util.stream.Collectors.toMap;
  *
  * @param members a non-{code null} map of name-value pairs
  */
-public record JsonObject(Map<String, JsonValue> members) implements Aggregate, Function<String, @Nullable JsonValue> {
+public value record JsonObject(Map<String, JsonValue> members) implements Aggregate, Function<String, @Nullable JsonValue> {
 
     public JsonObject {
         members = Map.copyOf(members);

@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.function.IntFunction;
 
 import static io.github.ralfspoeth.json.Builder.arrayBuilder;
-import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -75,11 +74,15 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
 
     @Override
     public JsonValue apply(int index) {
-        return get(index).orElseThrow();
+        return elements.get(index);
     }
 
     @Override
     public Optional<JsonValue> get(int index) {
-        return index<elements.size() ? Optional.of(elements.get(index)) : get("");
+        if(index<elements().size()) {
+            return Optional.of(elements().get(index));
+        } else {
+            return Optional.empty();
+        }
     }
 }

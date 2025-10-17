@@ -11,6 +11,8 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+import static io.github.ralfspoeth.json.io.JsonReader.Elem.ArrBuilderElem.arrBuilderElem;
+import static io.github.ralfspoeth.json.io.JsonReader.Elem.ObjBuilderElem.objBuilderElem;
 import static io.github.ralfspoeth.json.io.Lexer.FixToken.*;
 import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
 
@@ -42,15 +44,15 @@ public class JsonReader implements AutoCloseable {
         this.lexer = new Lexer(src);
     }
 
-    private sealed interface Elem {
+    sealed interface Elem {
         record ObjBuilderElem(JsonObjectBuilder builder) implements Elem {
-            static ObjBuilderElem empty() {
+            static ObjBuilderElem objBuilderElem() {
                 return new ObjBuilderElem(Builder.objectBuilder());
             }
         }
 
         record ArrBuilderElem(JsonArrayBuilder builder) implements Elem {
-            static ArrBuilderElem empty() {
+            static ArrBuilderElem arrBuilderElem() {
                 return new ArrBuilderElem(Builder.arrayBuilder());
             }
         }
@@ -72,7 +74,7 @@ public class JsonReader implements AutoCloseable {
      * @return the JSON element
      * @throws IOException whenever the underlying source throws
      */
-    public JsonValue readElement() throws IOException {
+    public JsonValue readValue() throws IOException {
         return read().orElseThrow(
                 () -> new JsonParseException("No JSON element in the source",
                         lexer.row(),
@@ -101,7 +103,7 @@ public class JsonReader implements AutoCloseable {
         // and either the stack is empty or,
         // in case we expect to read more than one JSON element from the potentially unbounded source,
         // the top element is not a root element.
-        while (lexer.hasNext() && (stack.isEmpty() || !stack.top().getClass().equals(Elem.Root.class))) {
+        while (lexer.hasNext() && !(stack.top() instanceof Elem.Root)) {
             var tkn = lexer.next();
             // we switch over the type of the token as the primary level compound state
             switch (tkn) {
@@ -111,7 +113,7 @@ public class JsonReader implements AutoCloseable {
                     if (stack.top() instanceof Elem.NameElem) {
                         stack.push(Elem.Char.colon);
                     } else {
-                        parseEx("unexpected token : " + tkn);
+                        parseEx("unexpected token: " + tkn);
                     }
                 }
                 // a comma separates elements in an aggregate
@@ -128,20 +130,20 @@ public class JsonReader implements AutoCloseable {
                 // that is, at the start, in an empty array, and after a colon or a comma.
                 case OPENING_BRACE -> {
                     switch (stack.top()) {
-                        case null -> stack.push(Elem.ObjBuilderElem.empty());
+                        case null -> stack.push(objBuilderElem());
                         case Elem.ArrBuilderElem(var builder)
-                                when builder.isEmpty() -> stack.push(Elem.ObjBuilderElem.empty());
-                        case Elem.Char ignored -> stack.push(Elem.ObjBuilderElem.empty());
+                                when builder.isEmpty() -> stack.push(objBuilderElem());
+                        case Elem.Char ignored -> stack.push(objBuilderElem());
                         default -> parseEx("unexpected token " + tkn.value());
                     }
                 }
                 // opens an array, otherwise like a brace
                 case OPENING_BRACKET -> {
                     switch (stack.top()) {
-                        case null -> stack.push(Elem.ArrBuilderElem.empty());
-                        case Elem.Char ignored -> stack.push(Elem.ArrBuilderElem.empty());
+                        case null -> stack.push(arrBuilderElem());
+                        case Elem.Char ignored -> stack.push(arrBuilderElem());
                         case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ->
-                                stack.push(Elem.ArrBuilderElem.empty());
+                                stack.push(arrBuilderElem());
                         default -> parseEx("unexpected token " + tkn.value());
                     }
                 }
@@ -238,13 +240,13 @@ public class JsonReader implements AutoCloseable {
                         if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
                             builder.add(v);
                         } else {
-                            parseEx("unexpected token " + token);
+                            parseEx("unexpected token: " + token);
                         }
                     }
                 }
             }
             case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> builder.add(v);
-            default -> parseEx("unexpected token " + token);
+            default -> parseEx("unexpected token: " + token);
         }
     }
 

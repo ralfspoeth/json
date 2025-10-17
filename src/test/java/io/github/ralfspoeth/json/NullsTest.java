@@ -24,7 +24,6 @@ class NullsTest {
         ab.add(bn);
         var ja = ab.build();
         var json = ja.json();
-        System.out.println(json);
         assertAll(
                 () -> assertEquals(JsonNull.INSTANCE, arrayBuilder().addBasic(null).build().elements().getFirst()),
                 () -> assertEquals(JsonNull.INSTANCE, arrayBuilder().addBasic(null).build().elements().getFirst())
@@ -37,7 +36,7 @@ class NullsTest {
                 () -> assertThrows(NullPointerException.class, () -> objectBuilder().put(null, JsonNull.INSTANCE)),
                 () -> assertEquals(JsonNull.INSTANCE, objectBuilder().putBasic("nix", null)
                         .build()
-                        .get("nix", Basic.class)
+                        .get("nix").orElseThrow()
                 ),
                 () -> {}
         );

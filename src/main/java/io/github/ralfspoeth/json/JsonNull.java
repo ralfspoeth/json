@@ -17,4 +17,24 @@ public value record JsonNull() implements Basic<Object> {
     public boolean test(JsonValue o) {
         return o instanceof JsonNull;
     }
+
+    @Override
+    public Optional<Boolean> booleanValue() {
+        return Optional.of(false);
+    }
+
+    @Override
+    public OptionalInt intValue() {
+        return OptionalInt.of(0);
+    }
+
+    @Override
+    public OptionalLong longValue() {
+        return OptionalLong.of(0L);
+    }
+
+    @Override
+    public OptionalDouble doubleValue() {
+        return OptionalDouble.of(0d);
+    }
 }

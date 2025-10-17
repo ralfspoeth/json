@@ -1,4 +1,4 @@
-# Greyso - Java JSON IO Library
+# Greyson - Java JSON IO Library
 
 ![greyson.png](greyson.png "JSON")
 
@@ -14,7 +14,7 @@ elements into any Java objects.
 *   **Fluent Builder API**: Construct complex JSON objects and arrays with ease.
 *   **Efficient Serialization**: Quickly serialize JSON elements into UTF-8 documents and streams.
 
-Greyson parses the original version of JSON only with the only relaxation
+Greyson parses the original version of JSON only with the relaxation
 that ALL values may be root elements, not just objects and arrays. There are 
 no options to customize the contents, to be more relaxed or even stricter at the 
 parsing level.
@@ -25,23 +25,58 @@ THIS ALPHA VERSION OF 1.2 IS CURRENTLY UNDER ACTIVE DEVELOPMENT.
 
 The current version of the library is 1.2.0.
 It contains two breaking changes compared to version 1.1.x:
-* The common interface has been renamed from `JsonValue` to `JsonValue`
+* The common interface has been renamed from `Element` to `JsonValue`
   because that naming pattern seems to be more in line with other libraries.
 * `JsonNumber` uses `BigDecimal` instead of `double` for its payload; 
   cf. [numbers](numbers.md) for a detailed discussion.
 * `JsonBoolean` and `JsonNull` are implemented as `record`s, no longer as an `enum` or 
   singleton, respectively.
+* Conversions from and to `record`s have been removed in an attempt to get rid of deep
+  reflection.
+* It utilizes `JSpecify` nullness annotations.
+
+Beginning with version 1.2.0, the `Builder`s are the mutable duals of
+their immutable `JsonValue` counterparts, such that
+
+    var jo = new JsonObject(...);
+    var builder = Builder.objectBuilder(jo);
+    assert jo.equals(builder.build());
+
+and most naturally 
+
+    var ja = new JsonArray(...);
+    var builder = Builder.arrayBuilder(ja);
+    assert ja.equals(builder.build());
+
+plus 
+
+    var jv = Basic.of(...);
+    var builder = Builder.valueBuilder(jv);
+    assert jv.equals(builder.build());
+
+or simply
+
+    JsonValue value; // given
+    assert value.equals(Builder.of(value).build());
+
+The conversions from `JsonValue` to `Builder` are recursive in both directions.
+A `JsonArray` of `JsonObject`s is turned into a `JsonArrayBuilder` 
+with mutable `JsonObjectBuilder` instances in its mutable `ArrayList` data collection.
+The `build` method turns it into a fresh, immutable `JsonArray` instance
+of `JsonObject`s.
 
 ## The Greyson Workflow
 
-The Greyson workflow has been designed around the JSON in memory object representation
+The Greyson workflow has been designed around the JSON in-memory object representation
 described below:
 
-* The Greyson library parses a JSON document into a JsonValue instance.
-* User Code uses the Greyson query API to instantiate target class instances for this value.
-* User Code transforms an arbitrary class instance (or array or collection of objects) into a JsonValue 
-  using the Greyson builder API.
-* The Greyson library serializes this JSON value into a JSON file.
+* The Greyson library parses a JSON document into a `JsonValue` instance.
+* User Code uses the _Greyson Query API_ to instantiate target class instances
+  for this value.
+* User Code transforms an arbitrary class instance 
+  (or array or collection of objects) into a `JsonValue`
+  using the _Greyson Builder API_.
+* The Greyson library serializes this `JsonValue` into a JSON file.
 
 ![workflow.png](workflow.png "Greyson Workflow")
 
@@ -54,20 +89,37 @@ Both libraries support a model similar to the Greyson workflow with
 an intermediate representation, and both libraries provide access to 
 their token stream parsers. Both provide extensive customization options.
 All these features make these libraries quite large. Greyson is intentionally
-small both in terms of package size and in terms of classes and methods. 
-Here are some thoughts about [why not GSON or Jackson](whynot.md)]
+small both in terms of package size and in terms of classes, methods and more
+important: conceptual design. 
+Here are some thoughts about [why&when not GSON or Jackson](whynot.md)
 
-Greyson is not intended to be the fastest JSON parsing library on the planet,
-nor is it. Microbenchmarks show that parsing and writing is much slower than
-GSON or Jackson in its current incarnation.
+Greyson is not intended to be the fastest JSON parsing library on the planet...
+nor is it. Micro benchmarks and profiling tests show that 
+both parsing and writing using Greyson is slower than
+GSON or Jackson in its current incarnation. These two libraries
+use a lot of (sometimes dirty and ugly) tricks to gain maximum performance.
+The Greyson library, however,
+uses algebraic data types even for the internal intermediate representation
+of the parsed data, which leads to a very clean lexer and parser as well as
+writer designs -- yet at the expense of performance.
+We assume that value class will help Greyson to close the gap to GSON and Jackson
+in the future without compromising the current simplicity of the implementation.
+
+The Greyson library is really tiny: together with its dependencies on 
+`jspecify` nullness annotations (4kB) and my very own `basix` package (19kB) it's just about 100kB.
+Google's GSON packages including dependencies are as large as about 300kB, 
+which is three times the size.
+Jackson's core library weighs about 600kB, the databind package about 1.7MB,
+which is about 2.3 MB altogether or about 23 times
+the size of the Greyson package.
 
 ## JSON Test Suite
 
 Beginning with version 1.1.25, we've added a number of tests
-from the nst [JSON Test Suite](https://github.com/nst/JSONTestSuite) 
-which revealed some issues 
-parsing especially non-well-formed JSON documents; current progress
-improves upon the current stability. The API surface, however, doesn't change.
+from the **nst** [JSON Test Suite](https://github.com/nst/JSONTestSuite). 
+This test suite revealed some minor and even larger issues 
+parsing especially non-well-formed JSON documents, which have been fixed 
+in the 1.1.x branches as well as in the current 1.2 branch.
 
 ## Getting Started
 
@@ -87,25 +139,26 @@ In your `pom.xml` add
     </dependency>
 ```
 or, when using Gradle (Groovy)
-
+```groovy 
     implementation 'io.github.ralfspoeth:json:1.2.0'
-
+```
 or, with Gradle (Kotlin), put 
-
+```kotlin
     implementation("io.github.ralfspoeth:json:1.2.0")
-
+```
 in your build file.
 
 If you are using JPMS modules with a `module-info.java` file, add
+
 ```java    
     module your.module {
-        requires io.github.ralfspoeth.json;
+        requires io.github.ralfspoeth.greyson;
         // more
     }
 ```
 ### Basic Usage
 
-The module `io.github.ralfspoeth.json` exports three packages that you 
+The module `io.github.ralfspoeth.greyson` exports three packages that you 
 may use in your application:
 ```java
     import io.github.ralfspoeth.json.*;       // class hierarchy
@@ -121,12 +174,12 @@ This API allows for mapping operations like this:
 ```java
     Reader r;
     try(var rdr = new JsonReader(r)) { // auto-closeable
-        JsonValue elem = rdr.readJsonValue(); 
+        JsonValue elem = rdr.readValue(); 
         // switch over elem
         double dbl = switch(elem) {
             case JsonNumber(double d) -> d;
-            null, default -> throw new IllegalArgumentException("...");
-        }
+            case null, default -> throw new IllegalArgumentException("...");
+        };
 
         // often, you may easily convert the element into a simple record
         // {"x": 1, "y": 2}
@@ -151,14 +204,17 @@ Writing data into a JSON stream works either through the builders
         w.write(jo);
     }
 ```
-or through standard conversions from an object of a `Record` subclass
+or through conversions from a `record`
 ```java
     Writer out;
     record Rec(boolean x, double y) {}
     Rec r = new Rec(true, 5d);
-    JsonValue jo = JsonValue.of(r);
-    try(var w = JsonWriter.createDefaultWriter(out)) {
-        w.write(jo); // {"x": true, "y": "5.0"}
+    JsonValue jo = Aggregate.objectBuilder()
+            .named("x", Basic.of(true))
+            .named("y", Basic.of(5))
+            .build();
+    try(var w = new JsonWriter(out)) {
+        w.write(jo); // {"x": true, "y": 5.0}
     }
 ```
 The entire API is designed such that it never returns

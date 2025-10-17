@@ -21,6 +21,14 @@ import static java.util.stream.Collectors.toMap;
  */
 public sealed interface Builder<T extends JsonValue> {
 
+    static <T extends JsonValue> Builder<?> of(T value) {
+        return switch(value) {
+            case JsonObject jo -> objectBuilder(jo);
+            case JsonArray ja -> arrayBuilder(ja);
+            default -> valueBuilder(value);
+        };
+    }
+
     /**
      * Instantiate the mutable value holder.
      *
@@ -39,11 +47,11 @@ public sealed interface Builder<T extends JsonValue> {
 
     /**
      * Instantiate a builder for {@code JsonObject}s with the initial
-     * name-value pairs copied from given {@code JsonObject}.
-     * Same as {@code objectBuilder(from.members())}
+     * name-value pairs copied from given {@code JsonObject jo}.
+     * Same as {@code objectBuilder(jo.members())}
      */
-    static JsonObjectBuilder objectBuilder(JsonObject from) {
-        return objectBuilder().insert(from);
+    static JsonObjectBuilder objectBuilder(JsonObject jo) {
+        return objectBuilder().insert(jo);
     }
 
     /**

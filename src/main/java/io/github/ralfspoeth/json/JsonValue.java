@@ -18,7 +18,7 @@ import static java.util.Objects.requireNonNull;
  * {@code String string} value or the element at a given index (empty if out of bounds or not an array)
  * and the value of a given key (in an object) if it exists.
  */
-public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate, Basic {
+public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits Aggregate, Basic {
 
     /**
      * The JSON representation of the value.
@@ -33,9 +33,21 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
      */
     int depth();
 
+    /**
+     * Converts an object into a JSON value.
+     * If you happen to pass a {@link Builder}, its {@link Builder#build()} method will be invoked;
+     * if a JSON value, that itself will be returned - both just as a safeguard.
+     * A map is converted into a {@link JsonObject} using {@link JsonObject#ofMap(Map)},
+     * arrays and other iterables into {@link JsonArray}s.
+     * Everything else is passed to {@link Basic#of(Object)}.
+     *
+     * @param o an object, may be {@code null}
+     * @return a JSON value; never {@code null}
+     */
     static JsonValue of(@Nullable Object o) {
         return switch(o) {
-            case Record r -> JsonObject.ofRecord(r);
+            case Builder<?> b -> b.build();
+            case JsonValue v -> v;
             case Map<?, ?> m -> JsonObject.ofMap(m);
             case Iterable<?> it -> JsonArray.ofIterable(it);
             case Object array when array.getClass().isArray() -> JsonArray.ofArray(array);
@@ -82,6 +94,9 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
                 .orElse(OptionalInt.empty());
     }
 
+    /**
+     * Same as {@code intValue().orElse(def)}.
+     */
     default int intValue(int def) {
         return intValue().orElse(def);
     }
@@ -92,6 +107,9 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
                 .orElse(OptionalLong.empty());
     }
 
+    /**
+     * Same as {@code longValue().orElse(def)}.
+     */
     default long longValue(long def) {
         return longValue().orElse(def);
     }
@@ -101,35 +119,65 @@ public sealed interface JsonValue extends Predicate<JsonValue> permits Aggregate
                 .map(dv -> OptionalDouble.of(dv.doubleValue()))
                 .orElse(OptionalDouble.empty());
     }
-
+    /**
+     * Same as {@code doubleValue().orElse(def)}.
+     */
     default double doubleValue(double def) {
         return doubleValue().orElse(def);
     }
 
     Optional<BigDecimal> decimalValue();
 
+    /**
+     * Same as {@code decimalValue().orElse(def)}.
+     */
     default BigDecimal decimalValue(BigDecimal def) {
         return decimalValue().orElse(requireNonNull(def));
     }
 
     Optional<String> stringValue();
 
+    /**
+     * Same as {@code stringValue().orElse(def)}.
+     */
     default String stringValue(String def) {
         return stringValue().orElse(requireNonNull(def));
     }
 
+    /**
+     * Get the value at a given index in a JSON array,
+     * or an empty optional if the index is out of bounds or
+     * this is not an array.
+     * @param index the index
+     * @return the value at the given index, or an empty optional
+     */
     default Optional<JsonValue> get(int index) {
         return Optional.empty();
     }
 
+    /**
+     * Get the member named "name" in this JSON object;
+     * or an empty optional if this is not a JSON object or
+     * there is no such member.
+     * @param name the name
+     * @return the value of the member, or an empty optional
+     */
     default Optional<JsonValue> get(String name) {
         return Optional.empty();
     }
 
+    /**
+     * Get all the elements of this it is a JSON array,
+     * or an empty list if this is not an array.
+     */
     default List<JsonValue> elements() {
         return List.of();
     }
 
+    /**
+     * Get all the members of this it is a JSON object,
+     * or an empty map if this is not JSON object.
+     */
     default Map<String, JsonValue> members() {
         return Map.of();
     }

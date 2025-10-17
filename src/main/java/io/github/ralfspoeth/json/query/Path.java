@@ -43,10 +43,9 @@ import static java.util.Objects.requireNonNull;
  * Example:
  * <p>
  * {@snippet :
- * import io.github.ralfspoeth.json.JsonValue;
- * import io.github.ralfspoeth.json.JsonBoolean;
- * import io.github.ralfspoeth.json.JsonNumber;
- * import io.github.ralfspoeth.json.io.JsonReader;
+ * import io.github.ralfspoeth.greyson.JsonValue;
+ * import io.github.ralfspoeth.greyson.JsonBoolean;
+ * *import io.github.ralfspoeth.greyson.io.JsonReader;
  *
  * import java.util.List;
  *
@@ -54,7 +53,7 @@ import static java.util.Objects.requireNonNull;
  * var given = """
  *       [1, 2, {"aa": true}, {"xy": 5, "ab": 2}, {"ac": 3}]
  *       """;
- * var elem = JsonReader.readElement(given);
+ * var elem = JsonReader.readValue(given);
  *
  * // when p matches any element beginning with the third
  * // and then each member starts with 'a'
@@ -73,7 +72,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * {@snippet :
  * import java.util.List;
- * import io.github.ralfspoeth.json.*;
+ * import io.github.ralfspoeth.greyson.*;
  * Path p = Path.of("..."); // @replace regex='"..."' replacement="..."
  * JsonArray a = new JsonArray(List.of()); // @replace regex='new JsonArray(List.of())' replacement='...'
  * List<JsonValue> result = a.elements().stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"

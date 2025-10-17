@@ -2,6 +2,7 @@ package io.github.ralfspoeth.json;
 
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -69,64 +70,20 @@ class JsonValueTest {
     }
 
     @Test
-    void testOf() {
-        record R(Object x) {}
+    void testDecimalValue() {
         assertAll(
-                () -> assertEquals(JsonNull.INSTANCE, Basic.of(null)),
-                () -> assertEquals(Basic.of(5), JsonValue.of(5)),
-                () -> assertEquals(new JsonObject(Map.of("x", JsonNull.INSTANCE)), JsonValue.of(new R(null))),
-                () -> assertEquals(new JsonArray(List.of(JsonBoolean.FALSE)), JsonValue.of(new Object[]{false}))
+                () -> assertEquals(0, JsonValue.of(10).decimalValue().orElseThrow().compareTo(BigDecimal.TEN)),
+                () -> assertEquals(BigDecimal.TWO, JsonValue.of(null).decimalValue(BigDecimal.TWO)),
+                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).decimalValue().orElseThrow())
         );
     }
 
     @Test
-    void testJsonOfRecords() {
-        record A(int x) {}
-        record B(A a, boolean b) {}
-        record C(B b, String s) {}
-
-        // objects to convert
-        var a = new A(5);
-        var b = new B(a, true);
-        var c = new C(b, "Bb");
-        // json pendants
-        var jsonA = objectBuilder().putBasic("x", 5).build();
-        var jsonB = objectBuilder().put("a", jsonA).putBasic("b", true).build();
-        var jsonC = objectBuilder().put("b", jsonB).putBasic("s", "Bb").build();
-
+    void testStringValue() {
         assertAll(
-                () -> assertEquals(jsonA, JsonValue.of(a)),
-                () -> assertEquals(jsonB, JsonValue.of(b)),
-                () -> assertEquals(jsonC, JsonValue.of(c))
-        );
-    }
-
-    @Test
-    void testDeepStructure() {
-        record A(int x) {}
-        record B(A a, A b) {}
-        Object o = new Object[]{new A(0), new B(new A(1), new A(2)), new Object[]{new int[]{5, 6, 7}}};
-        assertEquals(arrayBuilder()
-                .add(new JsonObject(Map.of("x", Basic.of(0))))
-                .add(new JsonObject(Map.of(
-                                "a", new JsonObject(Map.of("x", Basic.of(1))),
-                                "b", new JsonObject(Map.of("x", Basic.of(2)))
-                        ))
-                ).add(arrayBuilder()
-                        .add(arrayBuilder()
-                                .add(Basic.of(5))
-                                .add(Basic.of(6))
-                                .add(Basic.of(7))
-                                .build()
-                        ).build()
-                ).build(), JsonValue.of(o));
-    }
-
-    @Test
-    void testIntValue() {
-        assertAll(
-                () -> assertEquals(1, JsonValue.of(1).intValue().orElseThrow()),
-                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).intValue().orElseThrow())
+                () -> assertEquals("hello", JsonValue.of("hello").stringValue().orElseThrow()),
+                () -> assertEquals("hello", JsonValue.of(null).stringValue("hello")),
+                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).stringValue().orElseThrow())
         );
     }
 
@@ -135,10 +92,10 @@ class JsonValueTest {
         assertAll(
                 () -> assertTrue(JsonValue.of(true).booleanValue().orElseThrow()),
                 () -> assertFalse(JsonValue.of(false).booleanValue().orElseThrow()),
-                () -> assertTrue(Basic.of(1).booleanValue().isEmpty()),
+                () -> assertTrue(Basic.of(1).booleanValue(false)),
                 () -> assertTrue(Basic.of("hello").booleanValue().isEmpty()),
-                () -> assertTrue(Basic.of(1.d).booleanValue().isEmpty()),
-                () -> assertTrue(JsonNull.INSTANCE.booleanValue().isEmpty()),
+                () -> assertTrue(Basic.of(1.d).booleanValue(false)),
+                () -> assertFalse(JsonNull.INSTANCE.booleanValue(true)),
                 () -> assertTrue(new JsonArray(List.of()).isEmpty()),
                 () -> assertTrue(new JsonObject(Map.of()).booleanValue().isEmpty())
         );

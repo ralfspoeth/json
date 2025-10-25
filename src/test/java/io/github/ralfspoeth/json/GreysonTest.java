@@ -115,14 +115,14 @@ class GreysonTest {
     }
 
     @Test
-    void testWrite_jsonNull() {
+    void testWrite_jsonNull() throws IOException {
         StringWriter writer = new StringWriter();
         Greyson.write(writer, JsonNull.INSTANCE);
         assertEquals("null", writer.toString().trim());
     }
 
     @Test
-    void testWriteToSystemOut() {
+    void testWriteToSystemOut() throws IOException {
         JsonObject jsonObject = Builder.objectBuilder()
                 .put("message", new JsonString("hello"))
                 .build();

@@ -9,7 +9,6 @@ import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.Builder.objectBuilder;
-import static io.github.ralfspoeth.json.query.Path.intValue;
 import static io.github.ralfspoeth.json.query.Path.of;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -145,7 +144,7 @@ class PathTest {
         // when
         var path = of("a/b/c");
         // then
-        assertEquals(5, Path.doubleValue(path, obj));
+        assertEquals(5, path.doubleValue(obj));
     }
 
     @Test
@@ -162,16 +161,16 @@ class PathTest {
         var elem = Greyson.readValue(src);
         // then
         assertAll(
-                () -> assertEquals(1, intValue(of("[0]/a"), elem)),
-                () -> assertEquals(3, intValue(of("[0]/c"), elem)),
-                () -> assertEquals(7, intValue(of("[1]/d"), elem)),
-                () -> assertTrue(Path.booleanValue(of("[5]"), elem)),
-                () -> assertEquals(3, intValue(of("[4]"), elem)),
-                () -> assertEquals(9, intValue(of("[9]/c"), elem)),
-                () -> assertEquals(0, intValue(of("[10]/a"), elem)),
-                () -> assertEquals(0, intValue(of("[11]"), elem)),
-                () -> assertEquals(1, intValue(of("[-1]/a"), elem)),
-                () -> assertEquals(0, intValue(of("[50..60]"), elem))
+                () -> assertEquals(1, of("[0]/a").intValue(elem)),
+                () -> assertEquals(3, of("[0]/c").intValue(elem)),
+                () -> assertEquals(7, of("[1]/d").intValue(elem)),
+                () -> assertTrue(of("[5]").booleanValue(elem)),
+                () -> assertEquals(3, of("[4]").intValue(elem)),
+                () -> assertEquals(9, of("[9]/c").intValue(elem)),
+                () -> assertEquals(0, of("[10]/a").intValue(elem)),
+                () -> assertEquals(0, of("[11]").intValue(elem)),
+                () -> assertEquals(1, of("[-1]/a").intValue(elem)),
+                () -> assertEquals(0, of("[50..60]").intValue(elem))
         );
     }
 
@@ -194,42 +193,42 @@ class PathTest {
         assertAll(
                 () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        intValue(Path.of("bl/x"), obj1),
-                                        intValue(Path.of("bl/y"), obj1)
+                                        of("bl/x").intValue(obj1),
+                                        of("bl/y").intValue(obj1)
                                 ),
                                 new Point(
-                                        intValue(Path.of("tr/x"), obj1),
-                                        intValue(Path.of("tr/y"), obj1)
+                                        of("tr/x").intValue(obj1),
+                                        of("tr/y").intValue(obj1)
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        intValue(Path.of("x1"), obj2),
-                                        intValue(Path.of("y1"), obj2)
+                                        of("x1").intValue(obj2),
+                                        of("y1").intValue(obj2)
                                 ),
                                 new Point(
-                                        intValue(Path.of("x2"), obj2),
-                                        intValue(Path.of("y2"), obj2)
+                                        of("x2").intValue(obj2),
+                                        of("y2").intValue(obj2)
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        intValue(Path.of("[0]"), arr1),
-                                        intValue(Path.of("[1]"), arr1)
+                                        of("[0]").intValue(arr1),
+                                        of("[1]").intValue(arr1)
                                 ),
                                 new Point(
-                                        intValue(Path.of("[2]"), arr1),
-                                        intValue(Path.of("[3]"), arr1)
+                                        of("[2]").intValue(arr1),
+                                        of("[3]").intValue(arr1)
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        intValue(Path.of("[0]"), arr2),
-                                        intValue(Path.of("[2]"), arr2)
+                                        of("[0]").intValue(arr2),
+                                        of("[2]").intValue(arr2)
                                 ),
                                 new Point(
-                                        intValue(Path.of("[1]"), arr2),
-                                        intValue(Path.of("[3]"), arr2)
+                                        of("[1]").intValue(arr2),
+                                        of("[3]").intValue(arr2)
                                 )
                         )
                 )

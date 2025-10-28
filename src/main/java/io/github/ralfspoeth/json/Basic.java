@@ -10,9 +10,6 @@ import java.math.BigInteger;
  * @param <T> the type of the (immutable) value wrapped in the {@code Basic} instance.
  */
 public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull, JsonNumber, JsonString {
-
-    String json();
-
     /**
      * The value wrapped inside this instance.
      * @return the value, never {@code null` except for `JsonNull}

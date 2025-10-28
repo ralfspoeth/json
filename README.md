@@ -399,6 +399,24 @@ This `a` can now easily be filtered like
 ```java
     assert 2 == a.stream().filter(Basic.of(2)).count();
 ```
+
+## `JsonValue` Conversions
+
+Each `JsonValue` can be converted to an optional `int`, `long`, `double`,
+`BigDecimal`, `String`, or `List` and `Map` directly, with the following
+behaviour for the various types:
+
+    Conv       |  JsonNull  |     JsonBoolean      |     JsonNumber      |         JsonString         |  JsonArray  |  JsonObject  |
+    --------------------------------------------------------------------------------------------------------------------------------
+    boolean    | false      | value                | !value.equals(ZERO) | value.isBlank()?false:true | empty()     | empty()      |
+    int        | 0          | value?1:0            | value.intValue()    | Integer.parseInt(value)    | empty()     | empty()      |
+    long       | 0L         | value?1L:0L          | value.longValue()   | Long.parseLong(value)      | empty()     | empty()      |
+    double     | 0d         | value?1d:0d          | value.doubleValue() | Double.parseDouble(value)  | empty()     | empty()      |
+    String     | "null"     | value?"true":"false" | value.toString()    | value                      | empty()     | empty()      |
+    BigDecimal | ZERO       | value?ONE:ZERO       | value               | new BigDecimal(value)      | empty()     | empty()      |
+    List       | List.of()  | List.of()            | List.of()           | List.of()                  | value       | empty()      |
+    Map        | Map.of()   | Map.of()             | Map.of()            | Map.of()                   | empty()     | value        |
+
 # Builders
 
 The [Builder pattern](https://en.wikipedia.org/wiki/Builder_pattern)

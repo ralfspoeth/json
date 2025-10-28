@@ -42,4 +42,9 @@ public record JsonNull() implements Basic<Object> {
     public OptionalDouble doubleValue() {
         return OptionalDouble.of(0d);
     }
+
+    @Override
+    public Optional<String> stringValue() {
+        return Optional.of("null");
+    }
 }

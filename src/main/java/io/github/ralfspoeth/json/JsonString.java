@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -22,24 +23,34 @@ public record JsonString(String value) implements Basic<String> {
     }
 
     private static String escape(String s) {
-        var tmp = s.replaceAll("\\\\", "\\\\\\\\")
-                .replaceAll("\"", "\\\\\"")
-                .replaceAll("/", "\\\\/")
-                .replaceAll("\b", "\\\\b")
-                .replaceAll("\f", "\\\\f")
-                .replaceAll("\n", "\\\\n")
-                .replaceAll("\r", "\\\\r")
-                .replaceAll("\t", "\\\\t");
-        if(tmp.chars().filter(cp -> 0x00 <= cp && cp <= 0x1F).findFirst().isPresent()) {
-            return tmp.chars()
-                    .mapToObj(cp -> 0x00 <= cp && cp <= 0x1F
-                            ?"\\u%04x".formatted(cp)
-                            :String.valueOf((char)cp))
-                    .reduce("", String::concat);
-        } else {
-            return tmp;
-        }
+        var sb = new StringBuilder(s.length() * 2);
+        s.chars().forEach(c -> {
+            switch(c) {
+                case '\\' -> sb.append("\\\\");
+                case '\"' -> sb.append("\\\"");
+                case '/' -> sb.append("\\/");
+                case '\b' -> sb.append("\\b");
+                case '\f' -> sb.append("\\f");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> {
+                    if(0x00 <= c && c <= 0x1F) {
+                        sb.append("\\u%04x".formatted(c));
+                    } else {
+                        sb.append((char)c);
+                    }
+                }
+            }
+        });
+        return sb.toString();
     }
+
+    @Override
+    public Optional<String> stringValue() {
+        return Optional.of(value);
+    }
+
 
     @Override
     public boolean test(JsonValue s) {

@@ -4,8 +4,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Optional;
-import java.util.OptionalDouble;
 
 /**
  * The basic data types in the JSON hierarchy.
@@ -29,28 +27,6 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
     @Override
     default int depth() {
         return 1;
-    }
-
-    @Override
-    default Optional<Boolean> booleanValue() {
-        return Optional.empty();
-    }
-
-    @Override
-    default Optional<BigDecimal> decimalValue() {
-        return Optional.empty();
-    }
-
-    @Override
-    default OptionalDouble doubleValue() {
-        return OptionalDouble.empty();
-    }
-
-    @Override
-    default Optional<String> stringValue() {
-        return Optional.ofNullable(value())
-                .map(Object::toString)
-                .or(Optional::empty);
     }
 
     /**

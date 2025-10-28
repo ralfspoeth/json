@@ -134,10 +134,10 @@ class QueriesTest {
         var jo = Greyson.readValue(src);
 
         var r = new R(
-                stringValue(members(jo).get("s"), ""),
-                booleanValue(members(jo).get("b"), false),
-                doubleValue(members(jo).get("d"), 0d),
-                value(members(jo).get("o"), null)
+                jo.get("s").flatMap(JsonValue::stringValue).orElse(""),
+                jo.get("b").flatMap(JsonValue::booleanValue).orElse(false),
+                jo.get("d").flatMap(JsonValue::decimalValue).map(BigDecimal::doubleValue).orElse(0d),
+                jo.get("o").map(Queries::value).orElse(null)
         );
 
         assertEquals(new R("a string", true, 5.1d, null), r);
@@ -150,9 +150,9 @@ class QueriesTest {
                 [{"d": 5}, {"d": 6}, {"d": 7}]
                 """;
         var ja = Greyson.readValue(src);
-        var result = elements(ja)
+        var result = ja.elements()
                 .stream()
-                .map(Queries::members)
+                .map(JsonValue::members)
                 .map(jo -> jo.get("d"))
                 .mapToDouble(e -> doubleValue(e, 0d))
                 .mapToObj(R::new)

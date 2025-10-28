@@ -3,10 +3,10 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.Greyson;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
+import io.github.ralfspoeth.json.JsonValue;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,9 +25,7 @@ class ToRecordTest {
 
         // when
         var jo = Greyson.readValue(src);
-        var result = new R(
-                intValue(members(jo).get("x"), 0)
-        );
+        var result = new R(jo.get("x").map(x -> intValue(x, 0)).orElse(0));
 
         // then
         assertAll(
@@ -54,9 +52,9 @@ class ToRecordTest {
 
         // when
         var value = Greyson.readValue(src);
-        var result = elements(value)
+        var result = value.elements()
                 .stream()
-                .map(Queries::members)
+                .map(JsonValue::members)
                 .map(jo -> new R(
                         intValue(jo.get("x"), 0)
                 ))
@@ -73,7 +71,7 @@ class ToRecordTest {
     @Test
     void toLargeRec() {
         // nested data structure
-        record Nested(int x, int y) {}
+        record Nested(int x, long y) {}
         record NestedList(List<Nested> l) {}
         record Large(int x, double y, String z, boolean b, Nested n, NestedList nl) {}
         // source text
@@ -96,33 +94,34 @@ class ToRecordTest {
         // JSON object representation
         var jo = Greyson.readValue(src);
         // convert to singleton list of Large instances
-        var result = Stream.of(jo).map(Queries::members).map(om -> new Large(
-                intValue(om.get("x"), 0),
-                doubleValue(om.get("y"), 0),
-                stringValue(om.get("z"), null),
-                booleanValue(om.get("b"), false),
+        var result = new Large(
+                jo.get("x").map(x -> intValue(x, 0)).orElse(0),
+                jo.get("y").map(y -> doubleValue(y, 0d)).orElse(0d),
+                jo.get("z").flatMap(JsonValue::stringValue).orElse(null),
+                jo.get("b").flatMap(JsonValue::booleanValue).orElse(false),
                 new Nested(
-                        intValue(members(om.get("n")).get("x"), 0),
-                        intValue(members(om.get("n")).get("y"), 0)
+                        intValue(jo.get("n").flatMap(n -> n.get("x")).orElseThrow(), 0),
+                        longValue(jo.get("n").flatMap(n -> n.get("y")).orElseThrow(), 0)
                 ),
                 new NestedList(
-                        elements(om.get("nl")).stream()
-                                .map(Queries::members)
-                                .map(nlm -> new Nested(
-                                        intValue(nlm.get("x"), 0),
-                                        intValue(nlm.get("y"), 0))
-                                )
-                                .toList()
+                        jo.get("nl").stream()
+                                .flatMap(nl -> nl.elements().stream())
+                                .map(JsonValue::members)
+                                .map(v -> new Nested(
+                                        intValue(v.get("x"), 0),
+                                        longValue(v.get("y"), 0)
+                                )).toList()
                 )
-        )).toList();
+        );
+
         // assert that result is a singleton list of Large instances and its only instance matches what
         // we expect
         assertAll(
-                () -> assertEquals(1, result.size()),
+                () -> assertNotNull(result),
                 () -> assertEquals(new Large(1, 2.0, "hello", true,
                                 new Nested(-8, -4),
                                 new NestedList(List.of(new Nested(1, 2), new Nested(3, 4)))),
-                        result.getFirst()
+                        result
                 )
         );
     }

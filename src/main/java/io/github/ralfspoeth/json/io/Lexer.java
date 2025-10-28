@@ -7,13 +7,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
-import static java.util.stream.StreamSupport.stream;
 
 class Lexer implements AutoCloseable {
 
@@ -47,64 +41,48 @@ class Lexer implements AutoCloseable {
         }
     }
 
-    private final Reader source;
+    static final class InternalPushbackReader implements AutoCloseable {
 
-    private int ch;
-    private boolean readCh;
+        private final Reader source;
 
-    private int read() throws IOException {
-        if (readCh) {
-            readCh = false;
-            return ch;
-        } else {
-            return source.read();
+        InternalPushbackReader(Reader source) {this.source = source;}
+
+        // hand-rolled pushback facility
+        private int ch;
+        private boolean readCh;
+
+        int read() throws IOException {
+            // if a character has been unread before, return it
+            if (readCh) {
+                readCh = false;
+                return ch;
+            }
+            // otherwise, read from the source
+            else {
+                return source.read();
+            }
+        }
+
+        void unread(int ch) {
+            this.ch = ch;
+            readCh = true;
+        }
+
+        @Override
+        public void close() throws IOException {
+            source.close();
         }
     }
 
-    private void unread(int ch) {
-        this.ch = ch;
-        readCh = true;
-    }
+    private final InternalPushbackReader source;
+
 
     Lexer(Reader rdr) {
-        this.source = switch (rdr) {
+        this.source = new InternalPushbackReader(switch (rdr) {
             case StringReader sr -> sr;
             case BufferedReader br -> br;
             default -> new BufferedReader(rdr);
-        };
-    }
-
-    static Stream<Token> tokenStream(Reader rdr) {
-        return stream(Spliterators.spliteratorUnknownSize(new Iterator<>() {
-            private final Lexer lxr = new Lexer(rdr);
-
-            @Override
-            public boolean hasNext() {
-                var next = false;
-                try {
-                    next = lxr.hasNext();
-                    if (!next) {
-                        try {
-                            lxr.close();
-                        } catch (IOException closeEx) {
-                            // swallow
-                        }
-                    }
-                } catch (IOException ioex) {
-                    try {
-                        lxr.close();
-                    } catch (IOException closeEx) {
-                        // swallow
-                    }
-                }
-                return next;
-            }
-
-            @Override
-            public Token next() {
-                return lxr.next();
-            }
-        }, Spliterator.IMMUTABLE | Spliterator.ORDERED), false);
+        });
     }
 
     private enum State {
@@ -130,7 +108,7 @@ class Lexer implements AutoCloseable {
     }
 
     private void appendCodePoint(int codePoint) {
-        for(char c: Character.toChars(codePoint)) {
+        for (char c : Character.toChars(codePoint)) {
             append(c);
         }
     }
@@ -170,7 +148,7 @@ class Lexer implements AutoCloseable {
 
     private void readNextToken() throws IOException {
         while (state != State.EOF && nextToken == null) {
-            int r = read();
+            int r = source.read();
             // special case -1 (EOF)
             if (r == -1) {
                 state = switch (state) {
@@ -224,7 +202,7 @@ class Lexer implements AutoCloseable {
                             yield State.NUM_LIT;
                         }
                         case 'n', 't', 'f', 'u', 'r', 'a', 'l', 's', ',', ':', '}', ']', '\"', '{', '[' -> {
-                            unread(c);
+                            source.unread(c);
                             yield literal();
                         }
                         case ' ', '\t', '\r', '\n' -> literal();
@@ -238,7 +216,7 @@ class Lexer implements AutoCloseable {
                             yield State.CONST_LIT;
                         }
                         case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
-                            unread(c);
+                            source.unread(c);
                             yield literal();
                         }
                         case ' ', '\t', '\r', '\n' -> literal();

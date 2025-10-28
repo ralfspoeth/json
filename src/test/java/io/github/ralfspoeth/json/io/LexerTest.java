@@ -171,6 +171,13 @@ class LexerTest {
         }
     }
 
+    public static void main(String[] args) throws Exception {
+        var c = System.in.read();
+        var lt = new LexerTest();
+        lt.testParseLarge();
+        System.out.println(c + " has been read");
+    }
+
     @Test
     void testTwo() throws Exception {
         var list = new ArrayList<Lexer.Token>();

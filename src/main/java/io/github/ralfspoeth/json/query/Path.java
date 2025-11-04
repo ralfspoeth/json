@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
  * {@snippet :
  * import io.github.ralfspoeth.greyson.JsonValue;
  * import io.github.ralfspoeth.greyson.JsonBoolean;
- * *import io.github.ralfspoeth.greyson.io.JsonReader;
+ * import io.github.ralfspoeth.greyson.io.JsonReader;
  *
  * import java.util.List;
  *
@@ -249,6 +249,15 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
     }
 
+    /**
+     * Instantiate a {@link Path} from a path pattern.
+     * The given pattern is first split into parts
+     * using {@code '/'}.
+     *
+     *
+     * @param pattern a path pattern
+     * @return a path
+     */
     public static Path of(String pattern) {
         var parts = requireNonNull(pattern).split("/");
         Path prev = null;

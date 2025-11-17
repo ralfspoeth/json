@@ -76,7 +76,6 @@ class Lexer implements AutoCloseable {
 
     private final InternalPushbackReader source;
 
-
     Lexer(Reader rdr) {
         this.source = new InternalPushbackReader(switch (rdr) {
             case StringReader sr -> sr;

@@ -16,15 +16,6 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
      */
     T value();
 
-    /**
-     * The depth of a {@code Basic} instance is always 1 since
-     * it is considered a leaf node in a JSON structure.
-     * @return 1
-     */
-    @Override
-    default int depth() {
-        return 1;
-    }
 
     /**
      * Instantiates the "right" Basic representation for a given

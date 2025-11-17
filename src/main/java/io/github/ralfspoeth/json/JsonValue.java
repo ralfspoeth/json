@@ -31,7 +31,9 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      * The depth of each leaf node is 1.
      * The depth of container nodes is 1 + the maximum depth of its descendants.
      */
-    int depth();
+    default int depth() {
+        return 1;
+    }
 
     /**
      * Converts an object into a JSON value.
@@ -180,5 +182,9 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      */
     default Map<String, JsonValue> members() {
         return Map.of();
+    }
+
+    default Builder<?> builder() {
+        return Builder.of(this);
     }
 }

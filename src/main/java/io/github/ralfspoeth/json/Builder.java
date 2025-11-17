@@ -62,6 +62,17 @@ public sealed interface Builder<T extends JsonValue> {
     }
 
     /**
+     * Instantiate a builder with an initial set of elements copied
+     * from the given {@code JsonArray}.
+     * Same as {@code arrayBuilder(ja.elements())}
+     *
+     * @param ja a {@code JsonArray}, may not be {@code null}
+     */
+    static JsonArrayBuilder arrayBuilder(JsonArray ja) {
+        return arrayBuilder().addAll(ja.elements());
+    }
+
+    /**
      * to be used in the stream pipeline.
      */
     static Collector<JsonValue, JsonArrayBuilder, JsonArray> toJsonArray() {
@@ -80,17 +91,6 @@ public sealed interface Builder<T extends JsonValue> {
                 Builder.JsonArrayBuilder::combine,
                 Builder::build
         );
-    }
-
-    /**
-     * Instantiate a builder with an initial set of elements copied
-     * from the given {@code JsonArray}.
-     * Same as {@code arrayBuilder(ja.elements())}
-     *
-     * @param ja a {@code JsonArray}, may not be {@code null}
-     */
-    static JsonArrayBuilder arrayBuilder(JsonArray ja) {
-        return arrayBuilder().addAll(ja.elements());
     }
 
     int size();

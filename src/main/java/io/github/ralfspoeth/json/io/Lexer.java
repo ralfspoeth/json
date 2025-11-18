@@ -80,7 +80,7 @@ class Lexer implements AutoCloseable {
         this.source = new InternalPushbackReader(switch (rdr) {
             case StringReader sr -> sr;
             case BufferedReader br -> br;
-            default -> new BufferedReader(rdr);
+            default -> new BufferedReader(rdr); // buffer in any case
         });
     }
 
@@ -91,44 +91,67 @@ class Lexer implements AutoCloseable {
         EOF
     }
 
+    // the next token
     private @Nullable Token nextToken;
+    // the current state
     private State state = State.INITIAL;
-    // the buffer
-    private char[] buffer = new char[1_024];
-    private int bufferPos = 0;
 
-    private void append(char c) {
-        if (bufferPos == buffer.length) {
-            char[] tmp = new char[buffer.length * 2];
-            System.arraycopy(buffer, 0, tmp, 0, buffer.length);
-            buffer = tmp;
+    // very similar to a string builder
+    static final class Buffer {
+        // the buffered char array
+        private char[] buffer = new char[4_096];
+        // the position where to add the next char read
+        private int bufferPos = 0;
+
+        void append(char c) {
+            // double buffer size
+            if (bufferPos == buffer.length) {
+                char[] tmp = new char[buffer.length * 2];
+                System.arraycopy(buffer, 0, tmp, 0, buffer.length);
+                buffer = tmp;
+            }
+            // add the char
+            buffer[bufferPos++] = c;
         }
-        buffer[bufferPos++] = c;
-    }
 
-    private void appendCodePoint(int codePoint) {
-        for (char c : Character.toChars(codePoint)) {
-            append(c);
+        void appendCodePoint(int codePoint) {
+            for (char c : Character.toChars(codePoint)) {
+                append(c);
+            }
+        }
+
+        String contents() {
+            var ret = String.valueOf(buffer, 0, bufferPos);
+            bufferPos = 0;
+            return ret;
         }
     }
 
-    private String litBuffer() {
-        var ret = new String(buffer, 0, bufferPos);
-        bufferPos = 0;
-        return ret;
+    // buffer for string an const literals
+    private final Buffer buffer = new Buffer();
+
+    // intermediate unicode sequence
+    static final class UnicodeSequence {
+        private final char[] unicSeq = new char[4];
+        private int unicSeqPos = 0;
+
+        void add(char c) {
+            unicSeq[unicSeqPos++] = c;
+        }
+
+        boolean isFull() {
+            return unicSeqPos == 4;
+        }
+
+        int toCodePoint() {
+            unicSeqPos = 0;
+            return Integer.parseInt(String.valueOf(unicSeq), 16);
+        }
     }
 
-    // unicode seq
-    private final char[] unicSeq = new char[4];
-    private int unicSeqPos = 0;
+    // unicode sequence
+    private final UnicodeSequence unicSeq = new UnicodeSequence();
 
-    private void unicSeqClear() {
-        unicSeqPos = 0;
-    }
-
-    private void unicSeqAdd(char c) {
-        unicSeq[unicSeqPos++] = c;
-    }
 
     boolean hasNext() throws IOException {
         readNextToken();
@@ -153,7 +176,7 @@ class Lexer implements AutoCloseable {
                 state = switch (state) {
                     case NUM_LIT, CONST_LIT -> literal();
                     case STRLIT, STRLIT_ESC, STRLIT_UC ->
-                            throw new JsonParseException("unexpected end of file in string literal " + Arrays.toString(buffer), row, column);
+                            throw new JsonParseException("unexpected end of file in string literal " + Arrays.toString(buffer.buffer), row, column);
                     case INITIAL, EOF -> State.EOF;
                 };
             } else {
@@ -169,12 +192,12 @@ class Lexer implements AutoCloseable {
                 state = switch (state) {
                     case INITIAL -> switch (c) {
                         case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
-                            append(c);
+                            buffer.append(c);
                             yield State.NUM_LIT;
                         }
                         case '\"' -> State.STRLIT;
                         case 'n', 't', 'f' -> {
-                            append(c);
+                            buffer.append(c);
                             yield State.CONST_LIT;
                         }
                         case '{', '}', '[', ']', ':', ',' -> {
@@ -197,7 +220,7 @@ class Lexer implements AutoCloseable {
 
                     case NUM_LIT -> switch (c) {
                         case '.', 'e', 'E', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
-                            append(c);
+                            buffer.append(c);
                             yield State.NUM_LIT;
                         }
                         case 'n', 't', 'f', 'u', 'r', 'a', 'l', 's', ',', ':', '}', ']', '\"', '{', '[' -> {
@@ -211,7 +234,7 @@ class Lexer implements AutoCloseable {
 
                     case CONST_LIT -> switch (c) {
                         case 'a', 'l', 's', 'e', 't', 'r', 'u' -> {
-                            append(c);
+                            buffer.append(c);
                             yield State.CONST_LIT;
                         }
                         case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
@@ -229,47 +252,44 @@ class Lexer implements AutoCloseable {
                             if (r <= 0x001F)
                                 throw new JsonParseException("Unexpected control character " + c, row, column);
                             else {
-                                append(c);
+                                buffer.append(c);
                                 yield State.STRLIT;
                             }
                         }
                     };
 
                     case STRLIT_ESC -> switch (c) {
-                        case 'u' -> {
-                            unicSeqClear();
-                            yield State.STRLIT_UC;
-                        }
+                        case 'u' -> State.STRLIT_UC;
                         case 'n' -> {
-                            append('\n');
+                            buffer.append('\n');
                             yield State.STRLIT;
                         }
                         case 'r' -> {
-                            append('\r');
+                            buffer.append('\r');
                             yield State.STRLIT;
                         }
                         case 't' -> {
-                            append('\t');
+                            buffer.append('\t');
                             yield State.STRLIT;
                         }
                         case '\\' -> {
-                            append('\\');
+                            buffer.append('\\');
                             yield State.STRLIT;
                         }
                         case '"' -> {
-                            append('\"');
+                            buffer.append('\"');
                             yield State.STRLIT;
                         }
                         case 'f' -> {
-                            append('\f');
+                            buffer.append('\f');
                             yield State.STRLIT;
                         }
                         case '/' -> {
-                            append('/');
+                            buffer.append('/');
                             yield State.STRLIT;
                         }
                         case 'b' -> {
-                            append('\b');
+                            buffer.append('\b');
                             yield State.STRLIT;
                         }
                         case '\t', '\r', '\n', ' ', '\f' ->
@@ -278,19 +298,18 @@ class Lexer implements AutoCloseable {
                             if (Character.isLetterOrDigit(c) || r > 0x001F || r == 0) {
                                 throw new JsonParseException("escaped non-control character " + c, row, column);
                             }
-                            append(c);
+                            buffer.append(c);
                             yield State.STRLIT;
                         }
                     };
 
                     case STRLIT_UC -> switch (c) {
                         case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B',
-                             'C', 'D', 'E', 'F' -> {
-                            unicSeqAdd(c);
-                            if (unicSeqPos == 4) {
-                                int value = Integer.parseInt(String.valueOf(unicSeq), 16);
-                                unicSeqPos = 0;
-                                appendCodePoint(value);
+                             'C', 'D', 'E', 'F' ->
+                        {
+                            unicSeq.add(c);
+                            if (unicSeq.isFull()) {
+                                buffer.appendCodePoint(unicSeq.toCodePoint());
                                 yield State.STRLIT;
                             } else {
                                 yield State.STRLIT_UC;
@@ -312,13 +331,12 @@ class Lexer implements AutoCloseable {
     }
 
     private Lexer.State stringLiteral() {
-        var text = litBuffer();
-        nextToken = new LiteralToken(Type.STRING, text);
+        nextToken = new LiteralToken(Type.STRING, buffer.contents());
         return State.INITIAL;
     }
 
     private Lexer.State literal() {
-        var text = litBuffer();
+        var text = buffer.contents();
         nextToken = switch (text) {
             case "null" -> new LiteralToken(Type.NULL, text);
             case "true" -> new LiteralToken(Type.TRUE, text);

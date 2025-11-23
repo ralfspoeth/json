@@ -269,10 +269,10 @@ public sealed interface Builder<T extends JsonValue> {
          * @return {@code this}
          */
         public JsonObjectBuilder merge(Map<String, ? extends JsonValue> map) {
-            map.forEach((key, value) -> data.put(key, switch (value) {
+            map.forEach((key, val) -> data.put(key, switch (val) {
                 case JsonObject jo -> objectBuilder(jo);
                 case JsonArray ja -> arrayBuilder(ja);
-                default -> valueBuilder(value);
+                default -> valueBuilder(val);
             }));
             return this;
         }

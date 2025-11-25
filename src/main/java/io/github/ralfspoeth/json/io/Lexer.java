@@ -191,122 +191,62 @@ class Lexer implements AutoCloseable {
                 }
                 state = switch (state) {
                     case INITIAL -> switch (c) {
-                        case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
-                            buffer.append(c);
-                            yield State.NUM_LIT;
-                        }
-                        case '\"' -> State.STRLIT;
-                        case 'n', 't', 'f' -> {
-                            buffer.append(c);
-                            yield State.CONST_LIT;
-                        }
-                        case '{', '}', '[', ']', ':', ',' -> {
-                            nextToken = switch (c) {
-                                case '{' -> FixToken.OPENING_BRACE;
-                                case '}' -> FixToken.CLOSING_BRACE;
-                                case '[' -> FixToken.OPENING_BRACKET;
-                                case ']' -> FixToken.CLOSING_BRACKET;
-                                case ':' -> FixToken.COLON;
-                                case ',' -> FixToken.COMMA;
-                                default -> throw new AssertionError();
-                            };
-                            yield State.INITIAL;
-                        }
+                        // white space
                         case ' ', '\t', '\r', '\n' -> State.INITIAL;
-                        default -> throw new JsonParseException("Unexpected character: " + c, row, column);
-
-
+                        // start of numbers
+                        case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> appendAndState(c, State.NUM_LIT);
+                        // start of strings
+                        case '\"' -> State.STRLIT;
+                        // start of const literals
+                        case 'n', 't', 'f' -> appendAndState(c, State.CONST_LIT);
+                        // separator char
+                        case '{', '}', '[', ']', ':', ',' -> fixTokenAndState(c);
+                        // else error
+                        default -> parseException("Unexpected character: " + c);
                     };
 
                     case NUM_LIT -> switch (c) {
-                        case '.', 'e', 'E', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
-                            buffer.append(c);
-                            yield State.NUM_LIT;
-                        }
-                        case 'n', 't', 'f', 'u', 'r', 'a', 'l', 's', ',', ':', '}', ']', '\"', '{', '[' -> {
-                            source.unread(c);
-                            yield literal();
-                        }
+                        // append num char
+                        case '.', 'e', 'E', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> append(c);
+                        //  unexpected char
+                        case 'n', 't', 'f', 'u', 'r', 'a', 'l', 's', ',', ':', '}', ']', '\"', '{', '[' -> unread(c);
+                        // separator
                         case ' ', '\t', '\r', '\n' -> literal();
-                        default ->
-                                throw new JsonParseException("Unexpected character: " + c + " in number literal", row, column);
+                        default -> parseException("Unexpected character: " + c + " in number literal");
                     };
 
                     case CONST_LIT -> switch (c) {
-                        case 'a', 'l', 's', 'e', 't', 'r', 'u' -> {
-                            buffer.append(c);
-                            yield State.CONST_LIT;
-                        }
-                        case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
-                            source.unread(c);
-                            yield literal();
-                        }
+                        case 'a', 'l', 's', 'e', 't', 'r', 'u' -> append(c);
+                        case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> unread(c);
                         case ' ', '\t', '\r', '\n' -> literal();
-                        default -> throw new JsonParseException("Misspelled literal: " + c, row, column);
+                        default -> parseException("Misspelled literal: " + c);
                     };
 
                     case STRLIT -> switch (c) {
                         case '\"' -> stringLiteral();
                         case '\\' -> State.STRLIT_ESC;
-                        default -> {
-                            if (r <= 0x001F)
-                                throw new JsonParseException("Unexpected control character " + c, row, column);
-                            else {
-                                buffer.append(c);
-                                yield State.STRLIT;
-                            }
-                        }
+                        default -> (r <= 0x001F) ? parseException("Unexpected control character " + c) : append(c);
                     };
 
                     case STRLIT_ESC -> switch (c) {
                         case 'u' -> State.STRLIT_UC;
-                        case 'n' -> {
-                            buffer.append('\n');
-                            yield State.STRLIT;
-                        }
-                        case 'r' -> {
-                            buffer.append('\r');
-                            yield State.STRLIT;
-                        }
-                        case 't' -> {
-                            buffer.append('\t');
-                            yield State.STRLIT;
-                        }
-                        case '\\' -> {
-                            buffer.append('\\');
-                            yield State.STRLIT;
-                        }
-                        case '"' -> {
-                            buffer.append('\"');
-                            yield State.STRLIT;
-                        }
-                        case 'f' -> {
-                            buffer.append('\f');
-                            yield State.STRLIT;
-                        }
-                        case '/' -> {
-                            buffer.append('/');
-                            yield State.STRLIT;
-                        }
-                        case 'b' -> {
-                            buffer.append('\b');
-                            yield State.STRLIT;
-                        }
-                        case '\t', '\r', '\n', ' ', '\f' ->
-                                throw new JsonParseException("control character after escape " + c, row, column);
-                        default -> {
-                            if (Character.isLetterOrDigit(c) || r > 0x001F || r == 0) {
-                                throw new JsonParseException("escaped non-control character " + c, row, column);
-                            }
-                            buffer.append(c);
-                            yield State.STRLIT;
-                        }
+                        case 'n' -> appendAndState('\n', State.STRLIT);
+                        case 'r' -> appendAndState('\r', State.STRLIT);
+                        case 't' -> appendAndState('\t', State.STRLIT);
+                        case '\\' -> appendAndState('\\', State.STRLIT);
+                        case '"' -> appendAndState('\"', State.STRLIT);
+                        case 'f' -> appendAndState('\f', State.STRLIT);
+                        case '/' -> appendAndState('/', State.STRLIT);
+                        case 'b' -> appendAndState('\b', State.STRLIT);
+                        case '\t', '\r', '\n', ' ', '\f' -> parseException("control character after escape " + c);
+                        default -> (Character.isLetterOrDigit(c) || r > 0x001F || r == 0)
+                                ? parseException("escaped non-control character " + c)
+                                : appendAndState(c, State.STRLIT);
                     };
 
                     case STRLIT_UC -> switch (c) {
                         case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B',
-                             'C', 'D', 'E', 'F' ->
-                        {
+                             'C', 'D', 'E', 'F' -> {
                             unicSeq.add(c);
                             if (unicSeq.isFull()) {
                                 buffer.appendCodePoint(unicSeq.toCodePoint());
@@ -315,38 +255,79 @@ class Lexer implements AutoCloseable {
                                 yield State.STRLIT_UC;
                             }
                         }
-                        default ->
-                                throw new JsonParseException("Unexpected character " + c + " in unicode sequence", row, column);
+                        default -> parseException("Unexpected character " + c + " in unicode sequence");
                     };
-                    case EOF -> throw new JsonParseException("character " + c + " after end of file", row, column);
+
+                    case EOF -> parseException("character " + c + " after end of file");
                 };
             }
         }
     }
 
-    private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
-
-    private static boolean jsonNumber(String s) {
-        return JSON_NUMBER.matcher(s).matches();
+    private State unread(char c) {
+        source.unread(c);
+        return literal();
     }
 
-    private Lexer.State stringLiteral() {
+    private State fixTokenAndState(char c) {
+        nextToken = fixToken(c);
+        return State.INITIAL;
+    }
+
+    private static Token fixToken(char c) {
+        return switch (c) {
+            case '{' -> FixToken.OPENING_BRACE;
+            case '}' -> FixToken.CLOSING_BRACE;
+            case '[' -> FixToken.OPENING_BRACKET;
+            case ']' -> FixToken.CLOSING_BRACKET;
+            case ':' -> FixToken.COLON;
+            case ',' -> FixToken.COMMA;
+            default -> throw new AssertionError();
+        };
+    }
+
+    private State stringLiteral() {
         nextToken = new LiteralToken(Type.STRING, buffer.contents());
         return State.INITIAL;
     }
 
-    private Lexer.State literal() {
+    private State literal() {
         var text = buffer.contents();
         nextToken = switch (text) {
             case "null" -> new LiteralToken(Type.NULL, text);
             case "true" -> new LiteralToken(Type.TRUE, text);
             case "false" -> new LiteralToken(Type.FALSE, text);
-            default -> {
-                if (jsonNumber(text)) yield new LiteralToken(Type.NUMBER, text);
-                else throw new JsonParseException("cannot parse %s as double".formatted(text), row, column);
-            }
+            default -> numLiteral(text);
         };
         return State.INITIAL;
+    }
+
+    private State appendAndState(char c, Lexer.State s) {
+        buffer.append(c);
+        return s;
+    }
+
+    private State append(char c) {
+        buffer.append(c);
+        return state;
+    }
+
+    private State parseException(String msg) {
+        throw new JsonParseException(msg, row, column);
+    }
+
+    private Token numLiteral(String s) {
+        if (jsonNumber(s))
+            return new LiteralToken(Type.NUMBER, s);
+        else
+            throw new JsonParseException("cannot parse %s as double".formatted(s), row, column);
+    }
+
+    // parse numbers
+    private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
+
+    private static boolean jsonNumber(String s) {
+        return JSON_NUMBER.matcher(s).matches();
     }
 
     private int row = 1, column = 1;

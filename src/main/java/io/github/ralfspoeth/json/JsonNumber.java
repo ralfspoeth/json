@@ -39,9 +39,4 @@ public value record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     public Optional<BigDecimal> decimalValue() {
         return Optional.of(value);
     }
-
-    @Override
-    public Optional<Boolean> booleanValue() {
-        return Optional.of(value.compareTo(BigDecimal.ZERO) != 0);
-    }
 }

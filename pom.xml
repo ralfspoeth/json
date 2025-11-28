@@ -20,9 +20,9 @@
         <maven.plugin.validation>VERBOSE</maven.plugin.validation>
     </properties>
 
-    <name>Java JSON IO Implementation</name>
+    <name>Greyson: a JSON IO Implementation for Java</name>
     <description>
-        This project implements a JSON parser and serializer
+        This project implements a JSON parser and serializer in Java
         which operates around immutable data structures for
         the JSON elements.
     </description>
@@ -104,7 +104,7 @@
         <dependency>
             <groupId>io.github.ralfspoeth</groupId>
             <artifactId>basix</artifactId>
-            <version>1.1.7</version>
+            <version>1.1.8</version>
         </dependency>
         <!-- testing -->
         <dependency>

@@ -4,54 +4,18 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Optional;
-import java.util.OptionalDouble;
 
 /**
  * The basic data types in the JSON hierarchy.
  * @param <T> the type of the (immutable) value wrapped in the {@code Basic} instance.
  */
 public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull, JsonNumber, JsonString {
-
-    String json();
-
     /**
      * The value wrapped inside this instance.
      * @return the value, never {@code null` except for `JsonNull}
      */
     T value();
 
-    /**
-     * The depth of a {@code Basic} instance is always 1 since
-     * it is considered a leaf node in a JSON structure.
-     * @return 1
-     */
-    @Override
-    default int depth() {
-        return 1;
-    }
-
-    @Override
-    default Optional<Boolean> booleanValue() {
-        return Optional.empty();
-    }
-
-    @Override
-    default Optional<BigDecimal> decimalValue() {
-        return Optional.empty();
-    }
-
-    @Override
-    default OptionalDouble doubleValue() {
-        return OptionalDouble.empty();
-    }
-
-    @Override
-    default Optional<String> stringValue() {
-        return Optional.ofNullable(value())
-                .map(Object::toString)
-                .or(Optional::empty);
-    }
 
     /**
      * Instantiates the "right" Basic representation for a given

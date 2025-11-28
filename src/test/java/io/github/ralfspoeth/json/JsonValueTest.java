@@ -88,16 +88,33 @@ class JsonValueTest {
     }
 
     @Test
-    void testBooleanValue() {
+    void testOptConv() {
+        // given
+        var src = """
+                {
+                    "a": [0, 1, 2, {"b": true}]
+                }
+                """;
+        // when
+        var parsed = Greyson.readValue(src);
+        // then
         assertAll(
-                () -> assertTrue(JsonValue.of(true).booleanValue().orElseThrow()),
-                () -> assertFalse(JsonValue.of(false).booleanValue().orElseThrow()),
-                () -> assertTrue(Basic.of(1).booleanValue(false)),
-                () -> assertTrue(Basic.of("hello").booleanValue().isEmpty()),
-                () -> assertTrue(Basic.of(1.d).booleanValue(false)),
-                () -> assertFalse(JsonNull.INSTANCE.booleanValue(true)),
-                () -> assertTrue(new JsonArray(List.of()).isEmpty()),
-                () -> assertTrue(new JsonObject(Map.of()).booleanValue().isEmpty())
+                () -> assertTrue(parsed.get("a").isPresent()),
+                () -> assertTrue(parsed.get("a")
+                        .flatMap(a -> a.get(3))
+                        .flatMap(a3 -> a3.get("b"))
+                        .flatMap(JsonValue::booleanValue)
+                        .orElseThrow()),
+                () -> assertTrue(
+                        parsed.get("x")
+                                .flatMap(x -> x.get(5))
+                                .flatMap(JsonValue::decimalValue)
+                                .map(BigDecimal::doubleValue)
+                                .isEmpty()
+                ),
+                () -> assertTrue(
+                        parsed.get("y").map(JsonValue::longValue).isEmpty()
+                )
         );
     }
 }

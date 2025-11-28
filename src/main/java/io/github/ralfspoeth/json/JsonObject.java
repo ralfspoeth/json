@@ -59,7 +59,7 @@ public value record JsonObject(Map<String, JsonValue> members) implements Aggreg
 
     @Override
     public Optional<JsonValue> get(String name) {
-        return Optional.of(members.get(name));
+        return Optional.ofNullable(members.get(name));
     }
 
     @Override

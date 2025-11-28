@@ -399,6 +399,52 @@ This `a` can now easily be filtered like
 ```java
     assert 2 == a.stream().filter(Basic.of(2)).count();
 ```
+
+## `JsonValue` Conversions
+
+The `JsonValue` interface contains conversions into `Optional`s (including variants 
+for `int`, `long`, and `double`) plus `List`s and `Map`s with empty defaults:
+
+    Conversion                          | Default                | Overridden by (using)
+    ---------------------------------------------------------------------------------------------
+    Optional<Boolean> booleanVaulue()   | Optional.empty()       | JsonBoolean (value)
+    OptionalInt intValue()              | OptionalInt.empty()    | JsonNumber (value.intValue)
+    OptionalLong longValue()            | OptionalLong.empty()   | JsonNumber (value.longValue)
+    OptionalDouble doubleValue()        | OptionalDouble.empty() | JsonNumber (value.doubleValue)
+    Optional<BigDecimal> decimalValue() | Optional.empty()       | JsonNumber (value)
+    Optional<String> stringValue()      | Optional.empty()       | JsonString (value)
+    List<JsonValue> elements()          | List.of()              | JsonArray (elements)
+    Optional<JsonValue> get(int i)      | Optional.empty()       | JsonArray (elements.get(i))
+    Map<String, JsonValue> members()    | Map.of()               | JsonObject (members)
+    Optional<JsonValue> get(String s)   | Optional.empty()       | JsonObject (members.get(s))
+
+This allows for a fluent conversation with `JsonValue`s.
+Assuming a structure like this
+```json
+    {"a":  [1, 2, {"b": true}]}
+```
+we may safely write
+```java
+    JsonValue v = Greyson.readValue("...");
+    boolean b = v.get("a").flatMap(a -> a.get(2)).flatMap(a2 -> a2.get("b")).flatMap(b -> b.booleanValue()).orElseThrow();
+```
+
+
+Each `JsonValue` can be converted to an `int`, `long`, `double`,
+`BigDecimal`, `String`, or `List` and `Map` using the `Queries` class, with this 
+behaviour for the various types:
+
+    Conv       |  JsonNull  |     JsonBoolean      |     JsonNumber      |         JsonString         |  JsonArray  |  JsonObject  |
+    --------------------------------------------------------------------------------------------------------------------------------
+    boolean    | false      | value                | !value.equals(ZERO) | value.isBlank()?false:true | empty()     | empty()      |
+    int        | 0          | value?1:0            | value.intValue()    | Integer.parseInt(value)    | empty()     | empty()      |
+    long       | 0L         | value?1L:0L          | value.longValue()   | Long.parseLong(value)      | empty()     | empty()      |
+    double     | 0d         | value?1d:0d          | value.doubleValue() | Double.parseDouble(value)  | empty()     | empty()      |
+    String     | "null"     | value?"true":"false" | value.toString()    | value                      | empty()     | empty()      |
+    BigDecimal | ZERO       | value?ONE:ZERO       | value               | new BigDecimal(value)      | empty()     | empty()      |
+    List       | List.of()  | List.of()            | List.of()           | List.of()                  | value       | empty()      |
+    Map        | Map.of()   | Map.of()             | Map.of()            | Map.of()                   | empty()     | value        |
+
 # Builders
 
 The [Builder pattern](https://en.wikipedia.org/wiki/Builder_pattern)

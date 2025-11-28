@@ -31,7 +31,9 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      * The depth of each leaf node is 1.
      * The depth of container nodes is 1 + the maximum depth of its descendants.
      */
-    int depth();
+    default int depth() {
+        return 1;
+    }
 
     /**
      * Converts an object into a JSON value.
@@ -82,16 +84,16 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
     @Override
     boolean equals(Object o);
 
-    Optional<Boolean> booleanValue();
+    default Optional<Boolean> booleanValue() {
+        return Optional.empty();
+    }
 
     default boolean booleanValue(boolean def) {
         return booleanValue().orElse(def);
     }
 
     default OptionalInt intValue() {
-        return decimalValue()
-                .map(dv -> OptionalInt.of(dv.intValue()))
-                .orElse(OptionalInt.empty());
+        return OptionalInt.empty();
     }
 
     /**
@@ -102,9 +104,7 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
     }
 
     default OptionalLong longValue() {
-        return decimalValue()
-                .map(dv -> OptionalLong.of(dv.longValue()))
-                .orElse(OptionalLong.empty());
+        return OptionalLong.empty();
     }
 
     /**
@@ -115,9 +115,7 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
     }
 
     default OptionalDouble doubleValue() {
-        return decimalValue()
-                .map(dv -> OptionalDouble.of(dv.doubleValue()))
-                .orElse(OptionalDouble.empty());
+        return OptionalDouble.empty();
     }
     /**
      * Same as {@code doubleValue().orElse(def)}.
@@ -126,7 +124,9 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return doubleValue().orElse(def);
     }
 
-    Optional<BigDecimal> decimalValue();
+    default Optional<BigDecimal> decimalValue() {
+        return Optional.empty();
+    }
 
     /**
      * Same as {@code decimalValue().orElse(def)}.
@@ -135,7 +135,9 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return decimalValue().orElse(requireNonNull(def));
     }
 
-    Optional<String> stringValue();
+    default Optional<String> stringValue() {
+        return Optional.empty();
+    }
 
     /**
      * Same as {@code stringValue().orElse(def)}.
@@ -180,5 +182,9 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      */
     default Map<String, JsonValue> members() {
         return Map.of();
+    }
+
+    default Builder<?> builder() {
+        return Builder.of(this);
     }
 }

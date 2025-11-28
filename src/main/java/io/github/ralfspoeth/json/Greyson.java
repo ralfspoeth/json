@@ -42,7 +42,7 @@ public class Greyson {
      * @param writer a writer, must not be {@code null}
      * @param elem the element to serialize, must not be {@code null}
      */
-    public static void write(Writer writer, JsonValue elem) {
+    public static void write(Writer writer, JsonValue elem) throws IOException {
         try(var wrt = new JsonWriter(writer)) {
             wrt.write(requireNonNull(elem));
         }
@@ -52,7 +52,7 @@ public class Greyson {
      * Serialize the {@link JsonValue} to {@code System.out}.
      * @param elem the element to serialize, must not be {@code null}
      */
-    public static void writeToSystemOut(JsonValue elem) {
+    public static void writeToSystemOut(JsonValue elem) throws IOException {
         write(new PrintWriter(System.out), elem);
     }
 
@@ -74,16 +74,20 @@ public class Greyson {
      * @return the string builder provided
      */
     public static StringBuilder write(StringBuilder sb, JsonValue elem) {
-        write(new Writer() {
-            @Override
-            public void write(char[] cbuf, int off, int len) {
-                sb.append(cbuf, off, len);
-            }
-            @Override
-            public void flush() {}
-            @Override
-            public void close() {}
-        }, elem);
+        try {
+            write(new Writer() {
+                @Override
+                public void write(char[] cbuf, int off, int len) {
+                    sb.append(cbuf, off, len);
+                }
+                @Override
+                public void flush() {}
+                @Override
+                public void close() {}
+            }, elem);
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
         return sb;
     }
 }

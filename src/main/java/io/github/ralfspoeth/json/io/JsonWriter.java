@@ -5,7 +5,7 @@ import io.github.ralfspoeth.json.JsonValue;
 import io.github.ralfspoeth.json.JsonArray;
 import io.github.ralfspoeth.json.JsonObject;
 
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.io.Writer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -15,78 +15,78 @@ import static io.github.ralfspoeth.json.JsonString.escaped;
 
 public class JsonWriter implements AutoCloseable {
 
-    private final int indentation;
-    private final PrintWriter out;
+    private final CharSequence indentation;
+    private final Writer out;
 
     public JsonWriter(Writer out, int indentation) {
-        this.indentation = indentation;
-        this.out = out instanceof PrintWriter pw?pw:new PrintWriter(out);
+        var tmp = new char[indentation];
+        Arrays.fill(tmp, ' ');
+        this.indentation = String.valueOf(tmp);
+        this.out = out;
     }
 
     public JsonWriter(Writer out) {
         this(out, 4);
     }
 
-    public void write(JsonValue elem) {
+    public void write(JsonValue elem) throws IOException {
         write(elem, 0);
     }
 
-    private void write(JsonValue el, int level) {
-        char[] chars = indentationChars(level);
+    private void write(JsonValue el, int level) throws IOException {
         switch (el) {
             case JsonObject(var members)-> {
-                out.println('{');
+                indent(level);
+                out.append('{').append('\n');
                 var memberIterator = members.entrySet().iterator();
                 if(memberIterator.hasNext()) {
                     writeMember(level, memberIterator);
                     while(memberIterator.hasNext()) {
-                        out.println(',');
+                        out.append(',');
                         writeMember(level, memberIterator);
                     }
-                    out.println();
+                    out.append('\n');
                 }
-                out.print(chars);
-                out.print('}');
+                indent(level);
+                out.append('}');
             }
             case JsonArray(var elements) -> {
-                out.print('[');
+                indent(level);
+                out.append('[');
                 var itemIterator = elements.iterator();
                 if(itemIterator.hasNext()) {
                     write(itemIterator.next(), level);
                     while(itemIterator.hasNext()) {
-                        out.print(", ");
+                        out.append(", ");
                         write(itemIterator.next(), level);
                     }
                 }
-                out.print(']');
+                out.append(']');
             }
-            case Basic<?> b -> out.print(b.json());
+            case Basic<?> b -> out.append(b.json());
         }
     }
 
-    private void writeMember(int level, Iterator<Map.Entry<String, JsonValue>> memberIterator) {
+    private void writeMember(int level, Iterator<Map.Entry<String, JsonValue>> memberIterator) throws IOException {
         var member = memberIterator.next();
         write(escaped(member.getKey()), member.getValue(), level + 1);
     }
 
-    private char[] indentationChars(int level) {
-        var chars = new char[level * indentation];
-        Arrays.fill(chars, ' ');
-        return chars;
+    private void indent(int level) throws IOException {
+        for(int i=0;i<level;i++) {
+            out.append(indentation);
+        }
     }
 
-    private void write(String name, JsonValue elem, int level) {
-        var chars = indentationChars(level);
-        out.print(chars);
-        out.print('"');
-        out.print(name);
-        out.print('"');
-        out.print(": ");
+    private void write(String name, JsonValue elem, int level) throws IOException {
+        indent(level);
+        out.append('"').append(name).append('"').append(": ");
         write(elem, level + 1);
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
+        out.flush();
         out.close();
     }
 }

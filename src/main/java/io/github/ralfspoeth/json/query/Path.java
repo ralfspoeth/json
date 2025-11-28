@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
  * {@snippet :
  * import io.github.ralfspoeth.greyson.JsonValue;
  * import io.github.ralfspoeth.greyson.JsonBoolean;
- * *import io.github.ralfspoeth.greyson.io.JsonReader;
+ * import io.github.ralfspoeth.greyson.io.JsonReader;
  *
  * import java.util.List;
  *
@@ -210,30 +210,54 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
     private final @Nullable Path parent;
 
-    protected Path(@Nullable Path parent) {
-        this.parent = parent;
-    }
-
-    @Override
-    public Stream<JsonValue> apply(JsonValue root) {
-        return parent == null ? this.evalThis(root) : parent.apply(root).flatMap(this::evalThis);
-    }
-
-    public Optional<JsonValue> first(JsonValue root) {
-        return apply(root).findFirst();
-    }
-
-    public Optional<JsonValue> single(JsonValue root) {
-        var l = apply(root).toList();
-        return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
-    }
-
     abstract Stream<JsonValue> evalThis(JsonValue elem);
 
     private static final Pattern INDEX_PATTERN = Pattern.compile("\\[(-?\\d+)]");
 
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)]");
 
+
+
+    protected Path(@Nullable Path parent) {
+        this.parent = parent;
+    }
+
+    /**
+     * To be used with {@link Stream#flatMap(Function)} in a stream
+     * pipeline.
+     * @param value a JSON element
+     * @return all children of this path applied to the given root
+     */
+    @Override
+    public Stream<JsonValue> apply(JsonValue value) {
+        return parent == null ? this.evalThis(value) : parent.apply(value).flatMap(this::evalThis);
+    }
+
+    /**
+     * The first element found by the path.
+     */
+    public Optional<JsonValue> first(JsonValue root) {
+        return apply(root).findFirst();
+    }
+
+    /**
+     * The only element found by the path if it results in
+     * a singleton list; otherwise {@link Optional#empty()}.
+     */
+    public Optional<JsonValue> single(JsonValue root) {
+        var l = apply(root).toList();
+        return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
+    }
+
+    /**
+     * Instantiate a {@link Path} from a path pattern.
+     * The given pattern is first split into parts
+     * using {@code '/'}.
+     *
+     *
+     * @param pattern a path pattern
+     * @return a path
+     */
     public static Path of(String pattern) {
         var parts = requireNonNull(pattern).split("/");
         Path prev = null;
@@ -256,40 +280,28 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return prev;
     }
 
-    public static BigDecimal decimalValue(Path p, JsonValue root) {
-        return p.single(root).map(Queries::decimalValue).orElse(BigDecimal.ZERO);
+    public BigDecimal decimalValue(JsonValue root) {
+        return single(root).flatMap(JsonValue::decimalValue).orElse(BigDecimal.ZERO);
     }
 
-    public static BigDecimal decimalValue(String path, JsonValue root) {
-        return decimalValue(of(path), root);
+    public double doubleValue(JsonValue root) {
+        return single(root).map(Queries::doubleValue).orElse(0d);
     }
 
-    public static double doubleValue(Path p, JsonValue root) {
-        return p.single(root).map(Queries::doubleValue).orElse(0d);
+    public boolean booleanValue(JsonValue root) {
+        return single(root).flatMap(JsonValue::booleanValue).orElse(false);
     }
 
-    public static boolean booleanValue(Path p, JsonValue root) {
-        return p.single(root).map(Queries::booleanValue).orElse(false);
+    public int intValue(JsonValue root) {
+        return single(root).map(Queries::intValue).orElse(0);
     }
 
-    public static int intValue(Path p, JsonValue root) {
-        return p.single(root).map(Queries::intValue).orElse(0);
+    public int intValue(JsonValue root, int def) {
+        return single(root).map(Queries::intValue).orElse(def);
     }
 
-    public static int intValue(Path p, JsonValue root, int def) {
-        return p.single(root).map(Queries::intValue).orElse(def);
-    }
-
-    public static <E extends Enum<E>> Enum<E> enumValue(Path p, JsonValue root, Class<E> enumClass) {
-        return p.single(root).map(e -> Queries.enumValue(enumClass, e)).orElse(null);
-    }
-
-    public static <E extends Enum<E>> Enum<E> enumValue(String path, JsonValue root, Class<E> enumClass) {
-        return enumValue(of(path), root, enumClass);
-    }
-
-    public static String stringValue(Path p, JsonValue root) {
-        return p.single(root).map(Queries::stringValue).orElse(null);
+    public String stringValue(JsonValue root) {
+        return single(root).map(Queries::stringValue).orElse(null);
     }
 
     abstract boolean equalsLast(Path p);

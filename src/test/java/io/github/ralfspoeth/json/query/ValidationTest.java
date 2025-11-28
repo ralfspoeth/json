@@ -10,7 +10,6 @@ import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.Greyson.read;
-import static io.github.ralfspoeth.json.query.Queries.members;
 import static io.github.ralfspoeth.json.query.Validation.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -178,10 +177,10 @@ class ValidationTest {
         assertAll(
                 () -> assertEquals(10, arr.stream()
                         .filter(is(JsonArray.class).and(any(is(JsonObject.class))))
-                        .map(Queries::elements)
+                        .map(JsonValue::elements)
                         .flatMap(List::stream)
                         .filter(is(JsonObject.class))
-                        .mapToInt(v -> Path.intValue(Path.of("x"), v))
+                        .mapToInt(v -> Path.of("x").intValue(v))
                         .findFirst().orElseThrow()
                 ),
                 () -> assertDoesNotThrow(() -> arr.filter(matchesOrThrow(is(JsonArray.class)))),
@@ -208,13 +207,13 @@ class ValidationTest {
         var points = array
                 .filter(all(is(JsonObject.class)
                         .and(matches(structureOfObjects))
-                        .and(o -> Stream.of("x", "y").anyMatch(members(o).keySet()::contains))))
+                        .and(o -> Stream.of("x", "y").anyMatch(o.members().keySet()::contains))))
                 .stream()
-                .map(Queries::elements)
+                .map(JsonValue::elements)
                 .flatMap(Collection::stream)
                 .map(jv -> new Point(
-                        Path.intValue(Path.of("x"), jv, 0),
-                        Path.intValue(Path.of("y"), jv, 1)
+                        Path.of("x").intValue( jv, 0),
+                        Path.of("y").intValue(jv, 1)
                 )).toList();
         System.out.println(points);
 

@@ -21,8 +21,9 @@ import static java.util.stream.Collectors.toMap;
  */
 public sealed interface Builder<T extends JsonValue> {
 
-    static <T extends JsonValue> Builder<?> of(T value) {
-        return switch(value) {
+    @SuppressWarnings("unchecked")
+    static <T extends JsonValue> Builder<T> of(T value) {
+        return (Builder<T>) switch (value) {
             case JsonObject jo -> objectBuilder(jo);
             case JsonArray ja -> arrayBuilder(ja);
             default -> valueBuilder(value);
@@ -62,6 +63,17 @@ public sealed interface Builder<T extends JsonValue> {
     }
 
     /**
+     * Instantiate a builder with an initial set of elements copied
+     * from the given {@code JsonArray}.
+     * Same as {@code arrayBuilder(ja.elements())}
+     *
+     * @param ja a {@code JsonArray}, may not be {@code null}
+     */
+    static JsonArrayBuilder arrayBuilder(JsonArray ja) {
+        return arrayBuilder().addAll(ja.elements());
+    }
+
+    /**
      * to be used in the stream pipeline.
      */
     static Collector<JsonValue, JsonArrayBuilder, JsonArray> toJsonArray() {
@@ -73,24 +85,13 @@ public sealed interface Builder<T extends JsonValue> {
         );
     }
 
-    static Collector<Builder<?>, JsonArrayBuilder, JsonArray> buildersToJsonArray() {
+    static Collector<Builder<? extends JsonValue>, JsonArrayBuilder, JsonArray> buildersToJsonArray() {
         return Collector.of(
                 Builder::arrayBuilder,
                 Builder.JsonArrayBuilder::add,
                 Builder.JsonArrayBuilder::combine,
                 Builder::build
         );
-    }
-
-    /**
-     * Instantiate a builder with an initial set of elements copied
-     * from the given {@code JsonArray}.
-     * Same as {@code arrayBuilder(ja.elements())}
-     *
-     * @param ja a {@code JsonArray}, may not be {@code null}
-     */
-    static JsonArrayBuilder arrayBuilder(JsonArray ja) {
-        return arrayBuilder().addAll(ja.elements());
     }
 
     int size();
@@ -125,7 +126,7 @@ public sealed interface Builder<T extends JsonValue> {
             );
         }
 
-        private final List<Builder<?>> data = new ArrayList<>();
+        private final List<Builder<? extends JsonValue>> data = new ArrayList<>();
 
         public JsonArrayBuilder add(JsonValue elem) {
             data.add(switch (elem) {
@@ -136,7 +137,7 @@ public sealed interface Builder<T extends JsonValue> {
             return this;
         }
 
-        public JsonArrayBuilder add(Builder<?> b) {
+        public JsonArrayBuilder add(Builder<? extends JsonValue> b) {
             data.add(b);
             return this;
         }
@@ -184,7 +185,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param elements the elements to be appended at the end of the list, may not be {@code null}
          * @return {@code this}
          */
-        public JsonArrayBuilder addAll(Collection<JsonValue> elements) {
+        public JsonArrayBuilder addAll(Collection<? extends JsonValue> elements) {
             elements.forEach(this::add);
             return this;
         }
@@ -200,7 +201,7 @@ public sealed interface Builder<T extends JsonValue> {
 
         // the data which will be turned into the
         // members map in the JsonObject instance later.
-        private final Map<String, Builder<?>> data = new HashMap<>();
+        private final Map<String, Builder<? extends JsonValue>> data = new HashMap<>();
 
         /**
          * Add a name-value pair to the builder.
@@ -225,7 +226,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param b    the builder
          * @return {@code this}
          */
-        public JsonObjectBuilder put(String name, Builder<?> b) {
+        public JsonObjectBuilder put(String name, Builder<? extends JsonValue> b) {
             data.put(name, b);
             return this;
         }

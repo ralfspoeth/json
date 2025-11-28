@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.Builder.*;
 import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
-import static io.github.ralfspoeth.json.query.Queries.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class BuilderTest {
@@ -128,14 +128,16 @@ class BuilderTest {
 
     @Test
     void testArrayBuilderItem() {
+        // given
+        // [{"a": null}, [[1]]
         var array = arrayBuilder()
                 .add(objectBuilder().put("a", JsonNull.INSTANCE).build())
                 .add(arrayBuilder().addBasic(1).build())
                 .build();
         assertAll(
                 () -> assertEquals(2, array.elements().size()),
-                () -> assertEquals(JsonNull.INSTANCE, members(array.elements().getFirst()).get("a")),
-                () -> assertEquals(1, intValue(elements(array.elements().getLast()).getFirst()))
+                () -> assertEquals(JsonNull.INSTANCE, array.elements().getFirst().get("a").orElseThrow()),
+                () -> assertEquals(1, array.elements().getLast().elements().getFirst().intValue(0))
         );
     }
 

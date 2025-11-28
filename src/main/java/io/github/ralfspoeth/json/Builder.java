@@ -21,8 +21,9 @@ import static java.util.stream.Collectors.toMap;
  */
 public sealed interface Builder<T extends JsonValue> {
 
-    static <T extends JsonValue> Builder<?> of(T value) {
-        return switch(value) {
+    @SuppressWarnings("unchecked")
+    static <T extends JsonValue> Builder<T> of(T value) {
+        return (Builder<T>) switch (value) {
             case JsonObject jo -> objectBuilder(jo);
             case JsonArray ja -> arrayBuilder(ja);
             default -> valueBuilder(value);
@@ -84,7 +85,7 @@ public sealed interface Builder<T extends JsonValue> {
         );
     }
 
-    static Collector<Builder<?>, JsonArrayBuilder, JsonArray> buildersToJsonArray() {
+    static Collector<Builder<? extends JsonValue>, JsonArrayBuilder, JsonArray> buildersToJsonArray() {
         return Collector.of(
                 Builder::arrayBuilder,
                 Builder.JsonArrayBuilder::add,

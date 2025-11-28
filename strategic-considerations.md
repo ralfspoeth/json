@@ -57,7 +57,7 @@ classes is records:
     record JsonArray(List<JsonValue> value) implements JsonValue {}
 
 So it's a no-brainer... or not?
-We think that a `boolean` should rather be an `enum`, as in
+We thought that a `boolean` should rather be an `enum`, as in
 
     enum JsonBoolean implements JsonValue {
         TRUE, FALSE
@@ -70,6 +70,11 @@ and `Null` a singleton:
         private JsonNull(){} // prevent instantiation
     }
 
+However, dealing with these elements in `switch` statements
+appeared to be less intuitive and readable, we switched back to 
+the original `record` based implementation, which provides us with
+the all the compliance and conveniences of an algebraic data type. 
+
 ### Distinction between Literal and Aggregate Values
 
 There are a number of reasons to separate literal from aggregate values
@@ -81,7 +86,6 @@ when modeling JSON data. We found two separate interfaces useful:
 
 The aggregate types should provide builders for their construction.
 We want to keep the data immutable for __all__ elements.
-
 
 ## Querying and Converting Data
 
@@ -209,4 +213,6 @@ in a given class for a single
 argument of the same type, as is the case for `BigDecimal`.
 These do not necessarily produce identical instances, so it matters
 which of the methods we select.
-
+When the target type of the conversion is not `public` or not 
+exported in a module, we cannot use reflection for the type
+unless we open the target type's module to this library. 

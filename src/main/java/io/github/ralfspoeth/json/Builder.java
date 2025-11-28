@@ -126,7 +126,7 @@ public sealed interface Builder<T extends JsonValue> {
             );
         }
 
-        private final List<Builder<?>> data = new ArrayList<>();
+        private final List<Builder<? extends JsonValue>> data = new ArrayList<>();
 
         public JsonArrayBuilder add(JsonValue elem) {
             data.add(switch (elem) {
@@ -137,7 +137,7 @@ public sealed interface Builder<T extends JsonValue> {
             return this;
         }
 
-        public JsonArrayBuilder add(Builder<?> b) {
+        public JsonArrayBuilder add(Builder<? extends JsonValue> b) {
             data.add(b);
             return this;
         }
@@ -185,7 +185,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param elements the elements to be appended at the end of the list, may not be {@code null}
          * @return {@code this}
          */
-        public JsonArrayBuilder addAll(Collection<JsonValue> elements) {
+        public JsonArrayBuilder addAll(Collection<? extends JsonValue> elements) {
             elements.forEach(this::add);
             return this;
         }
@@ -201,7 +201,7 @@ public sealed interface Builder<T extends JsonValue> {
 
         // the data which will be turned into the
         // members map in the JsonObject instance later.
-        private final Map<String, Builder<?>> data = new HashMap<>();
+        private final Map<String, Builder<? extends JsonValue>> data = new HashMap<>();
 
         /**
          * Add a name-value pair to the builder.
@@ -226,7 +226,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param b    the builder
          * @return {@code this}
          */
-        public JsonObjectBuilder put(String name, Builder<?> b) {
+        public JsonObjectBuilder put(String name, Builder<? extends JsonValue> b) {
             data.put(name, b);
             return this;
         }

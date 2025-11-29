@@ -17,7 +17,7 @@ public class Greyson {
 
     public static Optional<JsonValue> read(String s) {
         try {
-            return read(new StringReader(s));
+            return read(Reader.of(s));
         } catch (IOException e) {
             throw new AssertionError("StringReader should never throw IOException", e);
         }

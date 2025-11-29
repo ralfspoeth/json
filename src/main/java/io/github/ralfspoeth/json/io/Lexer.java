@@ -2,10 +2,8 @@ package io.github.ralfspoeth.json.io;
 
 import org.jspecify.annotations.Nullable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -76,11 +74,7 @@ class Lexer implements AutoCloseable {
     private final InternalPushbackReader source;
 
     Lexer(Reader rdr) {
-        this.source = new InternalPushbackReader(switch (rdr) {
-            case StringReader sr -> sr;
-            case BufferedReader br -> br;
-            default -> new BufferedReader(rdr); // buffer in any case
-        });
+        this.source = new InternalPushbackReader(rdr);
     }
 
     private enum State {

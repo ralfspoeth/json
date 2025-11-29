@@ -6,7 +6,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 class Lexer implements AutoCloseable {
@@ -96,39 +95,8 @@ class Lexer implements AutoCloseable {
     // the current state
     private State state = State.INITIAL;
 
-    // very similar to a string builder
-    static final class Buffer {
-        // the buffered char array
-        private char[] buffer = new char[4_096];
-        // the position where to add the next char read
-        private int bufferPos = 0;
-
-        void append(char c) {
-            // double buffer size
-            if (bufferPos == buffer.length) {
-                char[] tmp = new char[buffer.length * 2];
-                System.arraycopy(buffer, 0, tmp, 0, buffer.length);
-                buffer = tmp;
-            }
-            // add the char
-            buffer[bufferPos++] = c;
-        }
-
-        void appendCodePoint(int codePoint) {
-            for (char c : Character.toChars(codePoint)) {
-                append(c);
-            }
-        }
-
-        String contents() {
-            var ret = String.valueOf(buffer, 0, bufferPos);
-            bufferPos = 0;
-            return ret;
-        }
-    }
-
     // buffer for string an const literals
-    private final Buffer buffer = new Buffer();
+    private final StringBuilder buffer = new StringBuilder();
 
     // intermediate unicode sequence
     static final class UnicodeSequence {
@@ -176,7 +144,7 @@ class Lexer implements AutoCloseable {
                 state = switch (state) {
                     case NUM_LIT, CONST_LIT -> literal();
                     case STRLIT, STRLIT_ESC, STRLIT_UC ->
-                            throw new JsonParseException("unexpected end of file in string literal " + Arrays.toString(buffer.buffer), row, column);
+                            throw new JsonParseException("unexpected end of file in string literal " + buffer, row, column);
                     case INITIAL, EOF -> State.EOF;
                 };
             } else {
@@ -287,12 +255,14 @@ class Lexer implements AutoCloseable {
     }
 
     private State stringLiteral() {
-        nextToken = new LiteralToken(Type.STRING, buffer.contents());
+        nextToken = new LiteralToken(Type.STRING, buffer.toString());
+        buffer.setLength(0);
         return State.INITIAL;
     }
 
     private State literal() {
-        var text = buffer.contents();
+        var text = buffer.toString();
+        buffer.setLength(0);
         nextToken = switch (text) {
             case "null" -> new LiteralToken(Type.NULL, text);
             case "true" -> new LiteralToken(Type.TRUE, text);

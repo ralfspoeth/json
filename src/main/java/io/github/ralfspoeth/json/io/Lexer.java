@@ -48,14 +48,14 @@ class Lexer implements AutoCloseable {
         InternalPushbackReader(Reader source) {this.source = source;}
 
         // hand-rolled pushback facility
-        private int ch;
-        private boolean readCh;
+        private int ch = -1;
 
         int read() throws IOException {
             // if a character has been unread before, return it
-            if (readCh) {
-                readCh = false;
-                return ch;
+            if (ch!=-1) {
+                var ret = ch;
+                ch = -1;
+                return ret;
             }
             // otherwise, read from the source
             else {
@@ -65,7 +65,6 @@ class Lexer implements AutoCloseable {
 
         void unread(int ch) {
             this.ch = ch;
-            readCh = true;
         }
 
         @Override
@@ -200,7 +199,7 @@ class Lexer implements AutoCloseable {
                         // start of const literals
                         case 'n', 't', 'f' -> appendAndState(c, State.CONST_LIT);
                         // separator char
-                        case '{', '}', '[', ']', ':', ',' -> fixTokenAndState(c);
+                        case '{', '}', '[', ']', ':', ',' -> fixToken(c);
                         // else error
                         default -> parseException("Unexpected character: " + c);
                     };
@@ -269,13 +268,8 @@ class Lexer implements AutoCloseable {
         return literal();
     }
 
-    private State fixTokenAndState(char c) {
-        nextToken = fixToken(c);
-        return State.INITIAL;
-    }
-
-    private static Token fixToken(char c) {
-        return switch (c) {
+    private State fixToken(char c) {
+        nextToken = switch (c) {
             case '{' -> FixToken.OPENING_BRACE;
             case '}' -> FixToken.CLOSING_BRACE;
             case '[' -> FixToken.OPENING_BRACKET;
@@ -284,6 +278,7 @@ class Lexer implements AutoCloseable {
             case ',' -> FixToken.COMMA;
             default -> throw new AssertionError();
         };
+        return State.INITIAL;
     }
 
     private State stringLiteral() {

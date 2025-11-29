@@ -9,12 +9,18 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.util.Iterator;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.ArrBuilderElem.arrBuilderElem;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.ObjBuilderElem.objBuilderElem;
 import static io.github.ralfspoeth.json.io.Lexer.FixToken.*;
 import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.NONNULL;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
 
 /**
  * Instances parse character streams into JSON {@link JsonValue}s.
@@ -67,7 +73,7 @@ public class JsonReader implements AutoCloseable {
 
     // return to the stack from basix
     private final Stack<Elem> stack = new Stack<>();
-    
+
     /**
      * Reads the first and only JSON element from the source.
      *
@@ -81,6 +87,24 @@ public class JsonReader implements AutoCloseable {
                         lexer.column()
                 )
         );
+    }
+
+    public Stream<String> tokenStream() {
+        return stream(spliteratorUnknownSize(new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                try {
+                    return lexer.hasNext();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public String next() {
+                return lexer.next().value();
+            }
+        }, IMMUTABLE | NONNULL), false);
     }
 
     /**
@@ -142,8 +166,7 @@ public class JsonReader implements AutoCloseable {
                     switch (stack.top()) {
                         case null -> stack.push(arrBuilderElem());
                         case Elem.Char ignored -> stack.push(arrBuilderElem());
-                        case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ->
-                                stack.push(arrBuilderElem());
+                        case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> stack.push(arrBuilderElem());
                         default -> parseEx("unexpected token " + tkn.value());
                     }
                 }
@@ -185,8 +208,7 @@ public class JsonReader implements AutoCloseable {
                         switch (stack.top()) {
                             case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(val));
                             case Elem.ArrBuilderElem abe -> abe.builder.add(new JsonString(val));
-                            case null, default ->
-                                    parseEx("Unexpected value: " + val);
+                            case null, default -> parseEx("Unexpected value: " + val);
                         }
                     } else {
                         var literalToken = token2Value(tkn);

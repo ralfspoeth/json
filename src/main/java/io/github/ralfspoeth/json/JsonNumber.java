@@ -3,7 +3,7 @@ package io.github.ralfspoeth.json;
 import java.math.BigDecimal;
 import java.util.*;
 
-public value record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
+public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
 
     public JsonNumber {

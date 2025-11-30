@@ -2,7 +2,7 @@ package io.github.ralfspoeth.json;
 
 import java.util.Optional;
 
-public value record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
+public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     public static final JsonBoolean TRUE = new JsonBoolean(true);
     public static final JsonBoolean FALSE = new JsonBoolean(false);
 
@@ -21,8 +21,8 @@ public value record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     }
 
     @Override
-    public boolean test(JsonValue aBoolean) {
-        return aBoolean instanceof JsonBoolean(boolean value) && value == boolValue;
+    public boolean test(JsonValue jv) {
+        return jv instanceof JsonBoolean(boolean value) && value == boolValue;
     }
 
     @Override

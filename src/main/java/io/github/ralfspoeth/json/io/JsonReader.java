@@ -9,18 +9,12 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
-import java.util.Iterator;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.ArrBuilderElem.arrBuilderElem;
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.ObjBuilderElem.objBuilderElem;
 import static io.github.ralfspoeth.json.io.Lexer.FixToken.*;
 import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.NONNULL;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
 
 /**
  * Instances parse character streams into JSON {@link JsonValue}s.
@@ -89,24 +83,6 @@ public class JsonReader implements AutoCloseable {
         );
     }
 
-    public Stream<String> tokenStream() {
-        return stream(spliteratorUnknownSize(new Iterator<>() {
-            @Override
-            public boolean hasNext() {
-                try {
-                    return lexer.hasNext();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            public String next() {
-                return lexer.next().value();
-            }
-        }, IMMUTABLE | NONNULL), false);
-    }
-
     /**
      * Reads the first JSON element if there is one.
      *
@@ -166,7 +142,8 @@ public class JsonReader implements AutoCloseable {
                     switch (stack.top()) {
                         case null -> stack.push(arrBuilderElem());
                         case Elem.Char ignored -> stack.push(arrBuilderElem());
-                        case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> stack.push(arrBuilderElem());
+                        case Elem.ArrBuilderElem(var builder) when builder.isEmpty() ->
+                                stack.push(arrBuilderElem());
                         default -> parseEx("unexpected token " + tkn.value());
                     }
                 }

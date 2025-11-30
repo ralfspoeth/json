@@ -13,7 +13,7 @@ import static java.util.stream.Collectors.joining;
  *
  * @param elements the elements; if {@code null} substituted by an empty list
  */
-public value record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunction<JsonValue> {
+public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunction<JsonValue> {
     public JsonArray {
         elements = List.copyOf(elements);
     }
@@ -46,10 +46,7 @@ public value record JsonArray(List<JsonValue> elements) implements Aggregate, In
 
     @Override
     public boolean test(JsonValue jv) {
-        return switch (jv) {
-            case JsonArray(var elems) -> elems.equals(elements());
-            default -> false;
-        };
+        return jv instanceof JsonArray(var elems) && elems.equals(elements());
     }
 
     @Override

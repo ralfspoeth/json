@@ -17,7 +17,7 @@ class Lexer implements AutoCloseable {
         STRING, NUMBER, NULL, TRUE, FALSE
     }
 
-    value record LiteralToken(Type type, String value) implements Token {}
+    record LiteralToken(Type type, String value) implements Token {}
 
     enum FixToken implements Token {
         COMMA(","),

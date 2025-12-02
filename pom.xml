@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>plumbum</artifactId>
-        <version>1.4.14</version>
+        <version>1.5.0</version>
     </parent>
 
     <artifactId>json</artifactId>
@@ -90,14 +90,12 @@
         <dependency>
             <groupId>org.jspecify</groupId>
             <artifactId>jspecify</artifactId>
-            <version>1.0.0</version>
-            <scope>provided</scope>
         </dependency>
         <!-- basix utilities -->
         <dependency>
             <groupId>io.github.ralfspoeth</groupId>
             <artifactId>basix</artifactId>
-            <version>1.1.8</version>
+            <version>1.1.9</version>
         </dependency>
         <!-- testing -->
         <dependency>

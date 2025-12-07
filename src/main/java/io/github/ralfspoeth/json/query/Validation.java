@@ -1,17 +1,20 @@
 package io.github.ralfspoeth.json.query;
 
+import io.github.ralfspoeth.basix.fn.Indexed;
 import io.github.ralfspoeth.json.*;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Gatherer;
 
+import static io.github.ralfspoeth.basix.fn.Functions.indexed;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
 public class Validation {
 
-    public record Result(JsonValue value, @Nullable Predicate<JsonValue> predicate, List<Result> details) {
+    public record Result(JsonValue value, @Nullable Predicate<JsonValue> failed, List<Result> details) {
         public Result {
             details = List.copyOf(details);
         }
@@ -20,8 +23,8 @@ public class Validation {
             this(value, predicate, List.of());
         }
 
-        public boolean failed() {
-            return predicate != null;
+        public boolean testFailed() {
+            return failed != null;
         }
     }
 
@@ -31,68 +34,65 @@ public class Validation {
         record MapBased(Map<String, Predicate<JsonValue>> structure) implements Structured {
             @Override
             public boolean test(JsonValue jv) {
-                return switch (jv) {
-                    case JsonObject(var members) -> members.entrySet().stream()
-                            .filter(e -> structure.containsKey(e.getKey()))
-                            .allMatch(e -> structure.get(e.getKey()).test(e.getValue()));
-                    default -> false;
-                };
+                return jv instanceof JsonObject(var members) && members.entrySet().stream()
+                        .filter(e -> structure.containsKey(e.getKey()))
+                        .allMatch(e -> structure.get(e.getKey()).test(e.getValue()));
             }
 
             @Override
             public Result explain(JsonValue value) {
-                return switch (value) {
-                    case JsonObject(var members) -> {
-                        List<Result> details = new ArrayList<>();
-                        members.entrySet().stream()
-                                .filter(e -> structure.containsKey(e.getKey()))
-                                .filter(e -> !structure.get(e.getKey()).test(e.getValue()))
-                                .forEach(e -> {
-                                    if (structure.get(e.getKey()) instanceof Structured structured) {
-                                        details.add(structured.explain(e.getValue()));
-                                    } else {
-                                        details.add(new Result(e.getValue(), structure.get(e.getKey())));
-                                    }
-                                });
-                        yield new Result(value, this, details);
-                    }
-                    default -> new Result(value, this);
-                };
+                if (value instanceof JsonObject(var members)) {
+                    return new Result(value, this,
+                            members.entrySet()
+                                    .stream()
+                                    .filter(e -> structure.containsKey(e.getKey()))
+                                    .filter(e -> !structure.get(e.getKey()).test(e.getValue()))
+                                    .gather(Gatherer.<Map.Entry<String, JsonValue>, ArrayList<Result>, Result>ofSequential(
+                                            ArrayList::new,
+                                            (l, e, d) ->
+                                                    structure.get(e.getKey()) instanceof Structured s && d.push(s.explain(e.getValue()))
+                                                            || d.push(new Result(e.getValue(), structure.get(e.getKey()))))
+                                    )
+                                    .toList()
+                    );
+                } else return new Result(value, this);
             }
         }
+
 
         record ListBased(List<Predicate<JsonValue>> structure) implements Structured {
             @Override
             public boolean test(JsonValue jv) {
-                return switch (jv) {
-                    case JsonArray(var elements) when elements.size() == structure.size() -> {
-                        for (int i = 0; i < elements.size(); i++) {
-                            if (!structure.get(i).test(elements.get(i))) yield false;
-                        }
-                        yield true;
+                if (jv instanceof JsonArray(var elements) && elements.size() == structure.size()) {
+                    for (int i = 0; i < elements.size(); i++) {
+                        if (!structure.get(i).test(elements.get(i))) return false;
                     }
-                    default -> false;
-                };
+                    return true;
+                } else return false;
             }
+
 
             @Override
             public Result explain(JsonValue value) {
-                return switch (value) {
-                    case JsonArray(var elems) when elems.size() == structure.size() -> {
-                        List<Result> details = new ArrayList<>();
-                        for (int i = 0; i < elems.size(); i++) {
-                            if (!structure.get(i).test(elems.get(i))) {
-                                if (structure.get(i) instanceof Structured structured) {
-                                    details.add(structured.explain(elems.get(i)));
-                                } else {
-                                    details.add(new Result(elems.get(i), structure.get(i)));
-                                }
-                            }
-                        }
-                        yield new Result(value, this, details);
-                    }
-                    default -> new Result(value, this);
-                };
+                if(value instanceof JsonArray(var elems) && elems.size()== structure().size()) {
+                    return new Result(value, this, elems.stream()
+                            .map(indexed(0))
+                            .gather(Gatherer.<Indexed<JsonValue>, ArrayList<Result>, Result>ofSequential(
+                                    ArrayList::new,
+                                    (l, iv, d) -> {
+                                        if(structure().get(iv.index()) instanceof Structured s) {
+                                            return d.push(s.explain(iv.value()));
+                                        } else {
+                                            return d.push(new Result(iv.value(), this));
+                                        }
+                                    }
+
+                            ))
+                            .toList()
+                    );
+                } else {
+                    return new Result(value, this);
+                }
             }
         }
 
@@ -146,7 +146,7 @@ public class Validation {
 
             @Override
             public Result explain(JsonValue value) {
-                return predicate instanceof Structured s? s.explain(value):new Result(value, predicate);
+                return predicate instanceof Structured s ? s.explain(value) : new Result(value, predicate);
             }
 
             @Override
@@ -163,16 +163,16 @@ public class Validation {
     }
 
     public static Result explainIfFailed(Result result) {
-        if (result.failed()) {
-            return explain(result.value, result.predicate);
+        if (result.testFailed()) {
+            return explain(result.value, result.failed);
         } else {
             return result;
         }
     }
 
     public static JsonValue throwIfFailed(Result result) throws ValidationException {
-        if (result.failed()) {
-            throw new ValidationException("Predicate %s does not match %s".formatted(result.predicate, result.value),
+        if (result.testFailed()) {
+            throw new ValidationException("Predicate %s does not match %s".formatted(result.failed, result.value),
                     result);
         }
         return result.value;

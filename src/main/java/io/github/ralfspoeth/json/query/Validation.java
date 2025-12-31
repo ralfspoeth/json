@@ -28,10 +28,10 @@ public class Validation {
         }
     }
 
-    sealed interface Structured extends Predicate<JsonValue> {
+    sealed interface Structure extends Predicate<JsonValue> {
         Result explain(JsonValue value);
 
-        record MapBased(Map<String, Predicate<JsonValue>> structure) implements Structured {
+        record MapBased(Map<String, Predicate<JsonValue>> structure) implements Structure {
             @Override
             public boolean test(JsonValue jv) {
                 return jv instanceof JsonObject(var members) && members.entrySet().stream()
@@ -50,7 +50,7 @@ public class Validation {
                                     .gather(Gatherer.<Map.Entry<String, JsonValue>, ArrayList<Result>, Result>ofSequential(
                                             ArrayList::new,
                                             (l, e, d) ->
-                                                    structure.get(e.getKey()) instanceof Structured s && d.push(s.explain(e.getValue()))
+                                                    structure.get(e.getKey()) instanceof Structure s && d.push(s.explain(e.getValue()))
                                                             || d.push(new Result(e.getValue(), structure.get(e.getKey()))))
                                     )
                                     .toList()
@@ -59,8 +59,7 @@ public class Validation {
             }
         }
 
-
-        record ListBased(List<Predicate<JsonValue>> structure) implements Structured {
+        record ListBased(List<Predicate<JsonValue>> structure) implements Structure {
             @Override
             public boolean test(JsonValue jv) {
                 if (jv instanceof JsonArray(var elements) && elements.size() == structure.size()) {
@@ -80,7 +79,7 @@ public class Validation {
                             .gather(Gatherer.<Indexed<JsonValue>, ArrayList<Result>, Result>ofSequential(
                                     ArrayList::new,
                                     (l, iv, d) -> {
-                                        if(structure().get(iv.index()) instanceof Structured s) {
+                                        if(structure().get(iv.index()) instanceof Structure s) {
                                             return d.push(s.explain(iv.value()));
                                         } else {
                                             return d.push(new Result(iv.value(), this));
@@ -96,7 +95,7 @@ public class Validation {
             }
         }
 
-        record All(Predicate<JsonValue> predicate) implements Structured {
+        record All(Predicate<JsonValue> predicate) implements Structure {
 
             @Override
             public Result explain(JsonValue value) {
@@ -104,8 +103,8 @@ public class Validation {
                     case JsonArray(var elems) -> {
                         List<Result> details = new ArrayList<>();
                         elems.stream().filter(not(predicate)).forEach(e -> {
-                            if (predicate instanceof Structured structured) {
-                                details.add(structured.explain(e));
+                            if (predicate instanceof Structure structure) {
+                                details.add(structure.explain(e));
                             } else {
                                 details.add(new Result(e, predicate));
                             }
@@ -125,7 +124,7 @@ public class Validation {
             }
         }
 
-        record Any(Predicate<JsonValue> predicate) implements Structured {
+        record Any(Predicate<JsonValue> predicate) implements Structure {
 
             @Override
             public Result explain(JsonValue value) {
@@ -142,11 +141,11 @@ public class Validation {
 
         }
 
-        record Wrapped(Predicate<JsonValue> predicate) implements Structured {
+        record Wrapped(Predicate<JsonValue> predicate) implements Structure {
 
             @Override
             public Result explain(JsonValue value) {
-                return predicate instanceof Structured s ? s.explain(value) : new Result(value, predicate);
+                return predicate instanceof Structure s ? s.explain(value) : new Result(value, predicate);
             }
 
             @Override
@@ -196,7 +195,7 @@ public class Validation {
     }
 
     public static Predicate<JsonValue> matches(Map<String, Predicate<JsonValue>> structure) {
-        return new Structured.MapBased(structure);
+        return new Structure.MapBased(structure);
     }
 
     public static Predicate<JsonValue> matchesValuesOf(JsonObject jo) {
@@ -246,15 +245,15 @@ public class Validation {
     }
 
     public static Predicate<JsonValue> all(Predicate<JsonValue> predicate) {
-        return new Structured.All(predicate);
+        return new Structure.All(predicate);
     }
 
     public static Predicate<JsonValue> any(Predicate<JsonValue> predicate) {
-        return new Structured.Any(predicate);
+        return new Structure.Any(predicate);
     }
 
     public static Predicate<JsonValue> matches(List<Predicate<JsonValue>> structure) {
-        return new Structured.ListBased(structure);
+        return new Structure.ListBased(structure);
     }
 
     public static Predicate<JsonValue> regex(String regex) {
@@ -278,7 +277,7 @@ public class Validation {
 
     public static Result explain(JsonValue jsonValue, @Nullable Predicate<JsonValue> predicate) {
         return switch (predicate) {
-            case Structured structured -> structured.explain(jsonValue);
+            case Structure structure -> structure.explain(jsonValue);
             case null, default -> new Result(jsonValue, predicate);
         };
     }

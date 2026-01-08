@@ -54,7 +54,7 @@ class GreysonTest {
         // Behavior for empty string depends on JsonReader.readElement(String) implementation
         // It might throw an exception or return null/JsonNull if it's considered valid empty content.
         // Assuming it throws an exception for non-JSON content.
-        assertThrows(NoSuchElementException.class, () -> Greyson.readValue(""));
+        assertThrows(NoSuchElementException.class, () -> Greyson.read("").orElseThrow());
     }
 
     @Test

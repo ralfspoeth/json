@@ -17,7 +17,7 @@ class JSONTestSuiteTransformTest extends JSONTestSuiteBase {
 
     private JsonValue serialAndParse(JsonValue element) {
         var str = Greyson.write(new StringBuilder(), element).toString();
-        return Greyson.readValue(str);
+        return Greyson.read(str).orElseThrow();
     }
 
     private Executable testTransform(Path path) {

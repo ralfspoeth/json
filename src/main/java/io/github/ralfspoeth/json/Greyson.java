@@ -29,12 +29,10 @@ public class Greyson {
         }
     }
 
-    public static JsonValue readValue(String s) {
-        return read(s).orElseThrow();
-    }
-
-    public static JsonValue readValue(Reader rdr) throws IOException {
-        return read(rdr).orElseThrow();
+    public static Optional<JsonValue> read(InputStream in) throws IOException {
+        try(var jr = new JsonReader(in)) {
+            return jr.read();
+        }
     }
 
     /**

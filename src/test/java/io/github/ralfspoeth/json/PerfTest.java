@@ -21,7 +21,7 @@ class PerfTest {
     void testVeryBigArray() throws IOException {
         try (Reader reader = open()) {
             long start = System.currentTimeMillis();
-            var array = Greyson.readValue(reader);
+            var array = Greyson.read(reader).orElseThrow();
             var len = switch(array) {
                 case JsonArray(var elems) -> elems.size();
                 case JsonObject(var map) -> map.size();

@@ -6,7 +6,9 @@ import io.github.ralfspoeth.json.Builder.JsonArrayBuilder;
 import io.github.ralfspoeth.json.Builder.JsonObjectBuilder;
 import org.jspecify.annotations.Nullable;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -30,7 +32,91 @@ import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
  * The class supports strict adherence to the JSON specification
  * exclusively; there is no support for the sloppy variant.
  */
-public class JsonReader implements AutoCloseable {
+public class JsonReader implements Closeable {
+
+    private static final class FastUtf8Reader extends Reader {
+        private static final byte[] DFA_TABLE = {
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                8,8,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 10,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3,11,6,6,6,5,8,8,8,8,8,8,8,8,8,8,8,
+                0,12,24,36,60,96,84,12,12,12,48,72, 12,12,12,12,12,12,12,12,12,12,12,12, 12, 0,12,12,12,12,12,0,12,0,12,12,
+                12,24,12,12,12,12,12,24,12,24,12,12, 12,12,12,12,12,12,12,24,12,12,12,12, 12,24,12,12,12,12,12,12,12,24,12,12,
+                12,12,12,12,12,12,12,36,12,36,12,12, 12,36,12,12,12,12,12,36,12,36,12,12, 12,36,12,12,12,12,12,12,12,12,12,12
+        };
+
+        private final InputStream in;
+        private final byte[] byteBuf = new byte[8192];
+        private int byteBufPtr = 0;
+        private int byteBufLen = 0;
+
+        private int state = 0;
+        private int codePoint = 0;
+        private int pendingChar = -1; // To handle surrogate pairs across read calls
+
+        public FastUtf8Reader(InputStream in) {
+            this.in = in;
+        }
+
+        @Override
+        public int read(char[] cbuf, int off, int len) throws IOException {
+            if (len == 0) return 0;
+
+            int charsRead = 0;
+
+            // 1. Handle a pending surrogate from a previous call
+            if (pendingChar != -1) {
+                cbuf[off + charsRead++] = (char) pendingChar;
+                pendingChar = -1;
+                if (charsRead == len) return charsRead;
+            }
+
+            while (charsRead < len) {
+                // 2. Refill byte buffer if empty
+                if (byteBufPtr >= byteBufLen) {
+                    byteBufLen = in.read(byteBuf);
+                    byteBufPtr = 0;
+                    if (byteBufLen == -1) {
+                        return (charsRead == 0) ? -1 : charsRead;
+                    }
+                }
+
+                // 3. Process bytes
+                while (byteBufPtr < byteBufLen && charsRead < len) {
+                    int b = byteBuf[byteBufPtr++] & 0xFF;
+                    int type = DFA_TABLE[b];
+
+                    codePoint = (state == 0) ? (0xFF >> type) & b : (b & 0x3F) | (codePoint << 6);
+                    state = DFA_TABLE[256 + state + type];
+
+                    if (state == 0) {
+                        if (codePoint <= 0xFFFF) {
+                            cbuf[off + charsRead++] = (char) codePoint;
+                        } else {
+                            // High surrogate
+                            cbuf[off + charsRead++] = Character.highSurrogate(codePoint);
+                            // Check if we have room for the low surrogate
+                            char low = Character.lowSurrogate(codePoint);
+                            if (charsRead < len) {
+                                cbuf[off + charsRead++] = low;
+                            } else {
+                                // No room! Store it for the next read() call
+                                pendingChar = low;
+                            }
+                        }
+                    } else if (state == 12) {
+                        throw new IOException("Malformed UTF-8 sequence.");
+                    }
+                }
+            }
+            return charsRead;
+        }
+
+        @Override
+        public void close() throws IOException {
+            in.close();
+        }
+    }
 
     private final Lexer lexer;
 
@@ -42,6 +128,15 @@ public class JsonReader implements AutoCloseable {
      */
     public JsonReader(Reader src) {
         this.lexer = new Lexer(src);
+    }
+
+    /**
+     * Instantiate a JsonReader utilizing a super fast input stream
+     * decoder.
+     * @param in the input stream
+     */
+    public JsonReader(InputStream in) {
+        this(new FastUtf8Reader(in));
     }
 
     sealed interface Elem {

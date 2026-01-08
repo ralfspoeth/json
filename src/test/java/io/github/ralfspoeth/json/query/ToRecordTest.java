@@ -24,7 +24,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var jo = Greyson.readValue(src);
+        var jo = Greyson.read(src).orElseThrow();
         var result = new R(jo.get("x").map(x -> intValue(x, 0)).orElse(0));
 
         // then
@@ -51,7 +51,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var value = Greyson.readValue(src);
+        var value = Greyson.read(src).orElseThrow();
         var result = value.elements()
                 .stream()
                 .map(JsonValue::members)
@@ -92,7 +92,7 @@ class ToRecordTest {
                 }
                 """;
         // JSON object representation
-        var jo = Greyson.readValue(src);
+        var jo = Greyson.read(src).orElseThrow();
         // convert to singleton list of Large instances
         var result = new Large(
                 jo.get("x").map(x -> intValue(x, 0)).orElse(0),

@@ -158,7 +158,7 @@ class PathTest {
                  {"a": 1, "b": 2, "c": 9}
                 ]""";
         // when
-        var elem = Greyson.readValue(src);
+        var elem = Greyson.read(src).orElseThrow();
         // then
         assertAll(
                 () -> assertEquals(1, of("[0]/a").intValue(elem)),

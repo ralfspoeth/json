@@ -1,14 +1,15 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Builder.arrayBuilder;
-import static io.github.ralfspoeth.json.Builder.objectBuilder;
+import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Path.of;
 import static org.junit.jupiter.api.Assertions.*;
 

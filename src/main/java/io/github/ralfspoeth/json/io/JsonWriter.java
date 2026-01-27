@@ -1,9 +1,9 @@
 package io.github.ralfspoeth.json.io;
 
-import io.github.ralfspoeth.json.Basic;
-import io.github.ralfspoeth.json.JsonValue;
-import io.github.ralfspoeth.json.JsonArray;
-import io.github.ralfspoeth.json.JsonObject;
+import io.github.ralfspoeth.json.data.Basic;
+import io.github.ralfspoeth.json.data.JsonValue;
+import io.github.ralfspoeth.json.data.JsonArray;
+import io.github.ralfspoeth.json.data.JsonObject;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
-import static io.github.ralfspoeth.json.JsonString.escaped;
+import static io.github.ralfspoeth.json.data.JsonString.escaped;
 
 public class JsonWriter implements AutoCloseable {
 

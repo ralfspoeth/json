@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -8,8 +9,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Builder.arrayBuilder;
-import static io.github.ralfspoeth.json.Builder.objectBuilder;
+import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonValueTest {

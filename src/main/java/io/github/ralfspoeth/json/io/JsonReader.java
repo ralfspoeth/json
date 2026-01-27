@@ -1,9 +1,9 @@
 package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.basix.coll.Stack;
-import io.github.ralfspoeth.json.*;
-import io.github.ralfspoeth.json.Builder.JsonArrayBuilder;
-import io.github.ralfspoeth.json.Builder.JsonObjectBuilder;
+import io.github.ralfspoeth.json.data.*;
+import io.github.ralfspoeth.json.data.Builder.JsonArrayBuilder;
+import io.github.ralfspoeth.json.data.Builder.JsonObjectBuilder;
 import org.jspecify.annotations.Nullable;
 
 import java.io.Closeable;

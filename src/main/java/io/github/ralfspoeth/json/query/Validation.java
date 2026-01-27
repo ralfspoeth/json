@@ -1,7 +1,7 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.basix.fn.Indexed;
-import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.data.*;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;

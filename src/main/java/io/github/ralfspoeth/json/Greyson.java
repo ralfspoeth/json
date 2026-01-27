@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.JsonValue;
 import io.github.ralfspoeth.json.io.JsonReader;
 import io.github.ralfspoeth.json.io.JsonWriter;
 
@@ -44,48 +45,5 @@ public class Greyson {
         try(var wrt = new JsonWriter(writer)) {
             wrt.write(requireNonNull(elem));
         }
-    }
-
-    /**
-     * Serialize the {@link JsonValue} to {@code System.out}.
-     * @param elem the element to serialize, must not be {@code null}
-     */
-    public static void writeToSystemOut(JsonValue elem) throws IOException {
-        write(new PrintWriter(System.out), elem);
-    }
-
-    /**
-     * Serialize the {@link JsonValue} into a {@link StringBuilder}.
-     * The string builder is returned for convenient use:
-     * {@snippet :
-     * // Given
-     * JsonValue jv = null; // @replace regex="null;" replacement="..."
-     * // we can then chain things like `toString` easily, so instead of
-     * var sb = new StringBuilder();
-     * Greyson.writeToStringBuilder(sb, jv);
-     * var s = sb.toString();
-     * // we may write
-     * var s = Greyson.writeToStringBuilder(new StringBuilder(), jv).toString();
-     * }
-     * @param elem the element to serialize, must not be {@code null}
-     * @param sb a string builder
-     * @return the string builder provided
-     */
-    public static StringBuilder write(StringBuilder sb, JsonValue elem) {
-        try {
-            write(new Writer() {
-                @Override
-                public void write(char[] cbuf, int off, int len) {
-                    sb.append(cbuf, off, len);
-                }
-                @Override
-                public void flush() {}
-                @Override
-                public void close() {}
-            }, elem);
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-        return sb;
     }
 }

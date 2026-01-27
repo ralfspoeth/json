@@ -2,12 +2,13 @@ package io.github.ralfspoeth.json.suite;
 
 
 import io.github.ralfspoeth.json.Greyson;
-import io.github.ralfspoeth.json.JsonValue;
+import io.github.ralfspoeth.json.data.JsonValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.MultipleFailuresError;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -15,8 +16,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JSONTestSuiteTransformTest extends JSONTestSuiteBase {
 
-    private JsonValue serialAndParse(JsonValue element) {
-        var str = Greyson.write(new StringBuilder(), element).toString();
+    private JsonValue serialAndParse(JsonValue element) throws IOException {
+        var w = new StringWriter();
+        Greyson.write(w, element);
+        var str = w.toString();
         return Greyson.read(str).orElseThrow();
     }
 

@@ -1,8 +1,8 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.JsonArray;
-import io.github.ralfspoeth.json.JsonObject;
-import io.github.ralfspoeth.json.JsonValue;
+import io.github.ralfspoeth.json.data.JsonArray;
+import io.github.ralfspoeth.json.data.JsonObject;
+import io.github.ralfspoeth.json.data.JsonValue;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -72,7 +72,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * {@snippet :
  * import java.util.List;
- * import io.github.ralfspoeth.greyson.*;
+ * import io.github.ralfspoeth.greyson.*;import io.github.ralfspoeth.json.data.JsonArray;import io.github.ralfspoeth.json.data.JsonValue;
  * Path p = Path.of("..."); // @replace regex='"..."' replacement="..."
  * JsonArray a = new JsonArray(List.of()); // @replace regex='new JsonArray(List.of())' replacement='...'
  * List<JsonValue> result = a.elements().stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
@@ -84,7 +84,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
         private final String memberName;
 
-        private MemberPath(String memberName, Path parent) {
+        private MemberPath(String memberName, @Nullable Path parent) {
             super(parent);
             this.memberName = requireNonNull(memberName);
         }
@@ -110,7 +110,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     private static final class IndexPath extends Path {
         private final int index;
 
-        private IndexPath(int index, Path parent) {
+        private IndexPath(int index, @Nullable Path parent) {
             super(parent);
             this.index = index;
         }
@@ -143,7 +143,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
         private final int min, max;
 
-        private RangePath(int min, int max, Path parent) {
+        private RangePath(int min, int max, @Nullable Path parent) {
             super(parent);
             this.min = min;
             this.max = (max > 0 ? max : Integer.MAX_VALUE);
@@ -175,11 +175,11 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
         private final Pattern regex;
 
-        private RegexPath(String regex, Path parent) {
+        private RegexPath(String regex, @Nullable Path parent) {
             this(Pattern.compile(regex), parent);
         }
 
-        private RegexPath(Pattern regex, Path parent) {
+        private RegexPath(Pattern regex, @Nullable Path parent) {
             super(parent);
             this.regex = regex;
         }
@@ -277,6 +277,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
                 }
             }
         }
+        assert prev != null;
         return prev;
     }
 
@@ -300,7 +301,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return single(root).map(Queries::intValue).orElse(def);
     }
 
-    public String stringValue(JsonValue root) {
+    public @Nullable String stringValue(JsonValue root) {
         return single(root).map(Queries::stringValue).orElse(null);
     }
 

@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.data.*;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -9,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.github.ralfspoeth.json.Builder.arrayBuilder;
-import static io.github.ralfspoeth.json.Builder.objectBuilder;
+import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 

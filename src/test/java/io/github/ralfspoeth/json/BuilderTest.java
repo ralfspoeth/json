@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -7,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Builder.*;
-import static io.github.ralfspoeth.json.JsonBoolean.TRUE;
+import static io.github.ralfspoeth.json.data.Builder.*;
+import static io.github.ralfspoeth.json.data.JsonBoolean.TRUE;
 
 import static org.junit.jupiter.api.Assertions.*;
 

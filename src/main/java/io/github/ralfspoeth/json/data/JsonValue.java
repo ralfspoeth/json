@@ -1,4 +1,4 @@
-package io.github.ralfspoeth.json;
+package io.github.ralfspoeth.json.data;
 
 import org.jspecify.annotations.Nullable;
 

@@ -1,9 +1,9 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.Greyson;
-import io.github.ralfspoeth.json.JsonArray;
-import io.github.ralfspoeth.json.JsonObject;
-import io.github.ralfspoeth.json.JsonValue;
+import io.github.ralfspoeth.json.data.JsonArray;
+import io.github.ralfspoeth.json.data.JsonObject;
+import io.github.ralfspoeth.json.data.JsonValue;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

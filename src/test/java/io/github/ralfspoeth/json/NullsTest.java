@@ -1,9 +1,12 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.Basic;
+import io.github.ralfspoeth.json.data.JsonNull;
+import io.github.ralfspoeth.json.data.JsonString;
 import org.junit.jupiter.api.Test;
 
-import static io.github.ralfspoeth.json.Builder.arrayBuilder;
-import static io.github.ralfspoeth.json.Builder.objectBuilder;
+import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static org.junit.jupiter.api.Assertions.*;
 
 class NullsTest {

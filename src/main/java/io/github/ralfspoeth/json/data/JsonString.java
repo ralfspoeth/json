@@ -1,4 +1,6 @@
-package io.github.ralfspoeth.json;
+package io.github.ralfspoeth.json.data;
+
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +55,7 @@ public record JsonString(String value) implements Basic<String> {
 
 
     @Override
-    public boolean test(JsonValue s) {
+    public boolean test(@Nullable JsonValue s) {
         return s instanceof JsonString(String v) && v.equals(value);
     }
 }

@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.*;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 

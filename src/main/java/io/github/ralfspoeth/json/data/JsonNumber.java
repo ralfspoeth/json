@@ -1,4 +1,6 @@
-package io.github.ralfspoeth.json;
+package io.github.ralfspoeth.json.data;
+
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -16,7 +18,7 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     }
 
     @Override
-    public boolean test(JsonValue other) {
+    public boolean test(@Nullable JsonValue other) {
         return other instanceof JsonNumber(BigDecimal bd) && bd.equals(value);
     }
 

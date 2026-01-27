@@ -1,6 +1,6 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.json.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.Greyson.read;
 import static io.github.ralfspoeth.json.query.Validation.*;
 import static org.junit.jupiter.api.Assertions.*;

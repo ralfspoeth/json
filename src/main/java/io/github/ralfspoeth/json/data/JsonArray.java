@@ -1,11 +1,13 @@
-package io.github.ralfspoeth.json;
+package io.github.ralfspoeth.json.data;
+
+import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
-import static io.github.ralfspoeth.json.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -45,7 +47,7 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     }
 
     @Override
-    public boolean test(JsonValue jv) {
+    public boolean test(@Nullable JsonValue jv) {
         return jv instanceof JsonArray(var elems) && elems.equals(elements());
     }
 

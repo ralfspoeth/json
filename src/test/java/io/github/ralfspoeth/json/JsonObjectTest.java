@@ -1,5 +1,8 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.JsonNull;
+import io.github.ralfspoeth.json.data.JsonObject;
+import io.github.ralfspoeth.json.data.JsonValue;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;

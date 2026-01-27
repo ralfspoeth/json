@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.*;
 import io.github.ralfspoeth.json.io.JsonParseException;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
@@ -102,14 +103,16 @@ class GreysonTest {
     }
 
     @Test
-    void testWrite_jsonArray() {
+    void testWrite_jsonArray() throws IOException {
         // given
         JsonArray jsonArray = Builder.arrayBuilder()
                 .add(JsonBoolean.TRUE)
                 .add(JsonNull.INSTANCE)
                 .build();
         // when
-        var result = Greyson.write(new StringBuilder(), jsonArray).toString();
+        var w = new StringWriter();
+        Greyson.write(w, jsonArray);
+        var result = w.toString();
         String expectedOutput = "[true, null]";
         assertEquals(expectedOutput, result);
     }
@@ -119,31 +122,5 @@ class GreysonTest {
         StringWriter writer = new StringWriter();
         Greyson.write(writer, JsonNull.INSTANCE);
         assertEquals("null", writer.toString().trim());
-    }
-
-    @Test
-    void testWriteToSystemOut() throws IOException {
-        JsonObject jsonObject = Builder.objectBuilder()
-                .put("message", new JsonString("hello"))
-                .build();
-        Greyson.writeToSystemOut(jsonObject);
-
-        String expectedOutput = String.format("{%n    \"message\": \"hello\"%n}");
-        // The systemOutContent will have an extra newline from PrintWriter
-        assertEquals(expectedOutput, systemOutContent.toString().trim());
-    }
-
-    @Test
-    void testWriteStringBuilder() {
-        // given
-        var sb = new StringBuilder();
-        var jsonObject = Builder.objectBuilder()
-                .put("message", new JsonString("hello"))
-                .putBasic("num", 5)
-                .build();
-        // when
-        var serial = Greyson.write(sb, jsonObject).toString();
-        // then
-        assertEquals(jsonObject, Greyson.read(serial).orElseThrow());
     }
 }

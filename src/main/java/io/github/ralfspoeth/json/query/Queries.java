@@ -1,6 +1,6 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.data.*;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -242,7 +242,7 @@ public class Queries {
      * Converts a {@link JsonString} to an {@link Enum} instance ignoring the case of the string.
      * {@snippet :
      * // given
-     * enum E{a, b}
+     * import io.github.ralfspoeth.json.data.JsonString;enum E{a, b}
      * // when
      * var s = new JsonString("A");
      * // then

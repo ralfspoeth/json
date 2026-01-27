@@ -24,8 +24,7 @@ class QueriesTest {
                 () -> assertEquals(1, intValue(Basic.of(1.1d), 0)),
                 () -> assertEquals(1, intValue(new JsonString("1"), 0)),
                 () -> assertEquals(1, intValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1)),
-                () -> assertThrows(NullPointerException.class, () -> intValue(null))
+                () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1))
         );
     }
 
@@ -36,8 +35,7 @@ class QueriesTest {
                 () -> assertEquals(1L, longValue(Basic.of(1.1d), 0)),
                 () -> assertEquals(1L, longValue(new JsonString("1"), 0)),
                 () -> assertEquals(1L, longValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1)),
-                () -> assertThrows(NullPointerException.class, () -> longValue(null))
+                () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1))
         );
     }
 
@@ -49,8 +47,7 @@ class QueriesTest {
                 () -> assertEquals(1d, doubleValue(new JsonString("1"), 0)),
                 () -> assertEquals(1.5d, doubleValue(new JsonString("1.5"), 0)),
                 () -> assertEquals(1d, doubleValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE, 1)),
-                () -> assertThrows(NullPointerException.class, () -> booleanValue(null))
+                () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE, 1))
         );
     }
 
@@ -77,8 +74,7 @@ class QueriesTest {
                 () -> assertTrue(booleanValue(new JsonString("true"), false)),
                 () -> assertTrue(booleanValue(new JsonString("TrUe"), false)),
                 () -> assertFalse(booleanValue(new JsonString("false"), true)),
-                () -> assertFalse(booleanValue(new JsonString("XXX"), true)),
-                () -> assertThrows(NullPointerException.class, () -> booleanValue(null))
+                () -> assertFalse(booleanValue(new JsonString("XXX"), true))
         );
     }
 

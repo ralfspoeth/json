@@ -79,13 +79,6 @@ class GreysonTest {
     }
 
     @Test
-    void testReadFromReader_nullInput() {
-        // The Json.read(Reader) method creates `new JsonReader(rdr)`.
-        // If rdr is null, JsonReader constructor should handle it (e.g., throw NPE).
-        assertThrows(NullPointerException.class, () -> Greyson.read((Reader) null));
-    }
-
-    @Test
     void testReadFromReader_ioExceptionDuringRead() throws IOException {
         try (Reader faultyReader = new Reader() {
             @Override

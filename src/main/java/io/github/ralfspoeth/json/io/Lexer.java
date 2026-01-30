@@ -5,7 +5,6 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.regex.Pattern;
 
 class Lexer implements AutoCloseable {
 
@@ -50,7 +49,7 @@ class Lexer implements AutoCloseable {
 
         int read() throws IOException {
             // if a character has been unread before, return it
-            if (ch!=-1) {
+            if (ch != -1) {
                 var ret = ch;
                 ch = -1;
                 return ret;
@@ -90,7 +89,7 @@ class Lexer implements AutoCloseable {
     private State state = State.INITIAL;
 
     // very similar to a string builder
-    static final class Buffer {
+    static final class Buffer implements CharSequence {
         // the buffered char array
         private char[] buffer = new char[4_096];
         // the position where to add the next char read
@@ -113,14 +112,34 @@ class Lexer implements AutoCloseable {
             }
         }
 
-        String contents() {
+        String contentsAndReset() {
             var ret = String.valueOf(buffer, 0, bufferPos);
             bufferPos = 0;
             return ret;
         }
+
+        @Override
+        public int length() {
+            return bufferPos;
+        }
+
+        @Override
+        public char charAt(int index) {
+            return buffer[index];
+        }
+
+        @Override
+        public CharSequence subSequence(int start, int end) {
+            return String.valueOf(buffer, start, end);
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(buffer, 0, bufferPos);
+        }
     }
 
-    // buffer for string an const literals
+    // buffer for string and const literals
     private final Buffer buffer = new Buffer();
 
     // intermediate unicode sequence
@@ -210,7 +229,8 @@ class Lexer implements AutoCloseable {
 
                     case CONST_LIT -> switch (c) {
                         case 'a', 'l', 's', 'e', 't', 'r', 'u' -> append(c);
-                        case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> unread(c);
+                        case ',', '}', ']', '\"', '{', '[', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' ->
+                                unread(c);
                         case ' ', '\t', '\r', '\n' -> literal();
                         default -> parseException("Misspelled literal: " + c);
                     };
@@ -276,12 +296,12 @@ class Lexer implements AutoCloseable {
     }
 
     private State stringLiteral() {
-        nextToken = new LiteralToken(Type.STRING, buffer.contents());
+        nextToken = new LiteralToken(Type.STRING, buffer.contentsAndReset());
         return State.INITIAL;
     }
 
     private State literal() {
-        var text = buffer.contents();
+        var text = buffer.contentsAndReset();
         nextToken = switch (text) {
             case "null" -> new LiteralToken(Type.NULL, text);
             case "true" -> new LiteralToken(Type.TRUE, text);
@@ -312,11 +332,65 @@ class Lexer implements AutoCloseable {
             throw new JsonParseException("cannot parse %s as double".formatted(s), row, column);
     }
 
-    // parse numbers
-    private static final Pattern JSON_NUMBER = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
+    // parse numbers; hand-rolled, no longer using a regular expression
+    private static boolean jsonNumber(CharSequence cs) {
+        if (cs.isEmpty()) return false;
 
-    private static boolean jsonNumber(String s) {
-        return JSON_NUMBER.matcher(s).matches();
+        int i = 0;
+        int len = cs.length();
+
+        // 1. Optional Minus
+        if (cs.charAt(i) == '-') {
+            i++;
+            if (i == len) return false; // Just a minus sign is not a number
+        }
+
+        // 2. Integer Part
+        char c = cs.charAt(i);
+        if (c == '0') {
+            i++;
+            // If it starts with 0, the next char cannot be another digit
+        } else if (c >= '1' && c <= '9') {
+            i++;
+            while (i < len && (c = cs.charAt(i)) >= '0' && c <= '9') {
+                i++;
+            }
+        } else {
+            return false; // No valid integer part
+        }
+
+        // 3. Fractional Part
+        if (i < len && cs.charAt(i) == '.') {
+            i++;
+            if (i == len) return false; // Decimal must be followed by digits
+
+            int startI = i;
+            while (i < len && (c = cs.charAt(i)) >= '0' && c <= '9') {
+                i++;
+            }
+            if (i == startI) return false; // At least one digit required
+        }
+
+        // 4. Exponent Part
+        if (i < len && ((c = cs.charAt(i)) == 'e' || c == 'E')) {
+            i++;
+            if (i == len) return false; // e/E must be followed by something
+
+            c = cs.charAt(i);
+            if (c == '+' || c == '-') {
+                i++;
+                if (i == len) return false;
+            }
+
+            int startI = i;
+            while (i < len && (c = cs.charAt(i)) >= '0' && c <= '9') {
+                i++;
+            }
+            if (i == startI) return false; // At least one digit required
+        }
+
+        // Must have consumed the entire CharSequence to be a valid match
+        return i == len;
     }
 
     private int row = 1, column = 1;

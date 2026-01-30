@@ -1,8 +1,5 @@
-package io.github.ralfspoeth.json;
+package io.github.ralfspoeth.json.data;
 
-import io.github.ralfspoeth.json.data.Basic;
-import io.github.ralfspoeth.json.data.JsonNull;
-import io.github.ralfspoeth.json.data.JsonString;
 import org.junit.jupiter.api.Test;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;

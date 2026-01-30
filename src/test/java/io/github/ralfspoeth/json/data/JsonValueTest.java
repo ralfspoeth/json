@@ -1,6 +1,6 @@
-package io.github.ralfspoeth.json;
+package io.github.ralfspoeth.json.data;
 
-import io.github.ralfspoeth.json.data.*;
+import io.github.ralfspoeth.json.Greyson;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

@@ -171,7 +171,7 @@ class LexerTest {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    static void main(String[] args) throws Exception {
         var c = System.in.read();
         var lt = new LexerTest();
         lt.testParseLarge();

@@ -1,6 +1,5 @@
-package io.github.ralfspoeth.json;
+package io.github.ralfspoeth.json.data;
 
-import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

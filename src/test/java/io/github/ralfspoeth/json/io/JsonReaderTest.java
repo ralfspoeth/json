@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +17,7 @@ class JsonReaderTest {
     record Result(JsonValue elem, Exception ex) {}
 
     Result parse(String text) {
-        try(var jr = new JsonReader(new StringReader(text))) {
+        try (var jr = new JsonReader(new StringReader(text))) {
             return new Result(jr.readValue(), null);
         } catch (Exception e) {
             return new Result(null, e);
@@ -30,13 +31,13 @@ class JsonReaderTest {
     }
 
     @Test
-    void nume01(){
+    void nume01() {
         var result = parse("0e+1");
         assertEquals(Basic.of(0), result.elem);
     }
 
     @Test
-    void numplus1(){
+    void numplus1() {
         var result = parse("+1");
         assertAll(
                 () -> assertNull(result.elem),
@@ -48,8 +49,8 @@ class JsonReaderTest {
     void testMinus1twodots() {
         var result = parse("[-1.0.]");
         assertAll(
-                ()->assertNull(result.elem),
-                ()->assertInstanceOf(JsonParseException.class, result.ex)
+                () -> assertNull(result.elem),
+                () -> assertInstanceOf(JsonParseException.class, result.ex)
         );
     }
 
@@ -80,7 +81,7 @@ class JsonReaderTest {
                  "b":6}"""; // comma missing
         JsonValue result = null;
         Exception ex = null;
-        try(var rdr = new JsonReader(new StringReader(src))) {
+        try (var rdr = new JsonReader(new StringReader(src))) {
             result = rdr.readValue();
         } catch (Exception e) {
             ex = e;
@@ -239,7 +240,7 @@ class JsonReaderTest {
 
     @Test
     void testParseString() throws Exception {
-        try(var src = new StringReader("null"); var rdr = new JsonReader(src)) {
+        try (var src = new StringReader("null"); var rdr = new JsonReader(src)) {
             assertEquals(JsonNull.INSTANCE, rdr.readValue());
         }
     }
@@ -249,6 +250,46 @@ class JsonReaderTest {
         try (var src = largeFile(); var rdr = new JsonReader(src)) {
             var result = rdr.readValue();
             assertNotNull(result);
+        }
+    }
+
+    @Test
+    void testFastUtf8Reader() throws IOException {
+        try (var is = getClass().getResourceAsStream("/large-file.json");
+             var rdr = new JsonReader(is)) {
+            var result = rdr.readValue();
+            System.out.println(result.hashCode());
+        }
+    }
+
+    @Test
+    void testInputStreamReader() throws IOException {
+        try (var is = getClass().getResourceAsStream("/large-file.json");
+             var rdr = new InputStreamReader(is);
+             var jr = new JsonReader(rdr)) {
+            var result = jr.readValue();
+            System.out.println(result.hashCode());
+        }
+    }
+
+    @Test
+    void testFastUtf8ReaderArray() throws IOException {
+        try (var is = getClass().getResourceAsStream("/very-big-array.json.gz");
+             var gis = new GZIPInputStream(is);
+             var rdr = new JsonReader(gis)) {
+            var result = rdr.readValue();
+            System.out.println(result.hashCode());
+        }
+    }
+
+    @Test
+    void testInputStreamReaderArray() throws IOException {
+        try (var is = getClass().getResourceAsStream("/very-big-array.json.gz");
+             var gis = new GZIPInputStream(is);
+             var rdr = new InputStreamReader(gis);
+             var jr = new JsonReader(rdr)) {
+            var result = jr.readValue();
+            System.out.println(result.hashCode());
         }
     }
 

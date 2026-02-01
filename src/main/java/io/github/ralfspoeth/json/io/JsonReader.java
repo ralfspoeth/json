@@ -204,7 +204,7 @@ public class JsonReader implements Closeable {
 
         enum Char implements Elem {colon, comma}
 
-        record Root(JsonValue elem) implements Elem {
+        record Root(Builder<?> elem) implements Elem {
         }
     }
 
@@ -233,6 +233,10 @@ public class JsonReader implements Closeable {
      * @throws IOException whenever the lexer throws
      */
     public Optional<JsonValue> read() throws IOException {
+        return readBuilder().map(Builder::build);
+    }
+
+    public Optional<Builder<? extends JsonValue>> readBuilder() throws IOException {
         var result = readNextElement();
         if (lexer.hasNext()) {
             throw new JsonParseException("Input contains tokens after the first element", lexer.row(), lexer.column());
@@ -241,7 +245,7 @@ public class JsonReader implements Closeable {
         }
     }
 
-    private @Nullable JsonValue readNextElement() throws IOException {
+    private @Nullable Builder<? extends JsonValue> readNextElement() throws IOException {
         // repeat to take the next token while the lexer has more tokens available.
         // and either the stack is empty or,
         // in case we expect to read more than one JSON element from the potentially unbounded source,
@@ -293,9 +297,9 @@ public class JsonReader implements Closeable {
                 // there should be an object builder on top of the stack
                 case CLOSING_BRACE -> {
                     var obj = switch (stack.top()) {
-                        case Elem.ObjBuilderElem obe -> {
+                        case Elem.ObjBuilderElem(var builder) -> {
                             stack.pop();
-                            yield obe.builder.build();
+                            yield builder;
                         }
                         case null, default -> {
                             parseEx("unexpected token: " + tkn);
@@ -309,8 +313,7 @@ public class JsonReader implements Closeable {
                 case CLOSING_BRACKET -> {
                     if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
                         stack.pop();
-                        var jsonArray = builder.build();
-                        handle(tkn.value(), jsonArray);
+                        handle(tkn.value(), builder);
                     } else {
                         parseEx("unexpected token: " + tkn);
                     }
@@ -331,7 +334,7 @@ public class JsonReader implements Closeable {
                         }
                     } else {
                         var literalToken = token2Value(tkn);
-                        handle(val, literalToken);
+                        handle(val, Builder.of(literalToken));
                     }
                 }
             }
@@ -353,7 +356,7 @@ public class JsonReader implements Closeable {
 
     // handle tokens UNLESS these are element names
     // in a JSON object
-    private void handle(String token, JsonValue v) {
+    private void handle(String token, Builder<?> v) {
         switch (stack.top()) {
             // stack is empty
             case null -> stack.push(new Elem.Root(v));

@@ -118,4 +118,16 @@ class JsonValueTest {
                 )
         );
     }
+
+    @Test
+    void testBuilder() {
+        // given
+        var src = """
+                {
+                    "a": [0, 1, 2, {"b": true}]
+                }
+                """;
+        // when
+        var parsed = Greyson.read(src);
+    }
 }

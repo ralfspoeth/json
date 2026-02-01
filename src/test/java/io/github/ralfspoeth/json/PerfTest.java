@@ -31,6 +31,19 @@ class PerfTest {
     }
 
     @Test
+    void testFastUtf8Stream() throws IOException {
+        try (var is = getClass().getResourceAsStream("/very-big-array.json.gz");
+             var gis = new GZIPInputStream(requireNonNull(is))) {
+            long start = System.currentTimeMillis();
+            var array = Greyson.readBuilder(gis).orElseThrow();
+            var len = array.size();
+            long end = System.currentTimeMillis();
+            System.out.println("FastReader into Builder took " + (end - start) + " ms to read " + len + " elements");
+        }
+    }
+
+
+    @Test
     void testVeryBigArray() throws IOException {
         try (var gis = new GZIPInputStream(requireNonNull(getClass().getResourceAsStream("/very-big-array.json.gz")));
              var reader = new InputStreamReader(gis)) {

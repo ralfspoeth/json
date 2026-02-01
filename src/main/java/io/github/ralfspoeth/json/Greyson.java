@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.Builder;
 import io.github.ralfspoeth.json.data.JsonValue;
 import io.github.ralfspoeth.json.io.JsonReader;
 import io.github.ralfspoeth.json.io.JsonWriter;
@@ -33,6 +34,12 @@ public class Greyson {
     public static Optional<JsonValue> read(InputStream in) throws IOException {
         try(var jr = new JsonReader(in)) {
             return jr.read();
+        }
+    }
+
+    public static Optional<Builder<? extends JsonValue>> readBuilder(InputStream is) throws IOException {
+        try(var jr = new JsonReader(is)) {
+            return jr.readBuilder();
         }
     }
 

@@ -201,7 +201,7 @@ public sealed interface Builder<T extends JsonValue> {
 
         // the data which will be turned into the
         // members map in the JsonObject instance later.
-        private final Map<String, Builder<? extends JsonValue>> data = new HashMap<>();
+        private final Map<String, Builder<? extends JsonValue>> data = new TreeMap<>();
 
         /**
          * Add a name-value pair to the builder.

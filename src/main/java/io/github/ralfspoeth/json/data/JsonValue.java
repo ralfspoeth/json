@@ -92,8 +92,8 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return booleanValue().orElse(def);
     }
 
-    default OptionalInt intValue() {
-        return OptionalInt.empty();
+    default Optional<Integer> intValue() {
+        return Optional.empty();
     }
 
     /**
@@ -103,8 +103,8 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return intValue().orElse(def);
     }
 
-    default OptionalLong longValue() {
-        return OptionalLong.empty();
+    default Optional<Long> longValue() {
+        return Optional.empty();
     }
 
     /**
@@ -114,8 +114,8 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return longValue().orElse(def);
     }
 
-    default OptionalDouble doubleValue() {
-        return OptionalDouble.empty();
+    default Optional<Double> doubleValue() {
+        return Optional.empty();
     }
     /**
      * Same as {@code doubleValue().orElse(def)}.
@@ -182,6 +182,10 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      */
     default Map<String, JsonValue> members() {
         return Map.of();
+    }
+
+    default Optional<Basic<?>> basic() {
+        return Optional.empty();
     }
 
     default Builder<?> builder() {

@@ -2,8 +2,8 @@ package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.basix.coll.Stack;
 import io.github.ralfspoeth.json.data.*;
-import io.github.ralfspoeth.json.data.Builder.JsonArrayBuilder;
-import io.github.ralfspoeth.json.data.Builder.JsonObjectBuilder;
+import io.github.ralfspoeth.json.data.Builder.ArrayBuilder;
+import io.github.ralfspoeth.json.data.Builder.ObjectBuilder;
 import org.jspecify.annotations.Nullable;
 
 import java.io.Closeable;
@@ -188,13 +188,13 @@ public class JsonReader implements Closeable {
     }
 
     sealed interface Elem {
-        record ObjBuilderElem(JsonObjectBuilder builder) implements Elem {
+        record ObjBuilderElem(ObjectBuilder builder) implements Elem {
             static ObjBuilderElem objBuilderElem() {
                 return new ObjBuilderElem(Builder.objectBuilder());
             }
         }
 
-        record ArrBuilderElem(JsonArrayBuilder builder) implements Elem {
+        record ArrBuilderElem(ArrayBuilder builder) implements Elem {
             static ArrBuilderElem arrBuilderElem() {
                 return new ArrBuilderElem(Builder.arrayBuilder());
             }

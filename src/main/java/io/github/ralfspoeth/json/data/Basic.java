@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Optional;
 
 /**
  * The basic data types in the JSON hierarchy.
@@ -48,6 +49,11 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
             case Aggregate ignored -> illegalArgument("cannot pass an aggregate to Basic.of");
             default -> new JsonString(o.toString());
         };
+    }
+
+    @Override
+    default Optional<Basic<?>> basic() {
+        return Optional.of(this);
     }
 
     private static Basic<?> illegalArgument(String msg) {

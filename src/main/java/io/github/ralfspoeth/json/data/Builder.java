@@ -26,7 +26,7 @@ public sealed interface Builder<T extends JsonValue> {
         return (Builder<T>) switch (value) {
             case JsonObject jo -> objectBuilder(jo);
             case JsonArray ja -> arrayBuilder(ja);
-            default -> valueBuilder(value);
+            case Basic<?> b -> valueBuilder(b);
         };
     }
 
@@ -35,15 +35,15 @@ public sealed interface Builder<T extends JsonValue> {
      *
      * @param value a value, may not be {@code null}
      */
-    static JsonValueBuilder valueBuilder(JsonValue value) {
-        return new JsonValueBuilder(value);
+    static BasicBuilder valueBuilder(Basic<?> value) {
+        return new BasicBuilder(value);
     }
 
     /**
      * Instantiate an empty builder for {@code JsonObject}s.
      */
-    static JsonObjectBuilder objectBuilder() {
-        return new JsonObjectBuilder();
+    static ObjectBuilder objectBuilder() {
+        return new ObjectBuilder();
     }
 
     /**
@@ -51,15 +51,15 @@ public sealed interface Builder<T extends JsonValue> {
      * name-value pairs copied from given {@code JsonObject jo}.
      * Same as {@code objectBuilder(jo.members())}
      */
-    static JsonObjectBuilder objectBuilder(JsonObject jo) {
+    static ObjectBuilder objectBuilder(JsonObject jo) {
         return objectBuilder().insert(jo);
     }
 
     /**
      * Instantiate an empty builder for {@code JsonArray}s.
      */
-    static JsonArrayBuilder arrayBuilder() {
-        return new JsonArrayBuilder();
+    static ArrayBuilder arrayBuilder() {
+        return new ArrayBuilder();
     }
 
     /**
@@ -69,27 +69,27 @@ public sealed interface Builder<T extends JsonValue> {
      *
      * @param ja a {@code JsonArray}, may not be {@code null}
      */
-    static JsonArrayBuilder arrayBuilder(JsonArray ja) {
+    static ArrayBuilder arrayBuilder(JsonArray ja) {
         return arrayBuilder().addAll(ja.elements());
     }
 
     /**
      * to be used in the stream pipeline.
      */
-    static Collector<JsonValue, JsonArrayBuilder, JsonArray> toJsonArray() {
+    static Collector<JsonValue, ArrayBuilder, JsonArray> toJsonArray() {
         return Collector.of(
                 Builder::arrayBuilder,
-                Builder.JsonArrayBuilder::add,
-                Builder.JsonArrayBuilder::combine,
+                ArrayBuilder::add,
+                ArrayBuilder::combine,
                 Builder::build
         );
     }
 
-    static Collector<Builder<? extends JsonValue>, JsonArrayBuilder, JsonArray> buildersToJsonArray() {
+    static Collector<Builder<? extends JsonValue>, ArrayBuilder, JsonArray> buildersToJsonArray() {
         return Collector.of(
                 Builder::arrayBuilder,
-                Builder.JsonArrayBuilder::add,
-                Builder.JsonArrayBuilder::combine,
+                ArrayBuilder::add,
+                ArrayBuilder::combine,
                 Builder::build
         );
     }
@@ -108,8 +108,8 @@ public sealed interface Builder<T extends JsonValue> {
     /**
      * Builder implementation for {@code JsonArray}s.
      */
-    final class JsonArrayBuilder implements Builder<JsonArray> {
-        private JsonArrayBuilder() {}
+    final class ArrayBuilder implements Builder<JsonArray> {
+        private ArrayBuilder() {}
 
         @Override
         public int size() {
@@ -128,21 +128,21 @@ public sealed interface Builder<T extends JsonValue> {
 
         private final List<Builder<? extends JsonValue>> data = new ArrayList<>();
 
-        public JsonArrayBuilder add(JsonValue elem) {
+        public ArrayBuilder add(JsonValue elem) {
             data.add(switch (elem) {
                 case JsonObject jo -> objectBuilder(jo);
                 case JsonArray ja -> arrayBuilder(ja);
-                default -> valueBuilder(elem);
+                case Basic<?> b -> valueBuilder(b);
             });
             return this;
         }
 
-        public JsonArrayBuilder add(Builder<? extends JsonValue> b) {
+        public ArrayBuilder add(Builder<? extends JsonValue> b) {
             data.add(b);
             return this;
         }
 
-        JsonArrayBuilder combine(JsonArrayBuilder ab) {
+        ArrayBuilder combine(ArrayBuilder ab) {
             data.addAll(ab.data);
             return this;
         }
@@ -153,7 +153,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param o an object, may not be {@code null}, will be passed to {@link Basic#of(Object)}
          * @return {@code this}
          */
-        public JsonArrayBuilder addBasic(Object o) {
+        public ArrayBuilder addBasic(Object o) {
             return add(Basic.of(o));
         }
 
@@ -164,7 +164,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @return {@code this}
          * @throws IndexOutOfBoundsException if the index is out of bounds
          */
-        public JsonArrayBuilder remove(int index) {
+        public ArrayBuilder remove(int index) {
             data.remove(index);
             return this;
         }
@@ -174,7 +174,7 @@ public sealed interface Builder<T extends JsonValue> {
          *
          * @return {@code this}
          */
-        public JsonArrayBuilder clear() {
+        public ArrayBuilder clear() {
             data.clear();
             return this;
         }
@@ -185,7 +185,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param elements the elements to be appended at the end of the list, may not be {@code null}
          * @return {@code this}
          */
-        public JsonArrayBuilder addAll(Collection<? extends JsonValue> elements) {
+        public ArrayBuilder addAll(Collection<? extends JsonValue> elements) {
             elements.forEach(this::add);
             return this;
         }
@@ -194,10 +194,10 @@ public sealed interface Builder<T extends JsonValue> {
     /**
      * Builder implementation for {@code JsonObject}s.
      */
-    final class JsonObjectBuilder implements Builder<JsonObject> {
+    final class ObjectBuilder implements Builder<JsonObject> {
 
         // prevent instantiation for user code
-        private JsonObjectBuilder() {}
+        private ObjectBuilder() {}
 
         // the data which will be turned into the
         // members map in the JsonObject instance later.
@@ -210,11 +210,11 @@ public sealed interface Builder<T extends JsonValue> {
          * @param value the value
          * @return {@code this}
          */
-        public JsonObjectBuilder put(String name, JsonValue value) {
+        public ObjectBuilder put(String name, JsonValue value) {
             data.put(requireNonNull(name), switch (requireNonNull(value)) {
                 case JsonObject jo -> objectBuilder(jo);
                 case JsonArray ja -> arrayBuilder(ja);
-                default -> valueBuilder(value);
+                case Basic<?> b -> valueBuilder(b);
             });
             return this;
         }
@@ -226,7 +226,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param b    the builder
          * @return {@code this}
          */
-        public JsonObjectBuilder put(String name, Builder<? extends JsonValue> b) {
+        public ObjectBuilder put(String name, Builder<? extends JsonValue> b) {
             data.put(name, b);
             return this;
         }
@@ -238,7 +238,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param o    an object, may not be {@code null}, will be passed to {@link Basic#of(Object)}
          * @return {@code this}
          */
-        public JsonObjectBuilder putBasic(String name, @Nullable Object o) {
+        public ObjectBuilder putBasic(String name, @Nullable Object o) {
             return put(name, Basic.of(o));
         }
 
@@ -248,7 +248,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param map a map of names to values, may not be {@code null}.
          * @return {@code this}
          */
-        public JsonObjectBuilder update(Map<String, ? extends JsonValue> map) {
+        public ObjectBuilder update(Map<String, ? extends JsonValue> map) {
             map.entrySet().stream()
                     .filter(in(data.keySet(), Map.Entry::getKey))
                     .forEach(e -> put(e.getKey(), e.getValue()));
@@ -258,7 +258,7 @@ public sealed interface Builder<T extends JsonValue> {
         /**
          * Same as {@code update(o.members())}.
          */
-        public JsonObjectBuilder update(JsonObject o) {
+        public ObjectBuilder update(JsonObject o) {
             return update(o.members());
         }
 
@@ -269,11 +269,11 @@ public sealed interface Builder<T extends JsonValue> {
          * @param map a map of names to values, may not be {@code null}.
          * @return {@code this}
          */
-        public JsonObjectBuilder merge(Map<String, ? extends JsonValue> map) {
+        public ObjectBuilder merge(Map<String, ? extends JsonValue> map) {
             map.forEach((key, val) -> data.put(key, switch (val) {
                 case JsonObject jo -> objectBuilder(jo);
                 case JsonArray ja -> arrayBuilder(ja);
-                default -> valueBuilder(val);
+                case Basic<?> b -> valueBuilder(b);
             }));
             return this;
         }
@@ -281,7 +281,7 @@ public sealed interface Builder<T extends JsonValue> {
         /**
          * Same as {@code merge(o.members())}.
          */
-        public JsonObjectBuilder merge(JsonObject o) {
+        public ObjectBuilder merge(JsonObject o) {
             return merge(o.members());
         }
 
@@ -291,7 +291,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param map a map of name-value pairs
          * @return {@code this}
          */
-        public JsonObjectBuilder insert(Map<String, ? extends JsonValue> map) {
+        public ObjectBuilder insert(Map<String, ? extends JsonValue> map) {
             map.entrySet()
                     .stream()
                     .filter(not(in(data.keySet(), Map.Entry::getKey)))
@@ -299,7 +299,7 @@ public sealed interface Builder<T extends JsonValue> {
             return this;
         }
 
-        public JsonObjectBuilder insert(JsonObject o) {
+        public ObjectBuilder insert(JsonObject o) {
             return insert(o.members());
         }
 
@@ -309,7 +309,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param key the key.
          * @return {@code this}
          */
-        public JsonObjectBuilder remove(String key) {
+        public ObjectBuilder remove(String key) {
             data.remove(key);
             return this;
         }
@@ -320,7 +320,7 @@ public sealed interface Builder<T extends JsonValue> {
          * @param keys the keys to be removed, may not be {@code null}
          * @return {@code this}
          */
-        public JsonObjectBuilder removeAll(Collection<String> keys) {
+        public ObjectBuilder removeAll(Collection<String> keys) {
             keys.forEach(data::remove);
             return this;
         }
@@ -342,20 +342,29 @@ public sealed interface Builder<T extends JsonValue> {
     /**
      * Builder implementation for {@code JsonValue}s.
      */
-    final class JsonValueBuilder implements Builder<JsonValue> {
-        private JsonValue value; // never null
+    final class BasicBuilder implements Builder<Basic<?>> {
+        // exactly one of these two must be non-null
+        private Basic<?> value;
 
-        private JsonValueBuilder(JsonValue value) {
+        private BasicBuilder(Basic<?> value) {
             setValue(value);
         }
 
-        public JsonValueBuilder set(JsonValue value) {
+        public BasicBuilder set(Basic<?> value) {
             setValue(value);
             return this;
         }
 
-        private void setValue(JsonValue value) {
+        public Basic<?> get() {
+            return value;
+        }
+
+        private void setValue(Basic<?> value) {
             this.value = requireNonNull(value);
+        }
+
+        private void setValue(String contents) {
+            this.value = null;
         }
 
         @Override
@@ -364,7 +373,7 @@ public sealed interface Builder<T extends JsonValue> {
         }
 
         @Override
-        public JsonValue build() {
+        public Basic<?> build() {
             return value;
         }
     }

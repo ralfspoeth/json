@@ -102,7 +102,7 @@ The Greyson library, however,
 uses algebraic data types even for the internal intermediate representation
 of the parsed data, which leads to a very clean lexer and parser as well as
 writer designs -- yet at the expense of performance.
-We assume that value class will help Greyson to close the gap to GSON and Jackson
+We assume that value classes will help Greyson to close the gap to GSON and Jackson
 in the future without compromising the current simplicity of the implementation.
 
 The Greyson library is really tiny: together with its dependencies on 

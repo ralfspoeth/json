@@ -5,7 +5,6 @@ import io.github.ralfspoeth.json.data.JsonObject;
 import io.github.ralfspoeth.json.data.JsonValue;
 import org.jspecify.annotations.Nullable;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,9 +42,9 @@ import static java.util.Objects.requireNonNull;
  * Example:
  * <p>
  * {@snippet :
- * import io.github.ralfspoeth.greyson.JsonValue;
- * import io.github.ralfspoeth.greyson.JsonBoolean;
- * import io.github.ralfspoeth.greyson.io.JsonReader;
+ * import io.github.ralfspoeth.json.data.JsonValue;
+ * import io.github.ralfspoeth.json.data.JsonBoolean;
+ * import io.github.ralfspoeth.json.io.JsonReader;
  *
  * import java.util.List;
  *
@@ -90,7 +89,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        Stream<JsonValue> evalThis(JsonValue elem) {
+        Stream<JsonValue> evalSegment(JsonValue elem) {
             return elem instanceof JsonObject(var members) && members.containsKey(memberName) ?
                     Stream.of(members.get(memberName)) :
                     Stream.of();
@@ -102,7 +101,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        boolean equalsLast(Path p) {
+        boolean equalsSegment(Path p) {
             return p instanceof MemberPath mp && mp.memberName.equals(memberName);
         }
     }
@@ -116,7 +115,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        Stream<JsonValue> evalThis(JsonValue elem) {
+        Stream<JsonValue> evalSegment(JsonValue elem) {
             if (elem instanceof JsonArray(var elements)) {
                 if (index >= 0 && index < elements.size()) return Stream.of(elements.get(index));
                 else if (index < 0 && 0 <= elements.size() + index)
@@ -128,7 +127,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        boolean equalsLast(Path p) {
+        boolean equalsSegment(Path p) {
             return p instanceof IndexPath ip && ip.index == index;
         }
 
@@ -156,12 +155,12 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        Stream<JsonValue> evalThis(JsonValue elem) {
+        Stream<JsonValue> evalSegment(JsonValue elem) {
             return elem instanceof JsonArray(var elements) ? evalArray(elements) : Stream.of();
         }
 
         @Override
-        boolean equalsLast(Path p) {
+        boolean equalsSegment(Path p) {
             return p instanceof RangePath rp && rp.min == min && rp.max == max;
         }
 
@@ -185,7 +184,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        Stream<JsonValue> evalThis(JsonValue elem) {
+        Stream<JsonValue> evalSegment(JsonValue elem) {
             return elem instanceof JsonObject o ? evalObject(o) : Stream.of();
         }
 
@@ -198,7 +197,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        boolean equalsLast(Path p) {
+        boolean equalsSegment(Path p) {
             return p instanceof RegexPath rp && rp.regex.equals(regex);
         }
 
@@ -210,7 +209,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
     private final @Nullable Path parent;
 
-    abstract Stream<JsonValue> evalThis(JsonValue elem);
+    abstract Stream<JsonValue> evalSegment(JsonValue elem);
 
     private static final Pattern INDEX_PATTERN = Pattern.compile("\\[(-?\\d+)]");
 
@@ -230,7 +229,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      */
     @Override
     public Stream<JsonValue> apply(JsonValue value) {
-        return parent == null ? this.evalThis(value) : parent.apply(value).flatMap(this::evalThis);
+        return parent == null ? this.evalSegment(value) : parent.apply(value).flatMap(this::evalSegment);
     }
 
     /**
@@ -281,35 +280,11 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return prev;
     }
 
-    public BigDecimal decimalValue(JsonValue root) {
-        return single(root).flatMap(JsonValue::decimalValue).orElse(BigDecimal.ZERO);
-    }
-
-    public double doubleValue(JsonValue root) {
-        return single(root).map(Queries::doubleValue).orElse(0d);
-    }
-
-    public boolean booleanValue(JsonValue root) {
-        return single(root).flatMap(JsonValue::booleanValue).orElse(false);
-    }
-
-    public int intValue(JsonValue root) {
-        return single(root).map(Queries::intValue).orElse(0);
-    }
-
-    public int intValue(JsonValue root, int def) {
-        return single(root).map(Queries::intValue).orElse(def);
-    }
-
-    public @Nullable String stringValue(JsonValue root) {
-        return single(root).map(Queries::stringValue).orElse(null);
-    }
-
-    abstract boolean equalsLast(Path p);
+    abstract boolean equalsSegment(Path p);
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Path p && equalsLast(p) && Objects.equals(p.parent, parent);
+        return obj instanceof Path p && equalsSegment(p) && Objects.equals(p.parent, parent);
     }
 
     @Override

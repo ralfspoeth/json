@@ -3,19 +3,23 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 import org.jspecify.annotations.Nullable;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
-import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
+
+/**
+ * The {@code Queries} class provides two different types of functions:
+ * the {@link #asObject(JsonValue)} function which peals the most natural representation
+ * out of a JSON instance, and the {@code {int|long|double}Array(JsonValue)} functions
+ * which turn a {@link JsonArray} or {@link JsonNumber}s into an array of primitives
+ * {@code int}, {@code long}, or {@code double}.
+ */
 public class Queries {
 
     // prevent instantiation
@@ -38,511 +42,79 @@ public class Queries {
      * @return either a {@link Map}, a {@link List}
      * or a {@code String}, {@code BigDecimal}, {@code Boolean}, or {@code null}
      */
-    public static Object value(JsonValue elem) {
+    public static Object asObject(JsonValue elem) {
         return switch (requireNonNull(elem)) {
-            case JsonObject jo -> asMap(jo);
-            case JsonArray ja -> asList(ja);
-            case Basic<?> basic -> asBasic(basic);
-        };
-    }
-
-    private static Map<String, ?> asMap(JsonValue elem) {
-        return switch (elem) {
-            case JsonObject jo -> jo
-                    .members()
-                    .entrySet()
-                    .stream()
-                    .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
-                    .collect(toMap(Map.Entry::getKey, e -> value(e.getValue())));
-            case null, default -> throw new IllegalArgumentException(
-                    elem + " is not a JSON Object"
-            );
-        };
-    }
-
-    // turns a basic into an object
-    private static Object asBasic(JsonValue elem) {
-        return switch (elem) {
+            case JsonObject(var members) -> asMap(members);
+            case JsonArray(var elements) -> asList(elements);
             case Basic<?> basic -> basic.value();
-            case null, default -> throw new IllegalArgumentException(
-                    elem + " is not a basic JSON element"
-            );
         };
+    }
+
+    private static Map<String, ?> asMap(Map<String, JsonValue> members) {
+        return members.entrySet().stream()
+                .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
+                .collect(toMap(Map.Entry::getKey, e -> asObject(e.getValue())));
     }
 
     // turns a JsonArray into a list
-    private static List<?> asList(JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ar -> ar
-                    .elements()
-                    .stream()
-                    .filter(not(eq(JsonNull.INSTANCE, identity())))
-                    .map(Queries::value)
-                    .toList();
-            case null, default -> throw new IllegalArgumentException(
-                    elem + " is not a JSON array"
-            );
-        };
+    private static List<?> asList(List<JsonValue> elements) {
+        return elements.stream()
+                .filter(not(eq(JsonNull.INSTANCE, identity())))
+                .map(Queries::asObject)
+                .toList();
     }
 
     /**
-     * Exactly the same as {@link #value(JsonValue)} except
-     * that it allows {@code null} as parameter 1.
-     *
-     * @param elem a JSON element, may be null
-     * @param def  the default value if {@code elem} is {@code null}
-     * @return as in {@link #value(JsonValue)}
-     */
-    public static Object value(@Nullable JsonValue elem, Object def) {
-        return ofNullable(elem).map(Queries::value).orElse(def);
-    }
-
-    /**
-     * Converts an {@link JsonValue element} to {@code int}.
-     * <p>
-     * The result is:
-     * <ul>
-     *     <li>(int){@link JsonNumber#value()}</li>
-     *     <li>{@link JsonBoolean#TRUE}: 1</li>
-     *     <li>{@link JsonBoolean#FALSE}: 0</li>
-     *     <li>{@link JsonNull}: 0</li>
-     *     <li>{@link Integer#parseInt(String)} of {@link JsonString#value()}</li>
-     * </ul>
-     *
-     * @param elem an Element
-     * @return an int value
-     */
-    public static int intValue(@Nullable JsonValue elem, int def) {
-        return switch (elem) {
-            case null -> def;
-            case JsonNumber(var n) -> n.intValue();
-            case JsonBoolean(var b) -> b ? 1 : 0;
-            case JsonString(var s) -> Integer.parseInt(s);
-            case JsonNull ignored -> 0;
-            case Aggregate a -> throw new IllegalArgumentException(
-                    "cannot convert to int: " + a
-            );
-        };
-    }
-
-    /**
-     * Same as {@link #intValue(JsonValue, int)} with a default value of 0.
-     */
-    public static int intValue(JsonValue elem) {
-        return intValue(requireNonNull(elem), 0);
-    }
-
-    /**
-     * Same as {@link #intValue(JsonValue, int)} except that it converts the result to
-     * {code long}.
-     */
-    public static long longValue(@Nullable JsonValue elem, long def) {
-        return switch (elem) {
-            case null -> def;
-            case JsonNumber(var n) -> n.longValue();
-            case JsonBoolean(var b) -> b ? 1L : 0L;
-            case JsonString(var s) -> Long.parseLong(s);
-            case JsonNull ignored -> 0L;
-            case Aggregate a -> throw new IllegalArgumentException(
-                    "cannot convert to long: " + a
-            );
-        };
-    }
-
-    /**
-     * Same as {@link #longValue(JsonValue, long)}
-     * with a default value of 0L.
-     */
-    public static long longValue(JsonValue elem) {
-        return longValue(requireNonNull(elem), 0);
-    }
-
-    /**
-     * Same as {@link #intValue(JsonValue, int)} except that it converts
-     * the result to {@code double} and strings are parsed using {@link Double#parseDouble(String)}.
-     */
-    public static double doubleValue(@Nullable JsonValue elem, double def) {
-        return switch (elem) {
-            case null -> def;
-            case JsonNumber(var n) -> n.doubleValue();
-            case JsonBoolean(var b) -> b ? 1d : 0d;
-            case JsonString(var s) -> Double.parseDouble(s);
-            case JsonNull ignored -> 0d;
-            case Aggregate a -> throw new IllegalArgumentException(
-                    "cannot convert to double: " + a
-            );
-        };
-    }
-
-    /**
-     * {@link #doubleValue(JsonValue, double)} with a default value of 0d.
-     */
-    public static double doubleValue(JsonValue elem) {
-        return doubleValue(requireNonNull(elem), 0d);
-    }
-
-    /**
-     * Same as {@link #intValue(JsonValue, int)} except that it converts the result to
-     * {@link BigDecimal}.
-     */
-    public static BigDecimal decimalValue(@Nullable JsonValue elem, BigDecimal def) {
-        return switch (elem) {
-            case null -> def;
-            case JsonNumber(var n) -> n;
-            case JsonBoolean(var b) -> b ? BigDecimal.ONE : BigDecimal.ZERO;
-            case JsonString(var s) -> new BigDecimal(s);
-            case JsonNull ignored -> BigDecimal.ZERO;
-            case Aggregate a -> throw new IllegalArgumentException(
-                    "cannot convert to BigDecimal: " + a
-            );
-        };
-    }
-
-    public static BigDecimal decimalValue(JsonValue elem) {
-        return decimalValue(requireNonNull(elem), BigDecimal.ZERO);
-    }
-
-    /**
-     * Converts {@link JsonString}s to enum values using
-     * {@link Enum#valueOf(Class, String)}.
-     *
-     * @param enumClass the parameterized enum class
-     * @param elem      the element to convert, may be {@code null}
-     * @param def       the default value
-     * @param <E>       the enum type
-     * @return the enum value
-     * @throws IllegalArgumentException if elem not a {@link JsonString} or {@link JsonNull}.
-     */
-    public static <E extends Enum<E>> E enumValue(
-            Class<E> enumClass,
-            @Nullable JsonValue elem,
-            E def
-    ) {
-        return switch (elem) {
-            case null -> def;
-            case JsonNull ignored -> def;
-            case JsonString(var s) -> Enum.valueOf(enumClass, s);
-            default -> throw new IllegalArgumentException(
-                    "cannot convert to enum: " + elem
-            );
-        };
-    }
-
-    /**
-     * Same as {@code enumValue} with a default value of {@code null}.
-     */
-    public static <E extends Enum<E>> E enumValue(
-            Class<E> enumClass,
-            @Nullable JsonValue elem
-    ) {
-        return enumValue(enumClass, elem, (E) null);
-    }
-
-    /**
-     * Converts a {@link JsonString} to an {@link Enum} instance ignoring the case of the string.
-     * {@snippet :
-     * // given
-     * import io.github.ralfspoeth.json.data.JsonString;enum E{a, b}
-     * // when
-     * var s = new JsonString("A");
-     * // then
-     * assert enumValueIgnoreCase(E.class, s) == E.a;
-     *}
-     *
-     * @param enumClass the parameterized enum class
-     * @param elem      the element to convert
-     * @param <E>       the enum type
-     * @return the enum value
-     */
-    public static <E extends Enum<E>> E enumValueIgnoreCase(
-            Class<E> enumClass,
-            JsonValue elem
-    ) {
-        if (elem instanceof JsonString(String value)) {
-            return stream(enumClass.getEnumConstants())
-                    .collect(toMap(c -> c.name().toUpperCase(), identity()))
-                    .get(value.toUpperCase());
-        } else {
-            throw new IllegalArgumentException(
-                    "cannot convert to enum: " + elem
-            );
-        }
-    }
-
-    /**
-     * Converts an {@link JsonValue} to an {@link Enum} instance by first extracting
-     * a string value using the {@code extractor} function and then through {@link Enum#valueOf(Class, String)}.
-     *
-     * @param enumClass the parameterized enum class
-     * @param elem      the element to convert
-     * @param extractor an extractor function
-     * @param <E>       the enum type
-     * @return the enum value
-     */
-    public static <E extends Enum<E>> E enumValue(
-            Class<E> enumClass,
-            JsonValue elem,
-            Function<JsonValue, String> extractor
-    ) {
-        return extractor.andThen(s -> Enum.valueOf(enumClass, s)).apply(elem);
-    }
-
-    /**
-     * Convert an {link Element} to a {@link String} value.
-     * Conversion rules:
-     * <ul>
-     *     <li>JsonString: {@link JsonString#value()}</li>
-     *     <li>JsonNull: "null"</li>
-     *     <li>JsonNumber: {@link Double#toString(double)}</li>
-     *     <li>JsonBoolean: {@link Boolean#toString(boolean)}</li>
-     *     <li>JsonArray: {@link JsonArray#elements()}</li>
-     *     <li>JsonObject: {@link JsonObject#members()}</li>
-     * </ul>
-     *
-     * @param elem the element to convert
-     * @param def  the default value
-     * @return the string value
-     */
-    public static @Nullable String stringValue(@Nullable JsonValue elem, @Nullable String def) {
-        return switch (elem) {
-            case null -> def;
-            case JsonString(var s)-> s ;
-            case JsonNull ignored -> "null";
-            case JsonNumber(var n) -> n.toString();
-            case JsonBoolean(var b) -> Boolean.toString(b);
-            case JsonArray a -> a.elements().toString();
-            case JsonObject o -> o.members().toString();
-        };
-    }
-
-    /**
-     * {@link #stringValue(JsonValue, String)} with a default value of {@code null}.
-     */
-    public static @Nullable String stringValue(@Nullable JsonValue elem) {
-        return stringValue(elem, null);
-    }
-
-    /**
-     * Convert an {link Element} to a {@code boolean} value.
-     * String values are parsed using {link Boolean#parseBoolean(String)},
-     * numbers are compared to 0d (where 0d is false) and {@link JsonBoolean} as converted
-     * naturally.
-     *
-     * @param elem the element to convert
-     * @param def  the default value
-     * @return the boolean value
-     */
-    public static boolean booleanValue(@Nullable JsonValue elem, boolean def) {
-        return switch (elem) {
-            case null -> def;
-            case JsonBoolean(var b) -> b;
-            case JsonString(String value) -> Boolean.parseBoolean(value);
-            case JsonNumber(var n) -> n.compareTo(BigDecimal.ZERO) != 0;
-            default -> throw new IllegalArgumentException(
-                    "cannot convert to boolean: " + elem
-            );
-        };
-    }
-
-    /**
-     * {@link #booleanValue(JsonValue, boolean)} with a default value of {@code false}.
-     */
-    public static boolean booleanValue(JsonValue elem) {
-        return booleanValue(requireNonNull(elem), false);
-    }
-
-    private static int[] intArray(JsonArray ja) {
-        var tmp = new int[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = intValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Same as {@link #doubleArray(JsonValue)} but using
-     * {@link #intValue(JsonValue)} to convert the elements.
+     * Convert a {@link JsonArray} of {@link JsonNumber}s into an array
+     * of {@code int}s.
+     * If the
+     * @param elem, may be {@code null}
+     * @return an array of {@code int}s; never {@code null}, zero length for elements other than a {@link JsonArray}
      */
     public static int[] intArray(@Nullable JsonValue elem) {
         return switch (elem) {
-            case JsonArray ja -> intArray(ja);
+            case JsonArray(var elements) -> {
+                var tmp = new int[elements.size()];
+                for (int i = 0; i < tmp.length; i++) {
+                    tmp[i] = elements.get(i).intValue().orElseThrow();
+                }
+                yield tmp;
+            }
             case null, default -> new int[0];
         };
     }
 
-    private static long[] longArray(JsonArray ja) {
-        var tmp = new long[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = longValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
     /**
-     * Same as {@link #doubleArray(JsonValue)} but using
-     * {@link #longValue(JsonValue)} to convert the elements.
+     * Same as {@link #intArray(JsonValue)} but converting the elements of the
+     * {@link JsonArray} into {@code long}s.
      */
     public static long[] longArray(@Nullable JsonValue elem) {
         return switch (elem) {
-            case JsonArray ja -> longArray(ja);
+            case JsonArray(var elements) -> {
+                var tmp = new long[elements.size()];
+                for (int i = 0; i < tmp.length; i++) {
+                    tmp[i] = elements.get(i).longValue().orElseThrow();
+                }
+                yield tmp;
+            }
             case null, default -> new long[0];
         };
     }
 
-    private static char[] charArray(JsonArray ja) {
-        var tmp = new char[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = (char) intValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
     /**
-     * Same as {@link #intArray(JsonValue)} but casting the elements
-     * to {@code char}.
-     */
-    public static char[] charArray(@Nullable JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ja -> charArray(ja);
-            case null, default -> new char[0];
-        };
-    }
-
-    private static short[] shortArray(JsonArray ja) {
-        var tmp = new short[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = (short) intValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Same as {@link #intArray(JsonValue)} but casting the elements
-     * to {@code short}.
-     */
-    public static short[] shortArray(@Nullable JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ja -> shortArray(ja);
-            case null, default -> new short[0];
-        };
-    }
-
-    private static byte[] byteArray(JsonArray ja) {
-        var tmp = new byte[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = (byte) intValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Same as {@link #intArray(JsonValue)} but casting the elements
-     * to {@code byte}.
-     */
-    public static byte[] byteArray(@Nullable JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ja -> byteArray(ja);
-            case null, default -> new byte[0];
-        };
-    }
-
-    private static double[] doubleArray(JsonArray ja) {
-        var tmp = new double[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = doubleValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Same as {@link #stringArray(JsonArray)} except
-     * that it uses {@link #doubleValue(JsonValue)} to convert the
-     * member elements.
+     * Same as {@link #intArray(JsonValue)} but converting the elements of the
+     * {@link JsonArray} into {@code double}s.
      */
     public static double[] doubleArray(@Nullable JsonValue elem) {
         return switch (elem) {
-            case JsonArray ja -> doubleArray(ja);
+            case JsonArray(var elements) -> {
+                var tmp = new double[elements.size()];
+                for (int i = 0; i < tmp.length; i++) {
+                    tmp[i] = elements.get(i).doubleValue().orElseThrow();
+                }
+                yield tmp;
+            }
             case null, default -> new double[0];
-        };
-    }
-
-    private static float[] floatArray(JsonArray ja) {
-        var tmp = new float[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = (float) doubleValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Same as {@link #doubleArray(JsonValue)} but its array
-     * elements are cast to {@code float}.
-     */
-    public static float[] floatArray(@Nullable JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ja -> floatArray(ja);
-            case null, default -> new float[0];
-        };
-    }
-
-    private static BigDecimal[] decimalArray(JsonArray ja) {
-        var tmp = new BigDecimal[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = decimalValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Same as {@link #doubleArray(JsonValue)} except that its
-     * array consists of {@link BigDecimal}s.
-     */
-    public static BigDecimal[] decimalArray(@Nullable JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ja -> decimalArray(ja);
-            case null, default -> new BigDecimal[0];
-        };
-    }
-
-    private static boolean[] booleanArray(JsonArray ja) {
-        var tmp = new boolean[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = booleanValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Same as {@link #stringArray(JsonValue)} except that
-     * it utilizes {@link #booleanValue(JsonValue)}.
-     */
-    public static boolean[] booleanArray(@Nullable JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ja -> booleanArray(ja);
-            case null, default -> new boolean[0];
-        };
-    }
-
-    private static String[] stringArray(JsonArray ja) {
-        var tmp = new String[ja.size()];
-        for (int i = 0; i < tmp.length; i++) {
-            tmp[i] = stringValue(ja.elements().get(i));
-        }
-        return tmp;
-    }
-
-    /**
-     * Convert a {@link JsonArray} into an array of strings
-     * applying {@link #stringValue(JsonValue)} to each of its elements,
-     * and an empty array for all other elements.
-     *
-     * @param elem an element, may be {@code null}
-     * @return a potentially empty array of strings, never {@code null}
-     */
-    public static String[] stringArray(@Nullable JsonValue elem) {
-        return switch (elem) {
-            case JsonArray ja -> stringArray(ja);
-            case null, default -> new String[0];
         };
     }
 }

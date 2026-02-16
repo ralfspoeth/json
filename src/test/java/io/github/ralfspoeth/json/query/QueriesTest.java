@@ -2,104 +2,17 @@ package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.*;
 import io.github.ralfspoeth.json.data.*;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
-import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class QueriesTest {
-
-    @Test
-    void testIntValue() {
-        assertAll(
-                () -> assertEquals(1, intValue(Basic.of(1), 0)),
-                () -> assertEquals(1, intValue(Basic.of(1.1d), 0)),
-                () -> assertEquals(1, intValue(new JsonString("1"), 0)),
-                () -> assertEquals(1, intValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0, intValue(JsonBoolean.FALSE, 1))
-        );
-    }
-
-    @Test
-    void testLongValue() {
-        assertAll(
-                () -> assertEquals(1L, longValue(Basic.of(1), 0)),
-                () -> assertEquals(1L, longValue(Basic.of(1.1d), 0)),
-                () -> assertEquals(1L, longValue(new JsonString("1"), 0)),
-                () -> assertEquals(1L, longValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0L, longValue(JsonBoolean.FALSE, 1))
-        );
-    }
-
-    @Test
-    void testDoubleValue() {
-        assertAll(
-                () -> assertEquals(1d, doubleValue(Basic.of(1), 0)),
-                () -> assertEquals(1.1d, doubleValue(Basic.of(1.1d), 0)),
-                () -> assertEquals(1d, doubleValue(new JsonString("1"), 0)),
-                () -> assertEquals(1.5d, doubleValue(new JsonString("1.5"), 0)),
-                () -> assertEquals(1d, doubleValue(JsonBoolean.TRUE, 0)),
-                () -> assertEquals(0d, doubleValue(JsonBoolean.FALSE, 1))
-        );
-    }
-
-    @Test
-    void testStringValue() {
-        assertAll(
-                () -> assertEquals("one", stringValue(new JsonString("one"), null)),
-                () -> assertEquals("1", stringValue(Basic.of(1d), null)),
-                () -> assertEquals("1.1", stringValue(Basic.of(1.1d), null)),
-                () -> assertEquals("1.123", stringValue(Basic.of(1.123d), null)),
-                () -> assertEquals("true", stringValue(JsonBoolean.TRUE, null)),
-                () -> assertEquals("false", stringValue(JsonBoolean.FALSE, null)),
-                () -> assertEquals("null", stringValue(JsonNull.INSTANCE, null)),
-                () -> assertEquals("one", stringValue(new JsonString("one"))),
-                () -> assertNull(stringValue(null))
-        );
-    }
-
-    @Test
-    void testBooleanValue() {
-        assertAll(
-                () -> assertTrue(booleanValue(JsonBoolean.TRUE, false)),
-                () -> assertFalse(booleanValue(JsonBoolean.FALSE, true)),
-                () -> assertTrue(booleanValue(new JsonString("true"), false)),
-                () -> assertTrue(booleanValue(new JsonString("TrUe"), false)),
-                () -> assertFalse(booleanValue(new JsonString("false"), true)),
-                () -> assertFalse(booleanValue(new JsonString("XXX"), true))
-        );
-    }
-
-
-    @Test
-    void testEnumValue() {
-        enum E {ONE, TWO}
-        var obj = objectBuilder()
-                .put("e", new JsonString("onet"))
-                .build();
-
-        // extracts the member named "e", first three letters of the value, then to upper case
-        Function<JsonValue, @Nullable String> extr = elem -> elem instanceof JsonObject(Map<String, JsonValue> members)
-                ? stringValue(members.get("e"), null).substring(0, 3).toUpperCase()
-                : null;
-
-        assertAll(
-                () -> assertEquals(E.ONE, enumValue(E.class, new JsonString("ONE"))),
-                () -> assertNotEquals(E.TWO, enumValue(E.class, new JsonString("ONE"))),
-                () -> assertEquals(E.TWO, enumValue(E.class, new JsonString("TWO"))),
-                () -> assertThrows(IllegalArgumentException.class, () -> enumValue(E.class, new JsonString("one"))),
-                () -> assertEquals(E.ONE, enumValueIgnoreCase(E.class, new JsonString("one"))),
-                () -> assertEquals(E.ONE, enumValue(E.class, obj, extr))
-        );
-    }
 
     @Test
     void testAsJsonArray() {
@@ -134,7 +47,7 @@ class QueriesTest {
                 jo.get("s").flatMap(JsonValue::stringValue).orElse(""),
                 jo.get("b").flatMap(JsonValue::booleanValue).orElse(false),
                 jo.get("d").flatMap(JsonValue::decimalValue).map(BigDecimal::doubleValue).orElse(0d),
-                jo.get("o").map(Queries::value).orElse(null)
+                jo.get("o").map(Queries::asObject).orElse(null)
         );
 
         assertEquals(new R("a string", true, 5.1d, null), r);
@@ -151,7 +64,7 @@ class QueriesTest {
                 .stream()
                 .map(JsonValue::members)
                 .map(jo -> jo.get("d"))
-                .mapToDouble(e -> doubleValue(e, 0d))
+                .mapToDouble(e -> e.doubleValue(0d))
                 .mapToObj(R::new)
                 .toList();
         assertEquals(List.of(new R(5), new R(6), new R(7)), result);
@@ -159,7 +72,7 @@ class QueriesTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void testValue() {
+    void testAsObject() {
         var src = """
                 {"a": 1
                 , "b": true
@@ -169,19 +82,14 @@ class QueriesTest {
                 }""";
         var jo = Greyson.read(src).orElseThrow();
         assertAll(
-                () -> assertInstanceOf(Map.class, value(jo)),
-                () -> assertInstanceOf(BigDecimal.class, ((Map<String, ?>) value(jo)).get("a")),
-                () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) value(jo)).get("b")),
-                () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) value(jo)).get("c")),
-                () -> assertNull(((Map<String, ?>) value(jo)).get("d")),
-                () -> assertInstanceOf(List.class, ((Map<String, ?>) value(jo)).get("e")),
-                () -> assertThrows(NullPointerException.class, () -> value(null))
+                () -> assertInstanceOf(Map.class, asObject(jo)),
+                () -> assertInstanceOf(BigDecimal.class, ((Map<String, ?>) asObject(jo)).get("a")),
+                () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) asObject(jo)).get("b")),
+                () -> assertInstanceOf(Boolean.class, ((Map<String, ?>) asObject(jo)).get("c")),
+                () -> assertNull(((Map<String, ?>) asObject(jo)).get("d")),
+                () -> assertInstanceOf(List.class, ((Map<String, ?>) asObject(jo)).get("e")),
+                () -> assertThrows(NullPointerException.class, () -> asObject(null))
         );
-    }
-
-    @Test
-    void testValueDef() {
-        assertEquals("hello", value(null, "hello"));
     }
 
     @Test
@@ -189,12 +97,7 @@ class QueriesTest {
         var ja = arrayBuilder().addBasic(0).addBasic(1).build();
         assertAll(
                 () -> assertArrayEquals(new int[]{0, 1}, intArray(ja)),
-                () -> assertArrayEquals(new boolean[]{false, true}, booleanArray(ja)),
-                () -> assertArrayEquals(new byte[]{0, 1}, byteArray(ja)),
-                () -> assertArrayEquals(new char[]{0, 1}, charArray(ja)),
-                () -> assertArrayEquals(new short[]{0, 1}, shortArray(ja)),
                 () -> assertArrayEquals(new long[]{0, 1}, longArray(ja)),
-                () -> assertArrayEquals(new float[]{0, 1}, floatArray(ja)),
                 () -> assertArrayEquals(new double[]{0, 1}, doubleArray(ja))
         );
     }

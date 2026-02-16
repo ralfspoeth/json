@@ -171,7 +171,7 @@ class BuilderTest {
     void testOfAny() {
         var job = objectBuilder(new JsonObject(Map.of("a", TRUE)));
         var jab = arrayBuilder(new JsonArray(List.of(TRUE)));
-        var vb = valueBuilder(TRUE);
+        var vb = basicBuilder(TRUE);
         assertAll(
                 () -> assertInstanceOf(Builder.class, job),
                 () -> assertInstanceOf(Builder.class, jab),

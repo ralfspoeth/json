@@ -168,6 +168,15 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return Optional.empty();
     }
 
+    default Optional<JsonValue> getPath(String... names) {
+        var current = Optional.of(this);
+        for (String name : names) {
+            current = current.flatMap(v -> v.get(name));
+            if (current.isEmpty()) break;
+        }
+        return current;
+    }
+
     /**
      * Get all the elements of this it is a JSON array,
      * or an empty list if this is not an array.

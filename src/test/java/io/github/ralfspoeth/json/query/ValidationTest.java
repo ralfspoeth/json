@@ -180,8 +180,10 @@ class ValidationTest {
                         .map(JsonValue::elements)
                         .flatMap(List::stream)
                         .filter(is(JsonObject.class))
-                        .mapToInt(v -> Path.of("x").intValue(v))
-                        .findFirst().orElseThrow()
+                        .flatMap(Path.of("x"))
+                        .findFirst()
+                        .flatMap(JsonValue::intValue)
+                        .orElseThrow()
                 ),
                 () -> assertDoesNotThrow(() -> arr.filter(matchesOrThrow(is(JsonArray.class)))),
                 () -> assertThrows(ValidationException.class, () -> arr.filter(matchesOrThrow(is(JsonObject.class)))),
@@ -212,8 +214,8 @@ class ValidationTest {
                 .map(JsonValue::elements)
                 .flatMap(Collection::stream)
                 .map(jv -> new Point(
-                        Path.of("x").intValue( jv, 0),
-                        Path.of("y").intValue(jv, 1)
+                        Path.of("x").single(jv).flatMap(JsonValue::intValue).orElse(0),
+                        Path.of("y").single(jv).flatMap(JsonValue::intValue).orElse(0)
                 )).toList();
         System.out.println(points);
 

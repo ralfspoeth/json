@@ -26,7 +26,7 @@ public sealed interface Builder<T extends JsonValue> {
         return (Builder<T>) switch (value) {
             case JsonObject jo -> objectBuilder(jo);
             case JsonArray ja -> arrayBuilder(ja);
-            case Basic<?> b -> valueBuilder(b);
+            case Basic<?> b -> basicBuilder(b);
         };
     }
 
@@ -35,7 +35,7 @@ public sealed interface Builder<T extends JsonValue> {
      *
      * @param value a value, may not be {@code null}
      */
-    static BasicBuilder valueBuilder(Basic<?> value) {
+    static BasicBuilder basicBuilder(Basic<?> value) {
         return new BasicBuilder(value);
     }
 
@@ -132,7 +132,7 @@ public sealed interface Builder<T extends JsonValue> {
             data.add(switch (elem) {
                 case JsonObject jo -> objectBuilder(jo);
                 case JsonArray ja -> arrayBuilder(ja);
-                case Basic<?> b -> valueBuilder(b);
+                case Basic<?> b -> basicBuilder(b);
             });
             return this;
         }
@@ -214,7 +214,7 @@ public sealed interface Builder<T extends JsonValue> {
             data.put(requireNonNull(name), switch (requireNonNull(value)) {
                 case JsonObject jo -> objectBuilder(jo);
                 case JsonArray ja -> arrayBuilder(ja);
-                case Basic<?> b -> valueBuilder(b);
+                case Basic<?> b -> basicBuilder(b);
             });
             return this;
         }
@@ -273,7 +273,7 @@ public sealed interface Builder<T extends JsonValue> {
             map.forEach((key, val) -> data.put(key, switch (val) {
                 case JsonObject jo -> objectBuilder(jo);
                 case JsonArray ja -> arrayBuilder(ja);
-                case Basic<?> b -> valueBuilder(b);
+                case Basic<?> b -> basicBuilder(b);
             }));
             return this;
         }

@@ -145,7 +145,7 @@ class PathTest {
         // when
         var path = of("a/b/c");
         // then
-        assertEquals(5, path.doubleValue(obj));
+        assertEquals(5, path.single(obj).flatMap(JsonValue::doubleValue).orElseThrow());
     }
 
     @Test
@@ -162,16 +162,16 @@ class PathTest {
         var elem = Greyson.read(src).orElseThrow();
         // then
         assertAll(
-                () -> assertEquals(1, of("[0]/a").intValue(elem)),
-                () -> assertEquals(3, of("[0]/c").intValue(elem)),
-                () -> assertEquals(7, of("[1]/d").intValue(elem)),
-                () -> assertTrue(of("[5]").booleanValue(elem)),
-                () -> assertEquals(3, of("[4]").intValue(elem)),
-                () -> assertEquals(9, of("[9]/c").intValue(elem)),
-                () -> assertEquals(0, of("[10]/a").intValue(elem)),
-                () -> assertEquals(0, of("[11]").intValue(elem)),
-                () -> assertEquals(1, of("[-1]/a").intValue(elem)),
-                () -> assertEquals(0, of("[50..60]").intValue(elem))
+                () -> assertEquals(1, of("[0]/a").single(elem).flatMap(JsonValue::intValue).orElseThrow()),
+                () -> assertEquals(3, of("[0]/c").single(elem).flatMap(JsonValue::intValue).orElseThrow()),
+                () -> assertEquals(7, of("[1]/d").single(elem).flatMap(JsonValue::intValue).orElseThrow()),
+                () -> assertTrue(of("[5]").single(elem).flatMap(JsonValue::booleanValue).orElseThrow()),
+                () -> assertEquals(3, of("[4]").single(elem).flatMap(JsonValue::intValue).orElseThrow()),
+                () -> assertEquals(9, of("[9]/c").single(elem).flatMap(JsonValue::intValue).orElseThrow()),
+                () -> assertEquals(0, of("[10]/a").single(elem).flatMap(JsonValue::intValue).orElse(0)),
+                () -> assertEquals(0, of("[11]").single(elem).flatMap(JsonValue::intValue).orElse(0)),
+                () -> assertEquals(1, of("[-1]/a").single(elem).flatMap(JsonValue::intValue).orElseThrow()),
+                () -> assertEquals(0, of("[50..60]").single(elem).flatMap(JsonValue::intValue).orElse(0))
         );
     }
 
@@ -194,42 +194,42 @@ class PathTest {
         assertAll(
                 () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("bl/x").intValue(obj1),
-                                        of("bl/y").intValue(obj1)
+                                        of("bl/x").single(obj1).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("bl/y").single(obj1).flatMap(JsonValue::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("tr/x").intValue(obj1),
-                                        of("tr/y").intValue(obj1)
+                                        of("tr/x").single(obj1).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("tr/y").single(obj1).flatMap(JsonValue::intValue).orElseThrow()
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("x1").intValue(obj2),
-                                        of("y1").intValue(obj2)
+                                        of("x1").single(obj2).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("y1").single(obj2).flatMap(JsonValue::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("x2").intValue(obj2),
-                                        of("y2").intValue(obj2)
+                                        of("x2").single(obj2).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("y2").single(obj2).flatMap(JsonValue::intValue).orElseThrow()
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("[0]").intValue(arr1),
-                                        of("[1]").intValue(arr1)
+                                        of("[0]").single(arr1).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("[1]").single(arr1).flatMap(JsonValue::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("[2]").intValue(arr1),
-                                        of("[3]").intValue(arr1)
+                                        of("[2]").single(arr1).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("[3]").single(arr1).flatMap(JsonValue::intValue).orElseThrow()
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("[0]").intValue(arr2),
-                                        of("[2]").intValue(arr2)
+                                        of("[0]").single(arr2).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("[2]").single(arr2).flatMap(JsonValue::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("[1]").intValue(arr2),
-                                        of("[3]").intValue(arr2)
+                                        of("[1]").single(arr2).flatMap(JsonValue::intValue).orElseThrow(),
+                                        of("[3]").single(arr2).flatMap(JsonValue::intValue).orElseThrow()
                                 )
                         )
                 )

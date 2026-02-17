@@ -23,22 +23,7 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     }
 
     @Override
-    public Optional<Double> doubleValue() {
-        return Optional.of(value.doubleValue());
-    }
-
-    @Override
-    public Optional<Integer> intValue() {
-        return Optional.of(value.intValue());
-    }
-
-    @Override
-    public Optional<Long> longValue() {
-        return Optional.of(value.longValue());
-    }
-
-    @Override
-    public Optional<BigDecimal> decimalValue() {
+    public Optional<BigDecimal> decimal() {
         return Optional.of(value);
     }
 }

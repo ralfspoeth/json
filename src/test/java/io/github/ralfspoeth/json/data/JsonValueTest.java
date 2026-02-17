@@ -71,20 +71,20 @@ class JsonValueTest {
     }
 
     @Test
-    void testDecimalValue() {
+    void testDecimal() {
         assertAll(
-                () -> assertEquals(0, JsonValue.of(10).decimalValue().orElseThrow().compareTo(BigDecimal.TEN)),
-                () -> assertEquals(BigDecimal.TWO, JsonValue.of(null).decimalValue(BigDecimal.TWO)),
-                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).decimalValue().orElseThrow())
+                () -> assertEquals(0, JsonValue.of(10).decimal().orElseThrow().compareTo(BigDecimal.TEN)),
+                () -> assertEquals(BigDecimal.TWO, JsonValue.of(null).decimal(BigDecimal.TWO)),
+                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).decimal().orElseThrow())
         );
     }
 
     @Test
-    void testStringValue() {
+    void testString() {
         assertAll(
-                () -> assertEquals("hello", JsonValue.of("hello").stringValue().orElseThrow()),
-                () -> assertEquals("hello", JsonValue.of(null).stringValue("hello")),
-                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).stringValue().orElseThrow())
+                () -> assertEquals("hello", JsonValue.of("hello").string().orElseThrow()),
+                () -> assertEquals("hello", JsonValue.of(null).string("hello")),
+                () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).string().orElseThrow())
         );
     }
 
@@ -104,17 +104,17 @@ class JsonValueTest {
                 () -> assertTrue(parsed.get("a")
                         .flatMap(a -> a.get(3))
                         .flatMap(a3 -> a3.get("b"))
-                        .flatMap(JsonValue::booleanValue)
+                        .flatMap(JsonValue::bool)
                         .orElseThrow()),
                 () -> assertTrue(
                         parsed.get("x")
                                 .flatMap(x -> x.get(5))
-                                .flatMap(JsonValue::decimalValue)
+                                .flatMap(JsonValue::decimal)
                                 .map(BigDecimal::doubleValue)
                                 .isEmpty()
                 ),
                 () -> assertTrue(
-                        parsed.get("y").map(JsonValue::longValue).isEmpty()
+                        parsed.get("y").map(JsonValue::decimal).isEmpty()
                 )
         );
     }

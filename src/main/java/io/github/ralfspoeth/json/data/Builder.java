@@ -363,10 +363,6 @@ public sealed interface Builder<T extends JsonValue> {
             this.value = requireNonNull(value);
         }
 
-        private void setValue(String contents) {
-            this.value = null;
-        }
-
         @Override
         public int size() {
             return 1;

@@ -2,6 +2,8 @@ package io.github.ralfspoeth.json.data;
 
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,8 +29,8 @@ class NaviTest {
                 () -> assertTrue(a.isPresent()),
                 () -> assertTrue(ab.isPresent()),
                 () -> assertTrue(abtrue.isPresent()),
-                () -> assertEquals(true, abtrue.flatMap(JsonValue::booleanValue).orElseThrow()),
-                () -> assertEquals(1, ab1.flatMap(JsonValue::intValue).orElseThrow())
+                () -> assertEquals(true, abtrue.flatMap(JsonValue::bool).orElseThrow()),
+                () -> assertEquals(1, ab1.flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow())
         );
     }
 

@@ -13,7 +13,7 @@ public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     }
 
     @Override
-    public Optional<Boolean> booleanValue() {
+    public Optional<Boolean> bool() {
         return Optional.of(boolValue);
     }
 

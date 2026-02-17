@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -182,7 +183,8 @@ class ValidationTest {
                         .filter(is(JsonObject.class))
                         .flatMap(Path.of("x"))
                         .findFirst()
-                        .flatMap(JsonValue::intValue)
+                        .flatMap(JsonValue::decimal)
+                        .map(BigDecimal::intValue)
                         .orElseThrow()
                 ),
                 () -> assertDoesNotThrow(() -> arr.filter(matchesOrThrow(is(JsonArray.class)))),
@@ -214,8 +216,8 @@ class ValidationTest {
                 .map(JsonValue::elements)
                 .flatMap(Collection::stream)
                 .map(jv -> new Point(
-                        Path.of("x").single(jv).flatMap(JsonValue::intValue).orElse(0),
-                        Path.of("y").single(jv).flatMap(JsonValue::intValue).orElse(0)
+                        Path.of("x").single(jv).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0),
+                        Path.of("y").single(jv).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0)
                 )).toList();
         System.out.println(points);
 

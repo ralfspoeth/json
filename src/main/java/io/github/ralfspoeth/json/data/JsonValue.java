@@ -84,66 +84,34 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
     @Override
     boolean equals(Object o);
 
-    default Optional<Boolean> booleanValue() {
+    default Optional<Boolean> bool() {
         return Optional.empty();
     }
 
-    default boolean booleanValue(boolean def) {
-        return booleanValue().orElse(def);
+    default boolean bool(boolean def) {
+        return bool().orElse(def);
     }
 
-    default Optional<Integer> intValue() {
-        return Optional.empty();
-    }
-
-    /**
-     * Same as {@code intValue().orElse(def)}.
-     */
-    default int intValue(int def) {
-        return intValue().orElse(def);
-    }
-
-    default Optional<Long> longValue() {
-        return Optional.empty();
-    }
-
-    /**
-     * Same as {@code longValue().orElse(def)}.
-     */
-    default long longValue(long def) {
-        return longValue().orElse(def);
-    }
-
-    default Optional<Double> doubleValue() {
-        return Optional.empty();
-    }
-    /**
-     * Same as {@code doubleValue().orElse(def)}.
-     */
-    default double doubleValue(double def) {
-        return doubleValue().orElse(def);
-    }
-
-    default Optional<BigDecimal> decimalValue() {
+    default Optional<BigDecimal> decimal() {
         return Optional.empty();
     }
 
     /**
      * Same as {@code decimalValue().orElse(def)}.
      */
-    default BigDecimal decimalValue(BigDecimal def) {
-        return decimalValue().orElse(requireNonNull(def));
+    default BigDecimal decimal(BigDecimal def) {
+        return decimal().orElse(requireNonNull(def));
     }
 
-    default Optional<String> stringValue() {
+    default Optional<String> string() {
         return Optional.empty();
     }
 
     /**
      * Same as {@code stringValue().orElse(def)}.
      */
-    default String stringValue(String def) {
-        return stringValue().orElse(requireNonNull(def));
+    default String string(String def) {
+        return string().orElse(requireNonNull(def));
     }
 
     /**

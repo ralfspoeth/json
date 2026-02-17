@@ -44,9 +44,9 @@ class QueriesTest {
         var jo = Greyson.read(src).orElseThrow();
 
         var r = new R(
-                jo.get("s").flatMap(JsonValue::stringValue).orElse(""),
-                jo.get("b").flatMap(JsonValue::booleanValue).orElse(false),
-                jo.get("d").flatMap(JsonValue::decimalValue).map(BigDecimal::doubleValue).orElse(0d),
+                jo.get("s").flatMap(JsonValue::string).orElse(""),
+                jo.get("b").flatMap(JsonValue::bool).orElse(false),
+                jo.get("d").flatMap(JsonValue::decimal).map(BigDecimal::doubleValue).orElse(0d),
                 jo.get("o").map(Queries::asObject).orElse(null)
         );
 
@@ -64,7 +64,7 @@ class QueriesTest {
                 .stream()
                 .map(JsonValue::members)
                 .map(jo -> jo.get("d"))
-                .mapToDouble(e -> e.doubleValue(0d))
+                .mapToDouble(e -> e.decimal(BigDecimal.ZERO).doubleValue())
                 .mapToObj(R::new)
                 .toList();
         assertEquals(List.of(new R(5), new R(6), new R(7)), result);

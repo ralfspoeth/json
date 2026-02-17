@@ -49,7 +49,7 @@ public record JsonString(String value) implements Basic<String> {
     }
 
     @Override
-    public Optional<String> stringValue() {
+    public Optional<String> string() {
         return Optional.of(value);
     }
 

@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 import org.jspecify.annotations.Nullable;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -76,7 +77,7 @@ public class Queries {
             case JsonArray(var elements) -> {
                 var tmp = new int[elements.size()];
                 for (int i = 0; i < tmp.length; i++) {
-                    tmp[i] = elements.get(i).intValue().orElseThrow();
+                    tmp[i] = elem.get(i).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow();
                 }
                 yield tmp;
             }
@@ -93,7 +94,7 @@ public class Queries {
             case JsonArray(var elements) -> {
                 var tmp = new long[elements.size()];
                 for (int i = 0; i < tmp.length; i++) {
-                    tmp[i] = elements.get(i).longValue().orElseThrow();
+                    tmp[i] = elem.get(i).flatMap(JsonValue::decimal).map(BigDecimal::longValue).orElseThrow();
                 }
                 yield tmp;
             }
@@ -110,7 +111,7 @@ public class Queries {
             case JsonArray(var elements) -> {
                 var tmp = new double[elements.size()];
                 for (int i = 0; i < tmp.length; i++) {
-                    tmp[i] = elements.get(i).doubleValue().orElseThrow();
+                    tmp[i] = elem.get(i).flatMap(JsonValue::decimal).map(BigDecimal::doubleValue).orElseThrow();
                 }
                 yield tmp;
             }

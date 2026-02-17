@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json.data;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -137,7 +138,7 @@ class BuilderTest {
         assertAll(
                 () -> assertEquals(2, array.elements().size()),
                 () -> assertEquals(JsonNull.INSTANCE, array.elements().getFirst().get("a").orElseThrow()),
-                () -> assertEquals(1, array.elements().getLast().elements().getFirst().intValue(0))
+                () -> assertEquals(1, array.elements().getLast().elements().getFirst().decimal(BigDecimal.ZERO).intValue())
         );
     }
 

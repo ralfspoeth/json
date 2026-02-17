@@ -3,11 +3,9 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.JsonArray;
 import io.github.ralfspoeth.json.data.JsonObject;
 import io.github.ralfspoeth.json.data.JsonValue;
-import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -66,6 +64,11 @@ import static java.util.Objects.requireNonNull;
  * assert result.get(2).equals(Basic.of(3)); // the "ac" member of the fifth
  *}
  * <p>
+ * The second approach to constructing paths is through the fluent API, as in
+ * {@snippet :
+ * Path.root().member("a").index(1).regex("b.*c").range(0, 2);
+ *}
+ * <p>
  * The class implements {@link Function} such that it may be used in stream
  * pipelines easily as in
  * <p>
@@ -79,11 +82,65 @@ import static java.util.Objects.requireNonNull;
  */
 public sealed abstract class Path implements Function<JsonValue, Stream<JsonValue>> {
 
-    private static final class MemberPath extends Path {
+    private static final Path ROOT = new RootPath();
+
+    public static Path root() {
+        return ROOT;
+    }
+
+    private static abstract sealed class AbstractPath extends Path {
+        private final Path parent;
+        protected Path parent() {
+            return parent;
+        }
+
+        protected AbstractPath(Path parent) {
+            this.parent = requireNonNull(parent);
+        }
+
+        abstract Stream<JsonValue> evalSegment(JsonValue elem);
+
+        /**
+         * To be used with {@link Stream#flatMap(Function)} in a stream
+         * pipeline.
+         *
+         * @param value a JSON element
+         * @return all children of this path applied to the given root
+         */
+        @Override
+        public Stream<JsonValue> apply(JsonValue value) {
+            return parent.apply(value).flatMap(this::evalSegment);
+        }
+
+        abstract AbstractPath withParent(Path parent);
+
+        AbstractPath resolve(AbstractPath p) {
+            if (p.parent instanceof AbstractPath ap) {
+                return ap.resolve(p.withParent(this));
+            } else {
+                return p.withParent(this);
+            }
+        }
+    }
+
+    private static final class RootPath extends Path {
+
+        @Override
+        public Stream<JsonValue> apply(JsonValue jsonValue) {
+            return Stream.of(jsonValue);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof RootPath;
+        }
+    }
+
+    private static final class MemberPath extends AbstractPath {
 
         private final String memberName;
 
-        private MemberPath(String memberName, @Nullable Path parent) {
+        private MemberPath(String memberName, Path parent) {
             super(parent);
             this.memberName = requireNonNull(memberName);
         }
@@ -96,20 +153,20 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        public int hashCode() {
-            return memberName.hashCode();
+        AbstractPath withParent(Path parent) {
+            return new MemberPath(memberName, parent);
         }
 
         @Override
-        boolean equalsSegment(Path p) {
-            return p instanceof MemberPath mp && mp.memberName.equals(memberName);
+        public boolean equals(Object o) {
+            return o instanceof MemberPath mp && memberName.equals(mp.memberName) && parent().equals(mp.parent());
         }
     }
 
-    private static final class IndexPath extends Path {
+    private static final class IndexPath extends AbstractPath {
         private final int index;
 
-        private IndexPath(int index, @Nullable Path parent) {
+        private IndexPath(int index, Path parent) {
             super(parent);
             this.index = index;
         }
@@ -127,22 +184,21 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        boolean equalsSegment(Path p) {
-            return p instanceof IndexPath ip && ip.index == index;
+        AbstractPath withParent(Path parent) {
+            return new IndexPath(index, parent);
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(index);
+        public boolean equals(Object o) {
+            return o instanceof IndexPath ip && index == ip.index && parent().equals(ip.parent());
         }
-
     }
 
-    private static final class RangePath extends Path {
+    private static final class RangePath extends AbstractPath {
 
         private final int min, max;
 
-        private RangePath(int min, int max, @Nullable Path parent) {
+        private RangePath(int min, int max, Path parent) {
             super(parent);
             this.min = min;
             this.max = (max > 0 ? max : Integer.MAX_VALUE);
@@ -160,25 +216,25 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        boolean equalsSegment(Path p) {
-            return p instanceof RangePath rp && rp.min == min && rp.max == max;
+        AbstractPath withParent(Path parent) {
+            return new RangePath(min, max, parent);
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(max, min);
+        public boolean equals(Object o) {
+            return o instanceof RangePath rp && min == rp.min && max == rp.max && parent().equals(rp.parent());
         }
     }
 
-    private static final class RegexPath extends Path {
+    private static final class RegexPath extends AbstractPath {
 
         private final Pattern regex;
 
-        private RegexPath(String regex, @Nullable Path parent) {
+        private RegexPath(String regex, Path parent) {
             this(Pattern.compile(regex), parent);
         }
 
-        private RegexPath(Pattern regex, @Nullable Path parent) {
+        private RegexPath(Pattern regex, Path parent) {
             super(parent);
             this.regex = regex;
         }
@@ -197,40 +253,20 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        boolean equalsSegment(Path p) {
-            return p instanceof RegexPath rp && rp.regex.equals(regex);
+        AbstractPath withParent(Path parent) {
+            return new RegexPath(regex, parent);
         }
 
         @Override
-        public int hashCode() {
-            return regex.hashCode();
+        public boolean equals(Object o) {
+            return o instanceof RegexPath rp && regex.equals(rp.regex) && parent().equals(rp.parent());
         }
     }
-
-    private final @Nullable Path parent;
-
-    abstract Stream<JsonValue> evalSegment(JsonValue elem);
 
     private static final Pattern INDEX_PATTERN = Pattern.compile("\\[(-?\\d+)]");
 
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)]");
 
-
-
-    protected Path(@Nullable Path parent) {
-        this.parent = parent;
-    }
-
-    /**
-     * To be used with {@link Stream#flatMap(Function)} in a stream
-     * pipeline.
-     * @param value a JSON element
-     * @return all children of this path applied to the given root
-     */
-    @Override
-    public Stream<JsonValue> apply(JsonValue value) {
-        return parent == null ? this.evalSegment(value) : parent.apply(value).flatMap(this::evalSegment);
-    }
 
     /**
      * The first element found by the path.
@@ -253,13 +289,12 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * The given pattern is first split into parts
      * using {@code '/'}.
      *
-     *
      * @param pattern a path pattern
      * @return a path
      */
     public static Path of(String pattern) {
         var parts = requireNonNull(pattern).split("/");
-        Path prev = null;
+        Path prev = root();
         for (String part : parts) {
             var im = INDEX_PATTERN.matcher(part);
             if (im.matches()) {
@@ -276,17 +311,39 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
                 }
             }
         }
-        assert prev != null;
         return prev;
     }
 
-    abstract boolean equalsSegment(Path p);
+    public Path member(String memberName) {
+        return new MemberPath(memberName, this);
+    }
 
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Path p && equalsSegment(p) && Objects.equals(p.parent, parent);
+    public Path index(int index) {
+        return new IndexPath(index, this);
+    }
+
+    public Path range(int min, int max) {
+        return new RangePath(min, max, this);
+    }
+
+    public Path regex(String regex) {
+        return new RegexPath(regex, this);
+    }
+
+    public Path regex(Pattern regex) {
+        return new RegexPath(regex, this);
+    }
+
+    public Path resolve(Path p) {
+        if (this instanceof AbstractPath tp && p instanceof AbstractPath ap) {
+            return tp.resolve(ap);
+        } else {
+            return this;
+        }
     }
 
     @Override
-    public abstract int hashCode();
+    public int hashCode() {
+        return 0;
+    }
 }

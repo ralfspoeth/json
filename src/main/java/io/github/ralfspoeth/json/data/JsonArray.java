@@ -64,6 +64,11 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     }
 
     @Override
+    public int nodes() {
+        return 1 + elements.stream().mapToInt(JsonValue::nodes).sum();
+    }
+
+    @Override
     public int depth() {
         return elements.stream()
                 .mapToInt(JsonValue::depth)

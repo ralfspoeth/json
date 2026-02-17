@@ -35,6 +35,10 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return 1;
     }
 
+    default int nodes() {
+        return 1;
+    }
+
     /**
      * Converts an object into a JSON value.
      * If you happen to pass a {@link Builder}, its {@link Builder#build()} method will be invoked;

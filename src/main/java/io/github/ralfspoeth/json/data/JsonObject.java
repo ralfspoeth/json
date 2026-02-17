@@ -48,6 +48,11 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     }
 
     @Override
+    public int nodes() {
+        return 1 + members.values().stream().mapToInt(JsonValue::nodes).sum();
+    }
+
+    @Override
     public String json() {
         return members.entrySet().stream()
                 .map(e -> "\"" + e.getKey() + "\":" + e.getValue().json())

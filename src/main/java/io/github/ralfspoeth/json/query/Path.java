@@ -337,6 +337,9 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     public Path resolve(Path p) {
         if (this instanceof AbstractPath tp && p instanceof AbstractPath ap) {
             return tp.resolve(ap);
+        } if(p instanceof AbstractPath ap) {
+            assert this instanceof RootPath;
+            return ap;
         } else {
             return this;
         }

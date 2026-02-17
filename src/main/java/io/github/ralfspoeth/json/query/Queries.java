@@ -4,8 +4,10 @@ import io.github.ralfspoeth.json.data.*;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
 import static java.util.Objects.requireNonNull;
@@ -69,6 +71,7 @@ public class Queries {
      * Convert a {@link JsonArray} of {@link JsonNumber}s into an array
      * of {@code int}s.
      * If the
+     *
      * @param elem, may be {@code null}
      * @return an array of {@code int}s; never {@code null}, zero length for elements other than a {@link JsonArray}
      */
@@ -117,5 +120,17 @@ public class Queries {
             }
             case null, default -> new double[0];
         };
+    }
+
+    public static Collector<JsonValue, ?, JsonArray> toJsonArray() {
+        return Collector.of(
+                ArrayList::new,
+                ArrayList::add,
+                (l1, l2) -> {
+                    l1.addAll(l2);
+                    return l1;
+                },
+                JsonArray::new
+        );
     }
 }

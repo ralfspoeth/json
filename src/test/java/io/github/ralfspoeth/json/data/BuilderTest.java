@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.stream.Collector;
 
 import static io.github.ralfspoeth.json.data.Builder.*;
 import static io.github.ralfspoeth.json.data.JsonBoolean.TRUE;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class BuilderTest {
@@ -147,25 +147,20 @@ class BuilderTest {
         // given
         var l = List.of(Basic.of(5), JsonNull.INSTANCE, TRUE,
                 new JsonArray(List.of()), new JsonObject(Map.of()));
-        var s = l.stream();
         // when
-        var r = s.collect(toJsonArray());
+        var r = l.stream().collect(Collector.of(
+                ArrayList::new, ArrayList::add,
+                (l1, l2) -> {
+                    l1.addAll(l2);
+                    return l1;
+                },
+                JsonArray::new)
+        );
         // then
         assertAll(
                 () -> assertInstanceOf(JsonArray.class, r),
                 () -> assertEquals(l, r.elements())
         );
-    }
-
-    @Test
-    void testBuildersToJsonArray() {
-        // given
-        var point = new JsonObject(Map.of("x", Basic.of(1), "y", Basic.of(2)));
-        var array = new JsonArray(List.of(Basic.of(7), Basic.of(11)));
-        // when
-        var result = arrayBuilder().add(objectBuilder(point)).add(arrayBuilder(array)).build();
-        // then
-        assertEquals(result, Stream.of(objectBuilder(point), arrayBuilder(array)).collect(buildersToJsonArray()));
     }
 
     @Test

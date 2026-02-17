@@ -29,12 +29,22 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
     /**
      * The depth of tree of nested values.
      * The depth of each leaf node is 1.
-     * The depth of container nodes is 1 + the maximum depth of its descendants.
+     * The depth of container nodes is 1 + the maximum depth of its children.
      */
     default int depth() {
         return 1;
     }
 
+    /**
+     * Recursively collect the number of nodes including {@code this}
+     * and the children.
+     * The result is 1 for all {@link Basic} nodes.
+     * For a {@link JsonArray}, it is 1 + the sum of the number of nodes
+     * of each if its {@link JsonArray#elements()}.
+     * For a {@link JsonObject}, it is 1 + the sum of the nodes of the
+     * {@link Map#values() values} of its {@link JsonObject#members()}.
+     * @return the number of nodes contained in this subtree
+     */
     default int nodes() {
         return 1;
     }

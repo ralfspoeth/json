@@ -3,7 +3,6 @@ package io.github.ralfspoeth.json.data;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;
-import java.util.stream.Collector;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.in;
 import static java.util.Objects.requireNonNull;
@@ -21,6 +20,12 @@ import static java.util.stream.Collectors.toMap;
  */
 public sealed interface Builder<T extends JsonValue> {
 
+    /**
+     * Instantiate a fresh builder from a given {@link JsonValue}.
+     * @param value the value, may not be {@code null}
+     * @return a new builder instance
+     * @param <T> the actual type of the value
+     */
     @SuppressWarnings("unchecked")
     static <T extends JsonValue> Builder<T> of(T value) {
         return (Builder<T>) switch (value) {
@@ -74,26 +79,8 @@ public sealed interface Builder<T extends JsonValue> {
     }
 
     /**
-     * to be used in the stream pipeline.
+     * The number of direct descendants of the builder.
      */
-    static Collector<JsonValue, ArrayBuilder, JsonArray> toJsonArray() {
-        return Collector.of(
-                Builder::arrayBuilder,
-                ArrayBuilder::add,
-                ArrayBuilder::combine,
-                Builder::build
-        );
-    }
-
-    static Collector<Builder<? extends JsonValue>, ArrayBuilder, JsonArray> buildersToJsonArray() {
-        return Collector.of(
-                Builder::arrayBuilder,
-                ArrayBuilder::add,
-                ArrayBuilder::combine,
-                Builder::build
-        );
-    }
-
     int size();
 
     default boolean isEmpty() {
@@ -139,11 +126,6 @@ public sealed interface Builder<T extends JsonValue> {
 
         public ArrayBuilder add(Builder<? extends JsonValue> b) {
             data.add(b);
-            return this;
-        }
-
-        ArrayBuilder combine(ArrayBuilder ab) {
-            data.addAll(ab.data);
             return this;
         }
 

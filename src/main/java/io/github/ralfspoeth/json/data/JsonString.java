@@ -8,11 +8,19 @@ import java.util.concurrent.ConcurrentMap;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Represents a JSON string.
+ *
+ * @param value the string contents, must not be {@code null}.
+ */
 public record JsonString(String value) implements Basic<String> {
     public JsonString {
         value = requireNonNull(value);
     }
 
+    /**
+     * The escaped JSON string representation.
+     */
     @Override
     public String json() {
         return "\"%s\"".formatted(escaped(value));
@@ -20,6 +28,11 @@ public record JsonString(String value) implements Basic<String> {
 
     private static final ConcurrentMap<String, String> cachedEscaped = new ConcurrentHashMap<>();
 
+    /**
+     * Obtain the escaped version of the given string {@code s}.
+     * @param s a string, may not be {@code null}
+     * @see <a href="http://json.org">json.org</a>
+     */
     public static String escaped(String s) {
         return cachedEscaped.computeIfAbsent(s, JsonString::escape);
     }
@@ -48,12 +61,14 @@ public record JsonString(String value) implements Basic<String> {
         return sb.toString();
     }
 
+    ///  @return a non-empty optional with {@code this.value()} as payload
     @Override
     public Optional<String> string() {
         return Optional.of(value);
     }
 
-
+    /// {@code true} if {@code s} is another {@link JsonString}
+    /// and the contents of {@code this} and {@code s} are equal.
     @Override
     public boolean test(@Nullable JsonValue s) {
         return s instanceof JsonString(String v) && v.equals(value);

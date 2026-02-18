@@ -1,7 +1,8 @@
 package io.github.ralfspoeth.json.data;
 
 /**
- * The aggregate types in the JSON hierarchy, which are JsonArray and JsonObject.
+ * The aggregate types in the JSON hierarchy,
+ * which are {@link JsonArray} and {@link JsonObject}.
  */
 public sealed interface Aggregate extends JsonValue permits JsonArray, JsonObject {
 

@@ -4,15 +4,15 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Optional;
 
 /**
  * The basic data types in the JSON hierarchy.
  * @param <T> the type of the (immutable) value wrapped in the {@code Basic} instance.
  */
 public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull, JsonNumber, JsonString {
+
     /**
-     * The value wrapped inside this instance.
+     * The payload wrapped inside this instance.
      * @return the value, never {@code null` except for `JsonNull}
      */
     T value();
@@ -23,7 +23,8 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
      * object {@code o}.
      * The conversions shouldn't provide any surprises:
      * {@code null} is mapped to {@code JsonNull}, {@code boolean}s
-     * to {@code JsonBoolean}, all numerical types to {@code JsonNumber}
+     * to {@code JsonBoolean}, all numerical types (including {@code char})
+     * to {@code JsonNumber}
      * and all others to {@code JsonString} using the object's {@link  Object#toString}
      * method.
      * @param o an object
@@ -44,16 +45,12 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
             case Number n -> new JsonNumber(BigDecimal.valueOf(n.doubleValue()));
             case Boolean b -> JsonBoolean.of(b);
             case String s -> new JsonString(s);
-            case Builder<?> b -> b.build() instanceof Basic<?> bb?bb:illegalArgument("cannot pass an aggregate builder to Basic.of");
+            case Builder.BasicBuilder bb -> bb.build();
+            case Builder<?> _ -> illegalArgument("cannot pass an aggregate builder to Basic.of");
             case Basic<?> bb -> bb;
             case Aggregate ignored -> illegalArgument("cannot pass an aggregate to Basic.of");
             default -> new JsonString(o.toString());
         };
-    }
-
-    @Override
-    default Optional<Basic<?>> basic() {
-        return Optional.of(this);
     }
 
     private static Basic<?> illegalArgument(String msg) {

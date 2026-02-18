@@ -10,11 +10,11 @@ import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Implements the builder pattern for both aggregate types.
+ * Implements the builder pattern for both aggregate and basic types.
  * The builders implement a fluent API; any mutation operation
  * will by default return the builder itself.
- * Builders can be considered the mutable counterpart to their
- * immutable aggregate cousins.
+ * Builders can be considered to be the mutable counterpart of their
+ * immutable {@link JsonValue} cousins.
  *
  * @param <T> the type of the object built by the builder.
  */
@@ -325,7 +325,6 @@ public sealed interface Builder<T extends JsonValue> {
      * Builder implementation for {@code JsonValue}s.
      */
     final class BasicBuilder implements Builder<Basic<?>> {
-        // exactly one of these two must be non-null
         private Basic<?> value;
 
         private BasicBuilder(Basic<?> value) {

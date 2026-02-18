@@ -12,16 +12,43 @@ import static java.util.Objects.requireNonNull;
  * The root interface of the JSON hierarchy.
  * {@code JsonValue} is a sealed interface which allows for two subtypes
  * {@link Basic} and {@link Aggregate}, which are sealed interfaces themselves.
- * All instances are immutable, {@link Predicate}s, have a {@link #depth()}
- * and a {@link #json()} representation.
- * Every value can report its {@code boolean}, {@link BigDecimal decimal} (and all primitive cousins),
- * {@code String string} value or the element at a given index (empty if out of bounds or not an array)
- * and the value of a given key (in an object) if it exists.
+ * All instances are immutable, {@link Predicate}s, have a {@link #depth()}, can report
+ * the number of {@link #nodes},
+ * and provide a minimalistic {@link #json()} text representation.
+ * <p>
+ * The payload of a JSON object is either a {@link Boolean}, a {@link BigDecimal} or a {@link String},
+ * or for aggregate types a {@link List} of elements or a {@link Map} of members.
+ * Every {@link JsonValue} can report its payload returning an {@link Optional} wrapper through its
+ * {@link #bool()}, {@link #string()}, and {@link #decimal()} methods,
+ * {@link #elements()} and {@link #members()} methods return potentially empty {@link List} or {@link Map}
+ * instances, where
+ * {@link JsonBoolean} returns its payload in its {@link JsonBoolean#bool()} method,
+ * {@link JsonNumber} its payload in its {@link JsonNumber#decimal()} method,
+ * {@link JsonString} its payload in its {@link JsonString#string()}} method,
+ * {@link JsonArray} its payload in its {@link JsonArray#elements()} method, and finally
+ * {@link JsonObject} its payload in its {@link JsonObject#members()} method.
+ * </p>
+ * <p>
+ * All other methods report empty {@link List}s, empty {@link Map}s and empty {@link Optional}s.
+ * Additionally, {@link JsonArray#get(int)} and {@link JsonObject#get(String)} return an
+ * {@link Optional} with a value {@link Optional#isPresent() present}. These two methods
+ * </p>
+ * <p>
+ * The intent is to allow for a fluent query API, as in
+ * {@snippet :
+ * JsonValue v = JsonNull.INSTANCE; // @replace replacement="..." regex="JsonNull.INSTANCE;"
+ * BigDecimal a5 = v
+ *     .get("a")                      // member "a" if JSON object and member present
+ *     .flatMap(a -> a.get(5))        // sixth element if JSON array and index&lt;length
+ *     .flatMap(JsonValue::decimal)   // decimal if it is a JSON number
+ *     .orElse(BigDecimal.ZERO);      // default to 0 if any of the above is empty
+ * }
+ * </p>
  */
 public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits Aggregate, Basic {
 
     /**
-     * The JSON representation of the value.
+     * A minimalistic JSON representation of the value.
      * @return a JSON string, never {@code null}, which adheres to the JSON specification.
      */
     String json();
@@ -148,15 +175,6 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      */
     default Optional<JsonValue> get(String name) {
         return Optional.empty();
-    }
-
-    default Optional<JsonValue> getPath(String... names) {
-        var current = Optional.of(this);
-        for (String name : names) {
-            current = current.flatMap(v -> v.get(name));
-            if (current.isEmpty()) break;
-        }
-        return current;
     }
 
     /**

@@ -13,7 +13,7 @@ import static java.util.stream.Collectors.joining;
 /**
  * The array aggregate type in the JSON hierarchy.
  *
- * @param elements the elements; if {@code null} substituted by an empty list
+ * @param elements the elements, may not be {@code null}
  */
 public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunction<JsonValue> {
     public JsonArray {

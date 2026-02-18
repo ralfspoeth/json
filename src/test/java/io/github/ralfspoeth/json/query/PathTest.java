@@ -4,6 +4,8 @@ import io.github.ralfspoeth.json.*;
 import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +152,7 @@ class PathTest {
     }
 
     @Test
-    void testComplex() {
+    void testComplex() throws IOException {
         // given
         var src = """
                 [{"a": 1, "b": 2, "c": 3}, {"a": 4, "b": 5, "c": 6, "d": 7},
@@ -160,7 +162,7 @@ class PathTest {
                  {"a": 1, "b": 2, "c": 9}
                 ]""";
         // when
-        var elem = Greyson.read(src).orElseThrow();
+        var elem = Greyson.read(Reader.of(src)).orElseThrow();
         // then
         assertAll(
                 () -> assertEquals(1, of("[0]/a").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),

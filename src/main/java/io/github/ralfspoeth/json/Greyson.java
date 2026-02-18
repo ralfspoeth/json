@@ -17,31 +17,34 @@ import static java.util.Objects.requireNonNull;
 public class Greyson {
     private Greyson() {}
 
-    public static Optional<JsonValue> read(String s) {
-        try {
-            return read(Reader.of(s));
-        } catch (IOException e) {
-            throw new AssertionError("StringReader should never throw IOException", e);
+    /**
+     * Parse the contents which the reader produces
+     * into a {@link Builder}.
+     *
+     * @param reader the source
+     * @return a builder instance
+     * @throws IOException upon IO exceptions
+     */
+    public static Optional<Builder<?>> readBuilder(Reader reader) throws IOException {
+        try(var jr = new JsonReader(reader)) {
+            return jr.readBuilder();
         }
     }
 
+    /**
+     * Parse a JSON source into a {@link JsonValue}
+     * if it is complete; may be empty.
+     *
+     * @param rdr the reader
+     * @return a potentially empty representation
+     * @throws IOException when the input stream throws
+     */
     public static Optional<JsonValue> read(Reader rdr) throws IOException {
         try(var jr = new JsonReader(rdr)) {
             return jr.read();
         }
     }
 
-    public static Optional<JsonValue> read(InputStream in) throws IOException {
-        try(var jr = new JsonReader(in)) {
-            return jr.read();
-        }
-    }
-
-    public static Optional<Builder<? extends JsonValue>> readBuilder(InputStream is) throws IOException {
-        try(var jr = new JsonReader(is)) {
-            return jr.readBuilder();
-        }
-    }
 
     /**
      * Serialize the {@link JsonValue} to the {@link Writer}.

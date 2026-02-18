@@ -4,6 +4,8 @@ import io.github.ralfspoeth.json.*;
 import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +33,7 @@ class QueriesTest {
     }
 
     @Test
-    void testRec1() {
+    void testRec1() throws IOException {
         record R(String s, boolean b, double d, Object o) {}
         var src = """
                 {
@@ -41,7 +43,7 @@ class QueriesTest {
                     "o": null
                 }
                 """;
-        var jo = Greyson.read(src).orElseThrow();
+        var jo = Greyson.read(Reader.of(src)).orElseThrow();
 
         var r = new R(
                 jo.get("s").flatMap(JsonValue::string).orElse(""),
@@ -54,12 +56,12 @@ class QueriesTest {
     }
 
     @Test
-    void testList1() {
+    void testList1() throws IOException {
         record R(double d) {}
         var src = """
                 [{"d": 5}, {"d": 6}, {"d": 7}]
                 """;
-        var ja = Greyson.read(src).orElseThrow();
+        var ja = Greyson.read(Reader.of(src)).orElseThrow();
         var result = ja.elements()
                 .stream()
                 .map(JsonValue::members)
@@ -72,7 +74,7 @@ class QueriesTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void testAsObject() {
+    void testAsObject() throws IOException {
         var src = """
                 {"a": 1
                 , "b": true
@@ -80,7 +82,7 @@ class QueriesTest {
                 , "d": null
                 , "e": [1, 2, 3]
                 }""";
-        var jo = Greyson.read(src).orElseThrow();
+        var jo = Greyson.read(Reader.of(src)).orElseThrow();
         assertAll(
                 () -> assertInstanceOf(Map.class, asObject(jo)),
                 () -> assertInstanceOf(BigDecimal.class, ((Map<String, ?>) asObject(jo)).get("a")),

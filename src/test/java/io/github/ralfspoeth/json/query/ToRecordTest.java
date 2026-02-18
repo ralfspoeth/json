@@ -6,6 +6,8 @@ import io.github.ralfspoeth.json.data.JsonObject;
 import io.github.ralfspoeth.json.data.JsonValue;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -14,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ToRecordTest {
 
     @Test
-    void toR() {
+    void toR() throws IOException {
         // given
         record R(int x) {}
         var src = """
@@ -24,7 +26,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var jo = Greyson.read(src).orElseThrow();
+        var jo = Greyson.read(Reader.of(src)).orElseThrow();
         var result = new R(jo.get("x").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow());
 
         // then
@@ -36,7 +38,7 @@ class ToRecordTest {
     }
 
     @Test
-    void toRs() {
+    void toRs() throws IOException {
         // given
         record R(int x) {}
         var src = """
@@ -51,7 +53,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var value = Greyson.read(src).orElseThrow();
+        var value = Greyson.read(Reader.of(src)).orElseThrow();
         var result = value.elements()
                 .stream()
                 .map(jo -> new R(

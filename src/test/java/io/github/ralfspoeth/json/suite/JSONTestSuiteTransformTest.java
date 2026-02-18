@@ -8,6 +8,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.MultipleFailuresError;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +21,7 @@ class JSONTestSuiteTransformTest extends JSONTestSuiteBase {
         var w = new StringWriter();
         Greyson.write(w, element);
         var str = w.toString();
-        return Greyson.read(str).orElseThrow();
+        return Greyson.read(Reader.of(str)).orElseThrow();
     }
 
     private Executable testTransform(Path path) {

@@ -3,6 +3,8 @@ package io.github.ralfspoeth.json.data;
 import io.github.ralfspoeth.json.Greyson;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +91,7 @@ class JsonValueTest {
     }
 
     @Test
-    void testOptConv() {
+    void testOptConv() throws IOException {
         // given
         var src = """
                 {
@@ -97,7 +99,7 @@ class JsonValueTest {
                 }
                 """;
         // when
-        var parsed = Greyson.read(src).orElseThrow();
+        var parsed = Greyson.read(Reader.of(src)).orElseThrow();
         // then
         assertAll(
                 () -> assertTrue(parsed.get("a").isPresent()),
@@ -120,7 +122,7 @@ class JsonValueTest {
     }
 
     @Test
-    void testBuilder() {
+    void testBuilder() throws IOException {
         // given
         var src = """
                 {
@@ -128,6 +130,10 @@ class JsonValueTest {
                 }
                 """;
         // when
-        var parsed = Greyson.read(src);
+        var parsed = Greyson.readBuilder(Reader.of(src));
+        // then
+        assertAll(
+                () -> assertDoesNotThrow(() -> parsed.orElseThrow())
+        );
     }
 }

@@ -97,6 +97,11 @@
             <artifactId>basix</artifactId>
             <version>1.1.9</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.ralfspoeth</groupId>
+            <artifactId>utf8</artifactId>
+            <version>1.0.0</version>
+        </dependency>
         <!-- testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

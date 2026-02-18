@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.json.data.*;
+import io.github.ralfspoeth.utf8.Utf8Reader;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -256,7 +257,7 @@ class JsonReaderTest {
     @Test
     void testFastUtf8Reader() throws IOException {
         try (var is = getClass().getResourceAsStream("/large-file.json");
-             var rdr = new JsonReader(is)) {
+             var rdr = new JsonReader(new Utf8Reader(is))) {
             var result = rdr.readValue();
             System.out.println(result.hashCode());
         }
@@ -276,7 +277,7 @@ class JsonReaderTest {
     void testFastUtf8ReaderArray() throws IOException {
         try (var is = getClass().getResourceAsStream("/very-big-array.json.gz");
              var gis = new GZIPInputStream(is);
-             var rdr = new JsonReader(gis)) {
+             var rdr = new JsonReader(new Utf8Reader(gis))) {
             var result = rdr.readValue();
             System.out.println(result.hashCode());
         }

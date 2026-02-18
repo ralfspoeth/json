@@ -3,6 +3,8 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Predicate;
@@ -168,12 +170,12 @@ class ValidationTest {
     }
 
     @Test
-    void testSimpleExplain() {
+    void testSimpleExplain() throws IOException {
         // given
         var src = """
                 [{"x":10}, 1, true, null]""";
         // when
-        var arr = read(src);
+        var arr = read(Reader.of(src));
         // then
         assertAll(
                 () -> assertEquals(10, arr.stream()
@@ -194,14 +196,14 @@ class ValidationTest {
     }
 
     @Test
-    void testStandardInvocationChain() {
+    void testStandardInvocationChain() throws IOException {
         // given
         record Point(int x, int y){}
         var src = """
                 [{"x":10}, {"x":11, "y": -11}, {"y":12},
                  {"y":13, "z":14, "str":"hello"}]""";
         // when
-        Optional<JsonValue> array = read(src);
+        Optional<JsonValue> array = read(Reader.of(src));
         Map<String, Predicate<JsonValue>> structureOfObjects = Map.of(
                 "x", is(JsonNumber.class),
                 "y", is(JsonNumber.class),

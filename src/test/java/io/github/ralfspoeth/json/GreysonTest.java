@@ -29,9 +29,9 @@ class GreysonTest {
     }
 
     @Test
-    void testReadFromString_validJson() {
+    void testReadFromString_validJson() throws IOException {
         String jsonString = "{\"name\":\"test\",\"value\":123}";
-        JsonValue element = Greyson.read(jsonString).orElseThrow();
+        JsonValue element = Greyson.read(Reader.of(jsonString)).orElseThrow();
         assertNotNull(element);
         assertInstanceOf(JsonObject.class, element);
         JsonObject jo = (JsonObject) element;
@@ -42,12 +42,12 @@ class GreysonTest {
     @Test
     void testReadFromString_invalidJson() {
         String invalidJsonString = "{\"name\":\"test\",\"value\":123"; // Missing closing brace
-        assertThrows(JsonParseException.class, () -> Greyson.read(invalidJsonString));
+        assertThrows(JsonParseException.class, () -> Greyson.read(Reader.of(invalidJsonString)));
     }
 
     @Test
     void testReadFromString_nullInput() {
-        assertThrows(NullPointerException.class, () -> Greyson.read((String) null));
+        assertThrows(NullPointerException.class, () -> Greyson.read(null));
     }
 
     @Test
@@ -55,7 +55,7 @@ class GreysonTest {
         // Behavior for empty string depends on JsonReader.readElement(String) implementation
         // It might throw an exception or return null/JsonNull if it's considered valid empty content.
         // Assuming it throws an exception for non-JSON content.
-        assertThrows(NoSuchElementException.class, () -> Greyson.read("").orElseThrow());
+        assertThrows(NoSuchElementException.class, () -> Greyson.read(Reader.of("")).orElseThrow());
     }
 
     @Test

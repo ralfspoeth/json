@@ -351,10 +351,9 @@ class Lexer implements AutoCloseable {
             i++;
             // If it starts with 0, the next char cannot be another digit
         } else if (c >= '1' && c <= '9') {
-            i++;
-            while (i < len && (c = cs.charAt(i)) >= '0' && c <= '9') {
+            do {
                 i++;
-            }
+            } while (i < len && (c = cs.charAt(i)) >= '0' && c <= '9');
         } else {
             return false; // No valid integer part
         }

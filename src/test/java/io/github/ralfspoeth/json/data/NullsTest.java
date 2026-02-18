@@ -12,7 +12,7 @@ class NullsTest {
     void basicsNeverNull() {
         assertAll(
                 () -> assertNotNull(Basic.of(null)),
-                () -> assertThrows(NullPointerException.class, () -> new JsonString(null).value())
+                () -> assertThrows(NullPointerException.class, () -> new JsonString(null))
         );
 
     }

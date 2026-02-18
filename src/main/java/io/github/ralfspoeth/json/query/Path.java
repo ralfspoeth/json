@@ -82,10 +82,23 @@ import static java.util.Objects.requireNonNull;
  */
 public sealed abstract class Path implements Function<JsonValue, Stream<JsonValue>> {
 
-    private static final Path ROOT = new RootPath();
+    private static final class RootPath extends Path {
+
+        private static final RootPath ROOT = new RootPath();
+
+        @Override
+        public Stream<JsonValue> apply(JsonValue jsonValue) {
+            return Stream.of(jsonValue);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof RootPath;
+        }
+    }
 
     public static Path root() {
-        return ROOT;
+        return RootPath.ROOT;
     }
 
     private static abstract sealed class AbstractPath extends Path {
@@ -120,19 +133,6 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
             } else {
                 return p.withParent(this);
             }
-        }
-    }
-
-    private static final class RootPath extends Path {
-
-        @Override
-        public Stream<JsonValue> apply(JsonValue jsonValue) {
-            return Stream.of(jsonValue);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return o instanceof RootPath;
         }
     }
 

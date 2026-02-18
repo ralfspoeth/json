@@ -41,7 +41,9 @@ public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
 
     /**
      * {@code true} if and only if {@code jv} is a {@link JsonBoolean}
-     * and the {@snippet : this.value().equals(jv.value());}
+     * and the {@snippet :
+     *  this.value().equals(jv.value());
+     * }
      */
     @Override
     public boolean test(@Nullable JsonValue jv) {

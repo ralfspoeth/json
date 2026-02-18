@@ -22,7 +22,7 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
         value = requireNonNull(value).stripTrailingZeros();
     }
 
-    ///  @return {@snippet : value().toString()}
+    ///  @return {@code value().toString()}
     @Override
     public String json() {
         return value.toString();
@@ -38,7 +38,7 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
         return other instanceof JsonNumber(BigDecimal bd) && bd.equals(value);
     }
 
-    ///  @return {@snippet : Optional.of(value())}
+    ///  @return {@code Optional.of(value())}
     @Override
     public Optional<BigDecimal> decimal() {
         return Optional.of(value);

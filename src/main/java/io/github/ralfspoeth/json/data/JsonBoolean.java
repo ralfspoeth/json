@@ -7,14 +7,21 @@ import java.util.Optional;
 /**
  * JSON {@code true} and {@code false} equivalents.
  *
- * @param boolValue
+ * @param boolValue the wrapped boolean
  */
 public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     /// The {@code true} representation
     public static final JsonBoolean TRUE = new JsonBoolean(true);
     ///  The {@code false} representation
     public static final JsonBoolean FALSE = new JsonBoolean(false);
-    /// {@snippet : b?TRUE:FALSE}
+
+    /**
+     * So obvious... turns a Java boolean into {@link #TRUE} if {@code true}
+     * or {@link #FALSE} if, well...
+     *
+     * @param b a boolean
+     * @return TRUE or FALSE
+     */
     public static JsonBoolean of(boolean b) {
         return b ? TRUE : FALSE;
     }

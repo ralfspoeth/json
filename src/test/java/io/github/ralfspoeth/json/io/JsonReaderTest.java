@@ -2,6 +2,7 @@ package io.github.ralfspoeth.json.io;
 
 import io.github.ralfspoeth.json.data.*;
 import io.github.ralfspoeth.utf8.Utf8Reader;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -254,43 +255,59 @@ class JsonReaderTest {
         }
     }
 
+    private static int hcSum = 0; // black hole
+
+    static int getHcSum() {
+        return hcSum;
+    }
+
+
+    @AfterAll
+    static void afterAll() {
+        if(getHcSum()==Integer.MAX_VALUE) {
+            System.err.println("hcSum overflow");
+        }
+    }
+
     @Test
     void testFastUtf8Reader() throws IOException {
         try (var is = getClass().getResourceAsStream("/large-file.json");
-             var rdr = new JsonReader(new Utf8Reader(is))) {
+             var rdr = new JsonReader(new Utf8Reader(is)))
+        {
             var result = rdr.readValue();
-            System.out.println(result.hashCode());
+            hcSum += result.hashCode();
         }
     }
 
     @Test
     void testInputStreamReader() throws IOException {
         try (var is = getClass().getResourceAsStream("/large-file.json");
-             var rdr = new InputStreamReader(is);
-             var jr = new JsonReader(rdr)) {
+             var rdr = new InputStreamReader(requireNonNull(is));
+             var jr = new JsonReader(rdr))
+        {
             var result = jr.readValue();
-            System.out.println(result.hashCode());
+            hcSum += result.hashCode();
         }
     }
 
     @Test
     void testFastUtf8ReaderArray() throws IOException {
         try (var is = getClass().getResourceAsStream("/very-big-array.json.gz");
-             var gis = new GZIPInputStream(is);
+             var gis = new GZIPInputStream(requireNonNull(is));
              var rdr = new JsonReader(new Utf8Reader(gis))) {
             var result = rdr.readValue();
-            System.out.println(result.hashCode());
+            hcSum += result.hashCode();
         }
     }
 
     @Test
     void testInputStreamReaderArray() throws IOException {
         try (var is = getClass().getResourceAsStream("/very-big-array.json.gz");
-             var gis = new GZIPInputStream(is);
+             var gis = new GZIPInputStream(requireNonNull(is));
              var rdr = new InputStreamReader(gis);
              var jr = new JsonReader(rdr)) {
             var result = jr.readValue();
-            System.out.println(result.hashCode());
+            hcSum += result.hashCode();
         }
     }
 

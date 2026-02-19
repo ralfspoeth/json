@@ -66,7 +66,7 @@ class ValidationTest {
         var struc1 = required(Map.of("a", is(JsonNumber.class), "b", is(JsonBoolean.class))); // keys and types
         var struc2 = required(Map.of("a", Basic.of(5), "b", Basic.of(true))); // exact map
         var struc3 = required(Map.of("c", Basic.of(null))); // key c missing
-        var struc4 = required(Map.of("a", x -> false, "b", x -> false));
+        var struc4 = required(Map.of("a", _ -> false, "b", _ -> false));
         // then
         assertAll(
                 () -> assertTrue(struc1.test(obj)),
@@ -106,7 +106,6 @@ class ValidationTest {
                 () -> assertTrue(structure.test(matching))
         );
     }
-
 
     @Test
     void testMatchesTypes() {
@@ -211,9 +210,8 @@ class ValidationTest {
         );
         // then
         var points = array
-                .filter(all(is(JsonObject.class)
-                        .and(matches(structureOfObjects))
-                        .and(o -> Stream.of("x", "y").anyMatch(o.members().keySet()::contains))))
+                // every element is a JSON object which matches the given structure
+                .filter(all(is(JsonObject.class).and(matches(structureOfObjects))))
                 .stream()
                 .map(JsonValue::elements)
                 .flatMap(Collection::stream)
@@ -221,7 +219,9 @@ class ValidationTest {
                         Path.of("x").single(jv).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0),
                         Path.of("y").single(jv).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0)
                 )).toList();
-        System.out.println(points);
-
+        assertAll(
+                () -> assertEquals(4, points.size()),
+                () -> assertEquals(4, points.stream().filter(p -> p.x() != 0 || p.y() != 0).count())
+        );
     }
 }

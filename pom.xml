@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>plumbum</artifactId>
-        <version>2.0.4</version>
+        <version>2.0.6</version>
     </parent>
 
     <artifactId>json</artifactId>
@@ -15,7 +15,6 @@
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
-        <plumbum.name>json</plumbum.name>
     </properties>
 
     <name>Greyson: a JSON IO Implementation for Java</name>
@@ -24,6 +23,13 @@
         which operates around immutable data structures for
         the JSON elements.
     </description>
+
+    <scm>
+        <developerConnection>scm:git:https://github.com/ralfspoeth/json.git</developerConnection>
+        <url>scm:git:https://github.com/ralfspoeth/json</url>
+        <tag>HEAD</tag>
+    </scm>
+
 
     <build>
         <plugins>
@@ -86,9 +92,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-
-  <scm>
-    <tag>json-1.2.0.alpha22</tag>
-  </scm>
 </project>

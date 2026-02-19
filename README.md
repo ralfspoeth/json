@@ -51,7 +51,7 @@ and most naturally
 plus 
 
     var jv = Basic.of(...);
-    var builder = Builder.valueBuilder(jv);
+    var builder = Builder.basicBuilder(jv);
     assert jv.equals(builder.build());
 
 or simply
@@ -71,9 +71,9 @@ The Greyson workflow has been designed around the JSON in-memory object represen
 described below:
 
 * The Greyson library parses a JSON document into a `JsonValue` instance.
-* User Code uses the _Greyson Query API_ to instantiate target class instances
+* User code uses the _Greyson Query API_ to instantiate target class instances
   for this value.
-* User Code transforms an arbitrary class instance 
+* User code transforms an arbitrary class instance 
   (or array or collection of objects) into a `JsonValue`
   using the _Greyson Builder API_.
 * The Greyson library serializes this `JsonValue` into a JSON file.
@@ -161,7 +161,7 @@ If you are using JPMS modules with a `module-info.java` file, add
 The module `io.github.ralfspoeth.greyson` exports three packages that you 
 may use in your application:
 ```java
-    import io.github.ralfspoeth.json.*;       // class hierarchy
+    import io.github.ralfspoeth.json.data.*;       // class hierarchy
     import io.github.ralfspoeth.json.io.*;    // reader and writer
     import io.github.ralfspoeth.json.query.*; // Queries and Path API
 ```
@@ -407,7 +407,7 @@ for `int`, `long`, and `double`) plus `List`s and `Map`s with empty defaults:
 
     Conversion                          | Default                | Overridden by (using)
     ---------------------------------------------------------------------------------------------
-    Optional<Boolean> booleanVaulue()   | Optional.empty()       | JsonBoolean (value)
+    Optional<Boolean> bool()            | Optional.empty()       | JsonBoolean (value)
     OptionalInt intValue()              | OptionalInt.empty()    | JsonNumber (value.intValue)
     OptionalLong longValue()            | OptionalLong.empty()   | JsonNumber (value.longValue)
     OptionalDouble doubleValue()        | OptionalDouble.empty() | JsonNumber (value.doubleValue)

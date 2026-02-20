@@ -402,17 +402,14 @@ This `a` can now easily be filtered like
 
 ## `JsonValue` Conversions
 
-The `JsonValue` interface contains conversions into `Optional`s (including variants 
-for `int`, `long`, and `double`) plus `List`s and `Map`s with empty defaults:
+The `JsonValue` interface contains conversions into `Optional`s 
+plus `List`s and `Map`s with empty defaults:
 
-    Conversion                          | Default                | Overridden by (using)
+    Conversion                          | Default                | Implemented by (using)
     ---------------------------------------------------------------------------------------------
     Optional<Boolean> bool()            | Optional.empty()       | JsonBoolean (value)
-    OptionalInt intValue()              | OptionalInt.empty()    | JsonNumber (value.intValue)
-    OptionalLong longValue()            | OptionalLong.empty()   | JsonNumber (value.longValue)
-    OptionalDouble doubleValue()        | OptionalDouble.empty() | JsonNumber (value.doubleValue)
-    Optional<BigDecimal> decimalValue() | Optional.empty()       | JsonNumber (value)
-    Optional<String> stringValue()      | Optional.empty()       | JsonString (value)
+    Optional<BigDecimal> decimal()      | Optional.empty()       | JsonNumber (value)
+    Optional<String> string()           | Optional.empty()       | JsonString (value)
     List<JsonValue> elements()          | List.of()              | JsonArray (elements)
     Optional<JsonValue> get(int i)      | Optional.empty()       | JsonArray (elements.get(i))
     Map<String, JsonValue> members()    | Map.of()               | JsonObject (members)
@@ -426,24 +423,12 @@ Assuming a structure like this
 we may safely write
 ```java
     JsonValue v = Greyson.readValue("...");
-    boolean b = v.get("a").flatMap(a -> a.get(2)).flatMap(a2 -> a2.get("b")).flatMap(b -> b.booleanValue()).orElseThrow();
+    boolean b = v.get("a")
+            .flatMap(a -> a.get(2))
+            .flatMap(a2 -> a2.get("b"))
+            .flatMap(b -> b.bool())
+            .orElseThrow();
 ```
-
-
-Each `JsonValue` can be converted to an `int`, `long`, `double`,
-`BigDecimal`, `String`, or `List` and `Map` using the `Queries` class, with this 
-behaviour for the various types:
-
-    Conv       |  JsonNull  |     JsonBoolean      |     JsonNumber      |         JsonString         |  JsonArray  |  JsonObject  |
-    --------------------------------------------------------------------------------------------------------------------------------
-    boolean    | false      | value                | !value.equals(ZERO) | value.isBlank()?false:true | empty()     | empty()      |
-    int        | 0          | value?1:0            | value.intValue()    | Integer.parseInt(value)    | empty()     | empty()      |
-    long       | 0L         | value?1L:0L          | value.longValue()   | Long.parseLong(value)      | empty()     | empty()      |
-    double     | 0d         | value?1d:0d          | value.doubleValue() | Double.parseDouble(value)  | empty()     | empty()      |
-    String     | "null"     | value?"true":"false" | value.toString()    | value                      | empty()     | empty()      |
-    BigDecimal | ZERO       | value?ONE:ZERO       | value               | new BigDecimal(value)      | empty()     | empty()      |
-    List       | List.of()  | List.of()            | List.of()           | List.of()                  | value       | empty()      |
-    Map        | Map.of()   | Map.of()             | Map.of()            | Map.of()                   | empty()     | value        |
 
 # Builders
 
@@ -453,9 +438,6 @@ immutable data and works like this:
 ```java
     var immutable = new Builder(...).add(...).add(...).build();
 ```
-It does not make much sense to provide builders for the basic data
-types; yet very much so for the aggregate types.
-This is another reason why we introduced the distinction between the two.
 
 The `Builder` interface has been implemented as an inner interface
 class of the `Aggregate` interface with two implementations:
@@ -467,6 +449,7 @@ class of the `Aggregate` interface with two implementations:
         }
         final class ArrayBuilder implements Builder<JsonArray>{...}
         final class ObjectBuilder implements Builder<JsonObject>{...}
+        final class BasicBuilder<T> implements Builder<Basic<T>>{...}
         // ...
     }
 ```

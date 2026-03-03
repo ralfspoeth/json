@@ -109,7 +109,7 @@ The Greyson library is really tiny: together with its dependencies on
 `jspecify` nullness annotations (4kB) and my very own `basix` package (19kB) it's just about 100kB.
 Google's GSON packages including dependencies are as large as about 300kB, 
 which is three times the size.
-Jackson's core library weighs about 600kB, the databind package about 1.7MB,
+Jackson's core library weighs about 600kB, the `databind` package about 1.7MB,
 which is about 2.3 MB altogether or about 23 times
 the size of the Greyson package.
 
@@ -484,15 +484,27 @@ The object builder is not so different:
 ```
 Both builders are instantiable through static methods in the 
 `JsonValue` interface exclusively:
-
+```java
     JsonObjectBuilder objectBuilder();
     JsonArrayBuilder arrayBuilder();
-
+```
 The implementing classes both need to be public because they provide
 different methods for adding intermediate data;
 `JsonArray` provides an `item(JsonValue)` method and
 `JsonObject` a `named(String, JsonValue)` method in order to
 add data their internal structures.
+
+## BasicBuilder
+
+The `BasicBuilder` just wraps a `JsonValue` instance which may be
+changed. It completes the `Builder` hierarchy such that there is the 
+corresponding builder for each value.
+Therefore, the following is always true:
+
+```java
+  JsonValue jv; // given
+  assert jv.equals(jv.builder().build());
+```
 
 # IO: Reading and Writing JSON Data
 

@@ -11,8 +11,6 @@
     <version>1.2.0.alpha23-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <url>https://github.com/ralfspoeth/json</url>
-
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
     </properties>
@@ -23,6 +21,7 @@
         which operates around immutable data structures for
         the JSON elements.
     </description>
+    <url>https://github.com/ralfspoeth/json</url>
 
     <scm>
         <developerConnection>scm:git:https://github.com/ralfspoeth/json.git</developerConnection>

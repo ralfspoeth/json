@@ -4,7 +4,8 @@
 
 Both the Jackson and GSON libraries
 serialize and deserialize between JSON documents
-and Java objects, with a lot of magic and the need for customizations
+and Java objects, with a lot of magic in standard or
+simple cases, and the need for customizations
 by the clients of these libraries.
 
 Let
@@ -56,4 +57,5 @@ and the GSON way
 ```java
     var line = new Gson().fromJson(json, Line.class);
 ```
-Both approaches are deceptively simple. Yet as soon as 
+Both approaches are deceptively simple. Yet as soon as things
+get more complicated, the customization effort grows.

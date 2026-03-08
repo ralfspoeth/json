@@ -136,4 +136,17 @@ class JsonValueTest {
                 () -> assertDoesNotThrow(() -> parsed.orElseThrow())
         );
     }
+
+    @Test
+    void testBool() {
+        assertAll(
+                () -> assertTrue(JsonBoolean.TRUE.bool().orElseThrow()),
+                () -> assertFalse(JsonBoolean.FALSE.bool().orElseThrow()),
+                () -> assertTrue(JsonNull.INSTANCE.bool().isEmpty()),
+                () -> assertTrue(new JsonNumber(BigDecimal.ZERO).bool().isEmpty()),
+                () -> assertTrue(new JsonString("str").bool().isEmpty()),
+                () -> assertTrue(new JsonArray(List.of()).bool().isEmpty()),
+                () -> assertTrue(new JsonObject(Map.of()).bool().isEmpty())
+        );
+    }
 }

@@ -1,7 +1,5 @@
 package io.github.ralfspoeth.json.data;
 
-import org.jspecify.annotations.Nullable;
-
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Optional;

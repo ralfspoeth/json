@@ -4,7 +4,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.Predicate;
 
 import static java.util.Objects.requireNonNull;
 

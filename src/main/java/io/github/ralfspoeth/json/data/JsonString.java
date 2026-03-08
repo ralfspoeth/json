@@ -1,7 +1,5 @@
 package io.github.ralfspoeth.json.data;
 
-import org.jspecify.annotations.Nullable;
-
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

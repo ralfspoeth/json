@@ -47,11 +47,6 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
     }
 
     @Override
-    public boolean test(@Nullable JsonValue jv) {
-        return jv instanceof JsonArray(var elems) && elems.equals(elements());
-    }
-
-    @Override
     public String json() {
         return elements.stream()
                 .map(JsonValue::json)

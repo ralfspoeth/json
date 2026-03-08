@@ -28,16 +28,6 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
         return value.toString();
     }
 
-
-    /**
-     * {@code true} if {@code other} is another {@link JsonNumber}
-     * and their respective values are numerically identical.
-     */
-    @Override
-    public boolean test(@Nullable JsonValue other) {
-        return other instanceof JsonNumber(BigDecimal bd) && bd.equals(value);
-    }
-
     ///  @return {@code Optional.of(value())}
     @Override
     public Optional<BigDecimal> decimal() {

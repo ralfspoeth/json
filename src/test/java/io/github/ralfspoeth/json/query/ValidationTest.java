@@ -35,48 +35,6 @@ class ValidationTest {
     }
 
     @Test
-    void testMatchesObject() {
-        // given
-        var obj = new JsonObject(Map.of("a", Basic.of(5), "b", Basic.of(true), "c", Basic.of("zeh")));
-        // when
-        var struc1 = matches(Map.of(
-                "a", is(JsonNumber.class),
-                "b", is(JsonBoolean.class),
-                "c", regex("[a-z]+")
-        )); // all keys included
-        var struc2 = matches(Map.of("a", Basic.of(5))); // incomplete
-        var struc3 = matches(Map.of(
-                "a", is(JsonString.class), // not a string, must fail
-                "b", Basic.of(false) // not false but true
-        ));
-        // then
-        assertAll(
-                () -> assertTrue(struc1.test(obj)),
-                () -> assertTrue(struc2.test(obj)),
-                () -> assertThrows(ValidationException.class, ()->matchesOrThrow(struc3).test(obj))
-        );
-    }
-
-    @Test
-    void testRequiredMap() {
-        // given
-        Map<String, JsonValue> data = Map.of("a", Basic.of(5), "b", Basic.of(true));
-        var obj = new JsonObject(data);
-        // when
-        var struc1 = required(Map.of("a", is(JsonNumber.class), "b", is(JsonBoolean.class))); // keys and types
-        var struc2 = required(Map.of("a", Basic.of(5), "b", Basic.of(true))); // exact map
-        var struc3 = required(Map.of("c", Basic.of(null))); // key c missing
-        var struc4 = required(Map.of("a", _ -> false, "b", _ -> false));
-        // then
-        assertAll(
-                () -> assertTrue(struc1.test(obj)),
-                () -> assertTrue(struc2.test(obj)),
-                () -> assertFalse(struc3.test(obj)),
-                () -> assertFalse(struc4.test(obj))
-        );
-    }
-
-    @Test
     void testAll() {
         // given
         var array = new JsonArray(IntStream.of(1, 2, 3, 4, 5)
@@ -152,19 +110,7 @@ class ValidationTest {
         assertAll( // there are...
                 () -> assertTrue(any(number).test(array)), // ...numbers
                 () -> assertTrue(any(bool).test(array)), // ... one boolean
-                () -> assertTrue(any(Basic.of(null)).test(array)), //... a null
                 () -> assertFalse(any(string).test(array)) // ... but no strings
-        );
-    }
-
-    @Test
-    void testMatchesOrThrow() {
-        // given
-        var value = Basic.of(true);
-        // then
-        assertAll(
-                () -> assertThrows(ValidationException.class, () -> matchesOrThrow(Basic.of(false)).test(value)),
-                () -> assertDoesNotThrow(() -> matchesOrThrow(Basic.of(true)).test(value))
         );
     }
 

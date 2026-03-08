@@ -18,26 +18,6 @@ class BasicTest {
     }
 
     @Test
-    void testPredicateNature() {
-        // given
-        var basics = List.of(
-                JsonNull.INSTANCE,
-                JsonBoolean.TRUE, JsonBoolean.FALSE,
-                Basic.of(5),
-                new JsonString("hello")
-        );
-        // when
-        // then
-        assertAll(
-                () -> assertEquals(JsonNull.INSTANCE, basics.stream().filter(JsonNull.INSTANCE).findFirst().orElse(null)),
-                () -> assertEquals(Basic.of(5), basics.stream().filter(Basic.of(5)).findFirst().orElse(null)),
-                () -> assertEquals(Basic.of("hello"), basics.stream().filter(new JsonString("hello")).findFirst().orElse(null)),
-                () -> assertEquals(JsonBoolean.TRUE, basics.stream().filter(JsonBoolean.TRUE).findFirst().orElse(null)),
-                () -> assertEquals(JsonBoolean.FALSE, basics.stream().filter(JsonBoolean.FALSE).findFirst().orElse(null))
-        );
-    }
-
-    @Test
     void testOfBoolean() {
         assertAll(
                 () -> assertEquals(JsonBoolean.TRUE, Basic.of(true)),

@@ -198,27 +198,6 @@ public class Validation {
         return new Structure.MapBased(structure);
     }
 
-    public static Predicate<JsonValue> matchesValuesOf(JsonObject jo) {
-        return matches(
-                jo.members().entrySet().stream().collect(toMap(
-                        Map.Entry::getKey,
-                        e -> switch (e.getValue()) {
-                            case Basic<?> b -> b;
-                            case JsonObject o -> matchesValuesOf(o);
-                            case JsonArray a -> matchesValuesOf(a);
-                        }
-                ))
-        );
-    }
-
-    public static Predicate<JsonValue> matchesValuesOf(JsonArray array) {
-        return matches(array.elements().stream().map(e -> switch (e) {
-            case Basic<?> b -> b;
-            case JsonObject o -> matchesValuesOf(o);
-            case JsonArray a -> matchesValuesOf(a);
-        }).toList());
-    }
-
     public static Predicate<JsonValue> matchesTypesOf(JsonArray array) {
         return matches(array.elements().stream().map(v -> switch (v) {
             case JsonBoolean ignored -> is(JsonBoolean.class);

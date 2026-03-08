@@ -37,16 +37,6 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     }
 
     /**
-     * {@code true} if {@code jv} is another {@link JsonObject}
-     * and the members of {@code this} and {@code jv} are equal.
-     * @param jv the input argument
-     */
-    @Override
-    public boolean test(@Nullable JsonValue jv) {
-        return jv instanceof JsonObject(var mems) && mems.size() == members.size() && mems.equals(members);
-    }
-
-    /**
      * @return the number of entries of the members
      */
     @Override

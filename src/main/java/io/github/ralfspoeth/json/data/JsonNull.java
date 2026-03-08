@@ -17,10 +17,4 @@ public record JsonNull() implements Basic<Object> {
     ///  @return null;
     @Override
     public @Nullable Object value() {return null;}
-
-    ///  true if {@code o instanceof JsonNull}
-    @Override
-    public boolean test(@Nullable JsonValue o) {
-        return o instanceof JsonNull;
-    }
 }

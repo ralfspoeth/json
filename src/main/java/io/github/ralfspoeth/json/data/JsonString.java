@@ -66,11 +66,4 @@ public record JsonString(String value) implements Basic<String> {
     public Optional<String> string() {
         return Optional.of(value);
     }
-
-    /// {@code true} if {@code s} is another {@link JsonString}
-    /// and the contents of {@code this} and {@code s} are equal.
-    @Override
-    public boolean test(@Nullable JsonValue s) {
-        return s instanceof JsonString(String v) && v.equals(value);
-    }
 }

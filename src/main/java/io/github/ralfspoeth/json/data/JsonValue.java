@@ -12,9 +12,9 @@ import static java.util.Objects.requireNonNull;
  * The root interface of the JSON hierarchy.
  * {@code JsonValue} is a sealed interface which allows for two subtypes
  * {@link Basic} and {@link Aggregate}, which are sealed interfaces themselves.
- * All instances are immutable, {@link Predicate}s, have a {@link #depth()}, can report
- * the number of {@link #nodes},
- * and provide a minimalistic {@link #json()} text representation.
+ * All instances are immutable, have a {@link #depth()}, can report
+ * the number of {@link #nodes}, and provide a minimalistic {@link #json()}
+ * representation.
  * <p>
  * The payload of a JSON object is either a {@link Boolean}, a {@link BigDecimal} or a {@link String},
  * or for aggregate types a {@link List} of elements or a {@link Map} of members.
@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
  * }
  * </p>
  */
-public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits Aggregate, Basic {
+public sealed interface JsonValue permits Aggregate, Basic {
 
     /**
      * A minimalistic JSON representation of the value.

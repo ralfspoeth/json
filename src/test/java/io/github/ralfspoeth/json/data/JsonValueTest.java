@@ -146,7 +146,11 @@ class JsonValueTest {
                 () -> assertTrue(new JsonNumber(BigDecimal.ZERO).bool().isEmpty()),
                 () -> assertTrue(new JsonString("str").bool().isEmpty()),
                 () -> assertTrue(new JsonArray(List.of()).bool().isEmpty()),
-                () -> assertTrue(new JsonObject(Map.of()).bool().isEmpty())
+                () -> assertTrue(new JsonObject(Map.of()).bool().isEmpty()),
+                () -> assertTrue(JsonBoolean.TRUE.bool(false)),
+                () -> assertFalse(JsonBoolean.FALSE.bool(true)),
+                () -> assertFalse(JsonNull.INSTANCE.bool(false)),
+                () -> assertFalse(new JsonNumber(BigDecimal.TWO).bool(false))
         );
     }
 }

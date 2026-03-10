@@ -25,7 +25,7 @@ public class Greyson {
      * @return a builder instance
      * @throws IOException upon IO exceptions
      */
-    public static Optional<Builder<?>> readBuilder(Reader reader) throws IOException {
+    public static Optional<Builder<? extends JsonValue>> readBuilder(Reader reader) throws IOException {
         try(var jr = new JsonReader(reader)) {
             return jr.readBuilder();
         }

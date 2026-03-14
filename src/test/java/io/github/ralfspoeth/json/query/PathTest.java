@@ -1,6 +1,6 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.Greyson;
 import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
@@ -9,18 +9,25 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
-import static io.github.ralfspoeth.json.query.Path.of;
+import static io.github.ralfspoeth.json.query.Path.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
 
     @Test
-    void ofEmpty() {
-        assertThrows(NullPointerException.class, () -> of(null));
+    void ofNull() {
+        assertAll(
+                () -> assertThrows(NullPointerException.class, () -> of(null)),
+                () -> assertThrows(NullPointerException.class, () -> root().member(null)),
+                () -> assertThrows(NullPointerException.class, () -> root().regex(null))
+        );
     }
 
     @Test
@@ -237,7 +244,45 @@ class PathTest {
                         )
                 )
         );
+    }
 
+    @Test
+    void testArray() {
+        // given
+        record Point(int x, int y) {}
+        var rnd = ThreadLocalRandom.current();
+        var input = IntStream.range(0, 10).mapToObj(_ -> new Point(rnd.nextInt(), rnd.nextInt())).toList();
+        var jsonArray = input
+                .stream()
+                .map(p -> objectBuilder().putBasic("x", p.x).putBasic("y", p.y).build())
+                .collect(Queries.toJsonArray());
+        // make sure the "given" is what we think it is
+        assert jsonArray.size() == 10;
+        assert jsonArray.elements()
+                .stream()
+                .allMatch(e -> e instanceof JsonObject(var members)
+                        && members.size() == 2
+                        && Set.of("x", "y").containsAll(members.keySet())
+                );
+        // when
+        Path x = Path.root().member("x"), y = Path.root().member("y"), z = Path.root().member("z");
+        // then
+        assertAll(
+                // all elements do have an x and a y but not a z
+                () -> assertTrue(jsonArray.elements().stream().allMatch(e -> x.single(e).isPresent())),
+                () -> assertTrue(jsonArray.elements().stream().allMatch(e -> y.single(e).isPresent())),
+                () -> assertTrue(jsonArray.elements().stream().noneMatch(e -> z.single(e).isPresent())),
+                // output equals input
+                () -> assertEquals(input, jsonArray.elements().stream().map(e -> new Point(
+                        x.single(e).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        y.single(e).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow())
+                ).toList()),
+                () -> assertInstanceOf(JsonObject.class, Path.root().index(7).single(jsonArray).orElseThrow()),
+                () -> assertInstanceOf(JsonNumber.class, Path.root().index(8).resolve(x).single(jsonArray).orElseThrow()),
+                () -> assertInstanceOf(JsonNumber.class, Path.root().index(2).resolve(y).single(jsonArray).orElseThrow()),
+                () -> assertTrue(Path.root().index(3).resolve(z).single(jsonArray).isEmpty()),
+                () -> assertTrue(Path.of("3/z").single(jsonArray).isEmpty())
+        );
     }
 
 }

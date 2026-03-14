@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Gatherer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -66,7 +67,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * The second approach to constructing paths is through the fluent API, as in
  * {@snippet :
- * Path.root().member("a").index(1).regex("b.*c").range(0, 2);
+ * Path.root().member("a").index(1).regex(Pattern.compile("b.*c")).range(0, 2);
  *}
  * <p>
  * The class implements {@link Function} such that it may be used in stream
@@ -103,6 +104,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
     private static abstract sealed class AbstractPath extends Path {
         private final Path parent;
+
         protected Path parent() {
             return parent;
         }
@@ -236,7 +238,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
         private RegexPath(Pattern regex, Path parent) {
             super(parent);
-            this.regex = regex;
+            this.regex = requireNonNull(regex);
         }
 
         @Override
@@ -284,6 +286,49 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
     }
 
+    public Gatherer<JsonValue, ?, JsonValue> solo(JsonValue root) {
+        class Singleton {
+            JsonValue ref;
+            boolean seen;
+            boolean multi;
+
+            boolean set(JsonValue v) {
+                if (multi) return false;
+                else if (!seen) {
+                    ref = v;
+                    return (seen = true);
+                } else {
+                    return !(multi = true);
+                }
+            }
+
+            boolean exactlyOne() {
+                return seen && !multi;
+            }
+
+            Singleton combine(Singleton other) {
+                if (seen) {
+                    if (!other.seen) {
+                        return this;
+                    } else {
+                        return other;
+                    }
+                } else {
+                    return other;
+                }
+            }
+        }
+
+        return Gatherer.of(
+                Singleton::new,
+                (r, v, d) -> r.set(v),
+                Singleton::combine,
+                (r, d) -> {
+                    if (r.exactlyOne() && !d.isRejecting()) d.push(r.ref);
+                }
+        );
+    }
+
     /**
      * Instantiate a {@link Path} from a path pattern.
      * The given pattern is first split into parts
@@ -326,10 +371,6 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return new RangePath(min, max, this);
     }
 
-    public Path regex(String regex) {
-        return new RegexPath(regex, this);
-    }
-
     public Path regex(Pattern regex) {
         return new RegexPath(regex, this);
     }
@@ -337,16 +378,12 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     public Path resolve(Path p) {
         if (this instanceof AbstractPath tp && p instanceof AbstractPath ap) {
             return tp.resolve(ap);
-        } if(p instanceof AbstractPath ap) {
+        }
+        if (p instanceof AbstractPath ap) {
             assert this instanceof RootPath;
             return ap;
         } else {
             return this;
         }
-    }
-
-    @Override
-    public int hashCode() {
-        return 0;
     }
 }

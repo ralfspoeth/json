@@ -41,9 +41,9 @@ import static java.util.Objects.requireNonNull;
  * Example:
  * <p>
  * {@snippet :
+ * import io.github.ralfspoeth.json.Greyson;
  * import io.github.ralfspoeth.json.data.JsonValue;
  * import io.github.ralfspoeth.json.data.JsonBoolean;
- * import io.github.ralfspoeth.json.io.JsonReader;
  *
  * import java.util.List;
  *
@@ -51,18 +51,17 @@ import static java.util.Objects.requireNonNull;
  * var given = """
  *       [1, 2, {"aa": true}, {"xy": 5, "ab": 2}, {"ac": 3}]
  *       """;
- * var elem = JsonReader.readValue(given);
  *
  * // when p matches any element beginning with the third
  * // and then each member starts with 'a'
  * Path p = Path.of("[2, -1]/#a.*");
  *
  * // then
- * List<JsonValue> result = p.apply(given).toList();
+ * List<JsonValue> result = Greyson.read(given).map(p).stream().toList();
  * assert result.size() == 3; // three JSON objects...
- * assert result.get(0) == JsonBoolean.TRUE; // the "aa" member of the third object
+ * assert result.getFirst() == JsonBoolean.TRUE; // the "aa" member of the third object
  * assert result.get(1).equals(Basic.of(2)); // the "ab" member of the fourth
- * assert result.get(2).equals(Basic.of(3)); // the "ac" member of the fifth
+ * assert result.getLast().equals(Basic.of(3)); // the "ac" member of the fifth
  *}
  * <p>
  * The second approach to constructing paths is through the fluent API, as in
@@ -75,7 +74,9 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * {@snippet :
  * import java.util.List;
- * import io.github.ralfspoeth.greyson.*;import io.github.ralfspoeth.json.data.JsonArray;import io.github.ralfspoeth.json.data.JsonValue;
+ * import io.github.ralfspoeth.greyson.*;
+ * import io.github.ralfspoeth.json.data.JsonArray;
+ * import io.github.ralfspoeth.json.data.JsonValue;
  * Path p = Path.of("..."); // @replace regex='"..."' replacement="..."
  * JsonArray a = new JsonArray(List.of()); // @replace regex='new JsonArray(List.of())' replacement='...'
  * List<JsonValue> result = a.elements().stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"

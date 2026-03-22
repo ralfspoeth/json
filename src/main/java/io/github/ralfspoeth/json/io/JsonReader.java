@@ -77,12 +77,7 @@ public class JsonReader implements Closeable {
      * @throws IOException whenever the underlying source throws
      */
     public JsonValue readValue() throws IOException {
-        return read().orElseThrow(
-                () -> new JsonParseException("No JSON element in the source",
-                        lexer.row(),
-                        lexer.column()
-                )
-        );
+        return read().orElseThrow();
     }
 
     /**

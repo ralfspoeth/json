@@ -122,6 +122,17 @@ public class Queries {
         };
     }
 
+    /**
+     * Collect a stream of {@link JsonValue}s into a {@link JsonArray}.
+     * {@snippet :
+     * // given
+     * JsonObject jo = JsonObject.ofMap(Map.of("a", 1, "b", 2));
+     * // when
+     * var result = jo.members().values().stream().collect(toJsonArray());
+     * // then
+     * assert new JsonArray(List.of(Basic.of(1), Basic.of(2))).equals(result);
+     * }
+     */
     public static Collector<JsonValue, ?, JsonArray> toJsonArray() {
         return Collector.of(
                 ArrayList::new,

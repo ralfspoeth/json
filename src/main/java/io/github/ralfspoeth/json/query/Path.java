@@ -339,8 +339,8 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * returns a stream of its elements from index {@code startInclusive}
      * to {@code endExclusive} exclusively.
      * If {@code endExclusive} is negative, it is replaced by {@link Integer#MAX_VALUE}.
-     * @param startInclusive the first index
-     * @param endExclusive the last index
+     * @param startInclusive the first index, inclusively
+     * @param endExclusive the last index, exclusively
      */
     public Path range(int startInclusive, int endExclusive) {
         return new RangePath(startInclusive, endExclusive, this);
@@ -352,8 +352,8 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * the keys of which match the given regular expression.
      * {@snippet :
      * // given
-     *
-     * import java.util.HashSet; var o = new JsonObject(Map.of("a1", Basic.of(1), "a2", Basic.of(2), "b", Basic.of(3)));
+     * import java.util.HashSet;
+     * var o = new JsonObject(Map.of("a1", Basic.of(1), "a2", Basic.of(2), "b", Basic.of(3)));
      * // when
      * var p = Path.regex("a[0-9]"); // a0, a1, a2, ..., a9
      * // then
@@ -371,14 +371,21 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * Resolve the given path {@code p} against this path.
      * {@snippet :
      * // given
+     * import io.github.ralfspoeth.json.data.JsonNull;
+     * var value = new JsonArray(
+     *         new JsonObject(Map.of("a", Basic.of(1))),
+     *         new JsonObject(Map.of("a", Basic.of(2), "b", Basic.of(3))),
+     *         Basic.of(4),
+     *         JsonNull.INSTANCE
+     *         );
      * var root = Path.root();
      * var theFirstTwo = root.range(0, 2);
      * var a = root.member("a");
      * // when
      * var aRelToTheFirstTwo = theFirstTwo.resolve(a);
      * // then
-     *
-     * }
+     * assert Stream.of(value).flatMap(aRelToTheFirstTwo).toList().equals(List.of(Basic.of(1), Basic.of(2)));
+     *}
      *
      * @param p the given path
      */

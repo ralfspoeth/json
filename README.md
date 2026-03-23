@@ -1,11 +1,11 @@
 # Greyson - Java JSON IO Library
 
-![greyson.png](greyson.png "JSON")
-
 A modern Java library for parsing JSON into **immutable data structures** 
 and serializing them back to text. It features a robust parser, a fluent builder API, 
 efficient UTF-8 serialization, and powerful query functions to transform JSON 
 elements into any Java objects.
+
+![greyson.png](greyson.png "JSON")
 
 ## Goals
 
@@ -21,44 +21,55 @@ parsing level.
 
 ## Current Status
 
-THIS ALPHA VERSION OF 1.2 IS CURRENTLY UNDER ACTIVE DEVELOPMENT.
+We are heading towards release 1.2. and are going into the beta phase.
+The public API is stable, some tests plus some JavaDoc comments
+are still to be added.
+
+### Changes
 
 The current version of the library is 1.2.0.
-It contains two breaking changes compared to version 1.1.x:
+It contains breaking changes compared to version 1.1.x:
 * The common interface has been renamed from `Element` to `JsonValue`
   because that naming pattern seems to be more in line with other libraries.
+* The package `io.github.ralfspoeth.json.data` has been added and contains
+  these data carrier classes.
 * `JsonNumber` uses `BigDecimal` instead of `double` for its payload; 
   cf. [numbers](numbers.md) for a detailed discussion.
 * `JsonBoolean` and `JsonNull` are implemented as `record`s, no longer as an `enum` or 
   singleton, respectively.
+* The new `Greyson` class has been added to simplify reading and writing JSON data.
+* The `JsonReader` and `JsonWriter` support reading resp. writing `Builder` instances
+  in addition to `JsonValue`s.
 * Conversions from and to `record`s have been removed in an attempt to get rid of deep
   reflection.
 * It utilizes `JSpecify` nullness annotations.
 
+### Builder API changes
+
 Beginning with version 1.2.0, the `Builder`s are the mutable duals of
 their immutable `JsonValue` counterparts, such that
-
+```java
     var jo = new JsonObject(...);
     var builder = Builder.objectBuilder(jo);
     assert jo.equals(builder.build());
-
+```
 and most naturally 
-
+```java
     var ja = new JsonArray(...);
     var builder = Builder.arrayBuilder(ja);
     assert ja.equals(builder.build());
-
+```
 plus 
-
+```java
     var jv = Basic.of(...);
     var builder = Builder.basicBuilder(jv);
     assert jv.equals(builder.build());
-
+```
 or simply
-
+```java
     JsonValue value; // given
     assert value.equals(Builder.of(value).build());
-
+```
 The conversions from `JsonValue` to `Builder` are recursive in both directions.
 A `JsonArray` of `JsonObject`s is turned into a `JsonArrayBuilder` 
 with mutable `JsonObjectBuilder` instances in its mutable `ArrayList` data collection.

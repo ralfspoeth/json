@@ -368,7 +368,17 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     }
 
     /**
-     * Resolve the given path against this.
+     * Resolve the given path {@code p} against this path.
+     * {@snippet :
+     * // given
+     * var root = Path.root();
+     * var theFirstTwo = root.range(0, 2);
+     * var a = root.member("a");
+     * // when
+     * var aRelToTheFirstTwo = theFirstTwo.resolve(a);
+     * // then
+     *
+     * }
      *
      * @param p the given path
      */

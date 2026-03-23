@@ -17,7 +17,8 @@ import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
-import static io.github.ralfspoeth.json.query.Path.*;
+import static io.github.ralfspoeth.json.query.Path.of;
+import static io.github.ralfspoeth.json.query.Path.root;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
@@ -311,4 +312,35 @@ class PathTest {
         );
     }
 
+    @Test
+    void testResolveTheFirstTwoThenA() {
+        // given
+        var root = Path.root();
+        var theFirstTwo = root.range(0, 2);
+        var a = root.member("a");
+        var value = arrayBuilder()
+                .add(objectBuilder().putBasic("a", 1))
+                .add(objectBuilder().putBasic("a", 2))
+                .build();
+        // when
+        var aRelativeToTheFirstTwo = theFirstTwo.resolve(a);
+        // then
+        assertAll(
+                () -> assertEquals(BigDecimal.ONE, Stream.of(value)
+                        .flatMap(aRelativeToTheFirstTwo)
+                        .findFirst()
+                        .map(jv -> jv.decimal(BigDecimal.ZERO))
+                        .orElseThrow()
+                ),
+                () -> assertEquals(BigDecimal.TWO, Stream.of(value)
+                        .flatMap(aRelativeToTheFirstTwo)
+                        .map(jv -> jv.decimal(BigDecimal.ZERO))
+                        .toList()
+                        .getLast()
+                ),
+                () -> assertArrayEquals(new JsonValue[]{Basic.of(1), Basic.of(2)},
+                     Stream.of(value).flatMap(aRelativeToTheFirstTwo).toArray()
+                )
+        );
+    }
 }

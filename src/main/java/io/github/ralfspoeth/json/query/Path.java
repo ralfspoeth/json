@@ -97,6 +97,10 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
     }
 
+    /**
+     * Always start with a root path, which matches
+     * the given argument and returns it in a fresh {@link Stream}.
+     */
     public static Path root() {
         return RootPath.ROOT;
     }
@@ -298,6 +302,11 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return prev;
     }
 
+    /**
+     * Create a path element that, if applied to some {@link JsonObject},
+     * returns the associated {@link JsonObject#members()} key.
+     * @param memberName the name of the member
+     */
     public Path member(String memberName) {
         return new MemberPath(memberName, this);
     }
@@ -358,6 +367,11 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return new RegexPath(regex, this);
     }
 
+    /**
+     * Resolve the given path against this.
+     *
+     * @param p the given path
+     */
     public Path resolve(Path p) {
         if (this instanceof AbstractPath tp && p instanceof AbstractPath ap) {
             return tp.resolve(ap);

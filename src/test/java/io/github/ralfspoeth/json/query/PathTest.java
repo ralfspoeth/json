@@ -89,15 +89,24 @@ class PathTest {
 
     @Test
     void ofRange() {
+        // given
         var five = Basic.of(5);
         var singleElemArray = Builder.arrayBuilder().add(five).build();
         var multiElemArray = Builder.arrayBuilder().add(five).add(five).add(five).build();
+        // when
+        var all = Path.root().range(0, -1);
+        var o1 = Path.root().range(0, 1);
+        var o2 = Path.root().range(0, 2);
+        // then
         assertAll(
                 () -> assertEquals(of("[0..-5]"), of("[0..-1]")),
                 () -> assertTrue(of("[0..-1]").apply(singleElemArray).allMatch(five::equals)),
+                () -> assertTrue(all.apply(singleElemArray).allMatch(five::equals)),
                 () -> assertTrue(of("[0..-1]").apply(multiElemArray).allMatch(five::equals)),
                 () -> assertTrue(of("[0..1]").apply(multiElemArray).allMatch(five::equals)),
+                () -> assertTrue(o1.apply(multiElemArray).allMatch(five::equals)),
                 () -> assertTrue(of("[0..2]").apply(multiElemArray).allMatch(five::equals)),
+                () -> assertTrue(o2.apply(multiElemArray).allMatch(five::equals)),
                 () -> assertEquals(2, of("[0..2]").apply(multiElemArray).count()),
                 () -> assertTrue(of("[0..5]").apply(multiElemArray).allMatch(five::equals)),
                 () -> assertEquals(3, of("[0..5]").apply(multiElemArray).count())

@@ -9,6 +9,7 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
@@ -50,25 +51,41 @@ class PathTest {
         var a = new JsonArray(List.of(one, two, three));
         // then
         assertAll(
-                () -> assertEquals(one, first(a, "[0]")),
-                () -> assertEquals(two, first(a, "[1]")),
-                () -> assertEquals(three, first(a, "[2]")),
-                () -> assertEquals(one, first(a, "[-3]")),
-                () -> assertEquals(two, first(a, "[-2]")),
-                () -> assertEquals(three, first(a, "[-1]")),
+                () -> assertEquals(one, first(a, "[0]").orElseThrow()),
+                () -> assertEquals(two, first(a, "[1]").orElseThrow()),
+                () -> assertEquals(three, first(a, "[2]").orElseThrow()),
+                () -> assertEquals(one, first(a, "[-3]").orElseThrow()),
+                () -> assertEquals(two, first(a, "[-2]").orElseThrow()),
+                () -> assertEquals(three, first(a, "[-1]").orElseThrow()),
                 () -> assertTrue(empty(a, "[-4]")),
                 () -> assertTrue(empty(a, "[3]"))
         );
     }
 
-    private static JsonValue first(JsonValue root, String path) {
-        return of(path).first(root).orElseThrow();
+    private static Optional<JsonValue> first(JsonValue value, String path) {
+        return first(value, Path.of(path));
     }
 
-    private static boolean empty(JsonValue root, String path) {
-        return of(path).first(root).isEmpty();
+    private static Optional<JsonValue> first(JsonValue value, Path path) {
+        return Stream.of(value).flatMap(path).findFirst();
     }
 
+    private static boolean empty(JsonValue value, String path) {
+        return empty(value, Path.of(path));
+    }
+
+    private static boolean empty(JsonValue value, Path path) {
+        return Stream.of(value).flatMap(path).findFirst().isEmpty();
+    }
+
+    private static Optional<? extends JsonValue> single(JsonValue value, String path) {
+        return single(value, Path.of(path));
+    }
+
+    private static Optional<? extends JsonValue> single(JsonValue value, Path path) {
+        var l = Stream.of(value).flatMap(path).toList();
+        return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
+    }
 
     @Test
     void ofRange() {
@@ -155,7 +172,7 @@ class PathTest {
         // when
         var path = of("a/b/c");
         // then
-        assertEquals(5, path.single(obj).flatMap(JsonValue::decimal).map(BigDecimal::doubleValue).orElseThrow());
+        assertEquals(5, first(obj, path).flatMap(JsonValue::decimal).map(BigDecimal::doubleValue).orElseThrow());
     }
 
     @Test
@@ -172,16 +189,16 @@ class PathTest {
         var elem = Greyson.read(Reader.of(src)).orElseThrow();
         // then
         assertAll(
-                () -> assertEquals(1, of("[0]/a").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
-                () -> assertEquals(3, of("[0]/c").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
-                () -> assertEquals(7, of("[1]/d").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
-                () -> assertTrue(of("[5]").single(elem).flatMap(JsonValue::bool).orElseThrow()),
-                () -> assertEquals(3, of("[4]").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
-                () -> assertEquals(9, of("[9]/c").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
-                () -> assertEquals(0, of("[10]/a").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0)),
-                () -> assertEquals(0, of("[11]").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0)),
-                () -> assertEquals(1, of("[-1]/a").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
-                () -> assertEquals(0, of("[50..60]").single(elem).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0))
+                () -> assertEquals(1, single(elem, of("[0]/a")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
+                () -> assertEquals(3, single(elem, of("[0]/c")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
+                () -> assertEquals(7, single(elem, of("[1]/d")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
+                () -> assertTrue(single(elem, of("[5]")).flatMap(JsonValue::bool).orElseThrow()),
+                () -> assertEquals(3, single(elem, of("[4]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
+                () -> assertEquals(9, single(elem, of("[9]/c")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
+                () -> assertEquals(0, single(elem, of("[10]/a")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0)),
+                () -> assertEquals(0, single(elem, of("[11]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0)),
+                () -> assertEquals(1, single(elem, of("[-1]/a")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),
+                () -> assertEquals(0, single(elem, of("[50..60]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0))
         );
     }
 
@@ -204,42 +221,42 @@ class PathTest {
         assertAll(
                 () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("bl/x").single(obj1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("bl/y").single(obj1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(obj1, of("bl/x")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(obj1, of("bl/y")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("tr/x").single(obj1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("tr/y").single(obj1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(obj1, of("tr/x")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(obj1, of("tr/y")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("x1").single(obj2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("y1").single(obj2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(obj2, of("x1")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(obj2, of("y1")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("x2").single(obj2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("y2").single(obj2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(obj2, of("x2")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(obj2, of("y2")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("[0]").single(arr1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("[1]").single(arr1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(arr1, of("[0]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(arr1, of("[1]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("[2]").single(arr1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("[3]").single(arr1).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(arr1, of("[2]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(arr1, of("[3]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 )
                         )
                 ), () -> assertEquals(rect, new Rect(
                                 new Point(
-                                        of("[0]").single(arr2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("[2]").single(arr2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(arr2, of("[0]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(arr2, of("[2]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 ),
                                 new Point(
-                                        of("[1]").single(arr2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                                        of("[3]").single(arr2).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                                        single(arr2, of("[1]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                                        single(arr2, of("[3]")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                                 )
                         )
                 )
@@ -269,19 +286,19 @@ class PathTest {
         // then
         assertAll(
                 // all elements do have an x and a y but not a z
-                () -> assertTrue(jsonArray.elements().stream().allMatch(e -> x.single(e).isPresent())),
-                () -> assertTrue(jsonArray.elements().stream().allMatch(e -> y.single(e).isPresent())),
-                () -> assertTrue(jsonArray.elements().stream().noneMatch(e -> z.single(e).isPresent())),
+                () -> assertTrue(jsonArray.elements().stream().allMatch(e -> single(e, x).isPresent())),
+                () -> assertTrue(jsonArray.elements().stream().allMatch(e -> single(e, y).isPresent())),
+                () -> assertTrue(jsonArray.elements().stream().noneMatch(e -> single(e, z).isPresent())),
                 // output equals input
                 () -> assertEquals(input, jsonArray.elements().stream().map(e -> new Point(
-                        x.single(e).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                        y.single(e).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow())
+                        single(e, x).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        single(e, y).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow())
                 ).toList()),
-                () -> assertInstanceOf(JsonObject.class, Path.root().index(7).single(jsonArray).orElseThrow()),
-                () -> assertInstanceOf(JsonNumber.class, Path.root().index(8).resolve(x).single(jsonArray).orElseThrow()),
-                () -> assertInstanceOf(JsonNumber.class, Path.root().index(2).resolve(y).single(jsonArray).orElseThrow()),
-                () -> assertTrue(Path.root().index(3).resolve(z).single(jsonArray).isEmpty()),
-                () -> assertTrue(Path.of("3/z").single(jsonArray).isEmpty())
+                () -> assertInstanceOf(JsonObject.class, single(jsonArray, Path.root().index(7)).orElseThrow()),
+                () -> assertInstanceOf(JsonNumber.class, single(jsonArray, Path.root().index(8).resolve(x)).orElseThrow()),
+                () -> assertInstanceOf(JsonNumber.class, single(jsonArray, Path.root().index(2).resolve(y)).orElseThrow()),
+                () -> assertTrue(single(jsonArray, Path.root().index(3).resolve(z)).isEmpty()),
+                () -> assertTrue(single(jsonArray, Path.of("3/z")).isEmpty())
         );
     }
 

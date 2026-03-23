@@ -6,10 +6,8 @@ import io.github.ralfspoeth.json.data.JsonValue;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Gatherer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -270,66 +268,6 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)]");
 
-
-    /**
-     * The first element found by the path.
-     */
-    public Optional<JsonValue> first(JsonValue root) {
-        return apply(root).findFirst();
-    }
-
-    /**
-     * The only element found by the path if it results in
-     * a singleton list; otherwise {@link Optional#empty()}.
-     */
-    public Optional<JsonValue> single(JsonValue root) {
-        var l = apply(root).toList();
-        return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
-    }
-
-    public Gatherer<JsonValue, ?, JsonValue> solo(JsonValue root) {
-        class Singleton {
-            JsonValue ref;
-            boolean seen;
-            boolean multi;
-
-            boolean set(JsonValue v) {
-                if (multi) return false;
-                else if (!seen) {
-                    ref = v;
-                    return (seen = true);
-                } else {
-                    return !(multi = true);
-                }
-            }
-
-            boolean exactlyOne() {
-                return seen && !multi;
-            }
-
-            Singleton combine(Singleton other) {
-                if (seen) {
-                    if (!other.seen) {
-                        return this;
-                    } else {
-                        return other;
-                    }
-                } else {
-                    return other;
-                }
-            }
-        }
-
-        return Gatherer.of(
-                Singleton::new,
-                (r, v, d) -> r.set(v),
-                Singleton::combine,
-                (r, d) -> {
-                    if (r.exactlyOne() && !d.isRejecting()) d.push(r.ref);
-                }
-        );
-    }
-
     /**
      * Instantiate a {@link Path} from a path pattern.
      * The given pattern is first split into parts
@@ -364,14 +302,58 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return new MemberPath(memberName, this);
     }
 
+    /**
+     * Create a path that picks the element at the given index,
+     * or, if negative, at the index of the reversed array,
+     * given that it is applied to a JSON array.
+     * {@snippet :
+     * // given
+     * JsonArray a = new JsonArray(Basic.of(1), Basic.of(2), Basic.of(3));
+     * // when
+     * var first = Path.index(0);
+     * var last = Path.index(-1);
+     * var end = Path.index(a.size()-1);
+     * // then
+     * assert first.apply(a).findFirst().orElseThrow().equals(Basic.of(1));
+     * assert last.apply(a).findFirst().orElseThrow().equals(Basic.of(3));
+     * assert end.apply(a).findFirst().orElseThrow().equals(Basic.of(3));
+     * }
+     *
+     * @param index the index
+     */
     public Path index(int index) {
         return new IndexPath(index, this);
     }
 
-    public Path range(int min, int max) {
-        return new RangePath(min, max, this);
+    /**
+     * Create a path that, given a JSON array {@code a},
+     * returns a stream of its elements from index {@code startInclusive}
+     * to {@code endExclusive} exclusively.
+     * If {@code endExclusive} is negative, it is replaced by {@link Integer#MAX_VALUE}.
+     * @param startInclusive the first index
+     * @param endExclusive the last index
+     */
+    public Path range(int startInclusive, int endExclusive) {
+        return new RangePath(startInclusive, endExclusive, this);
     }
 
+    /**
+     * Create a path which, when applied to a {@link JsonObject},
+     * produces a stream of {@link JsonValue}s if its {@link JsonObject#members()}
+     * the keys of which match the given regular expression.
+     * {@snippet :
+     * // given
+     *
+     * import java.util.HashSet; var o = new JsonObject(Map.of("a1", Basic.of(1), "a2", Basic.of(2), "b", Basic.of(3)));
+     * // when
+     * var p = Path.regex("a[0-9]"); // a0, a1, a2, ..., a9
+     * // then
+     * var l = Stream.of(o).flatMap(p).toList();
+     * var c = List.of(Basic.of(1), Basic.of(2));
+     * assert l.containsAll(c) && c.containsAll(l);
+     * }
+     * @param regex a regular expression matched against the keys of
+     */
     public Path regex(Pattern regex) {
         return new RegexPath(regex, this);
     }
@@ -379,8 +361,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     public Path resolve(Path p) {
         if (this instanceof AbstractPath tp && p instanceof AbstractPath ap) {
             return tp.resolve(ap);
-        }
-        if (p instanceof AbstractPath ap) {
+        } else if (p instanceof AbstractPath ap) {
             assert this instanceof RootPath;
             return ap;
         } else {

@@ -1,6 +1,7 @@
 package io.github.ralfspoeth.json.data;
 
 import io.github.ralfspoeth.json.Greyson;
+import io.github.ralfspoeth.json.io.JsonReader;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -129,12 +130,15 @@ class JsonValueTest {
                     "a": [0, 1, 2, {"b": true}]
                 }
                 """;
-        // when
-        var parsed = Greyson.readBuilder(Reader.of(src));
-        // then
-        assertAll(
-                () -> assertDoesNotThrow(() -> parsed.orElseThrow())
-        );
+
+        try (var jr = new JsonReader(Reader.of(src))) {
+            // when
+            var parsed = jr.readBuilder();
+            // then
+            assertAll(
+                    () -> assertDoesNotThrow(() -> parsed.orElseThrow())
+            );
+        }
     }
 
     @Test

@@ -71,16 +71,6 @@ public class JsonReader implements Closeable {
     private final Stack<Elem> stack = new Stack<>();
 
     /**
-     * Reads the first and only JSON element from the source.
-     *
-     * @return the JSON element
-     * @throws IOException whenever the underlying source throws
-     */
-    public JsonValue readValue() throws IOException {
-        return read().orElseThrow();
-    }
-
-    /**
      * Reads the first JSON element if there is one.
      *
      * @return a JSON value wrapped in an Optional

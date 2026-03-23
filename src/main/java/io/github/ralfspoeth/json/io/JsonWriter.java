@@ -1,10 +1,8 @@
 package io.github.ralfspoeth.json.io;
 
-import io.github.ralfspoeth.json.data.Basic;
-import io.github.ralfspoeth.json.data.JsonValue;
-import io.github.ralfspoeth.json.data.JsonArray;
-import io.github.ralfspoeth.json.data.JsonObject;
+import io.github.ralfspoeth.json.data.*;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Arrays;
@@ -13,12 +11,12 @@ import java.util.Map;
 
 import static io.github.ralfspoeth.json.data.JsonString.escaped;
 
-public class JsonWriter implements AutoCloseable {
+public class JsonWriter implements Closeable {
 
     private final CharSequence indentation;
     private final Writer out;
 
-    public JsonWriter(Writer out, int indentation) {
+    private JsonWriter(Writer out, int indentation) {
         var tmp = new char[indentation];
         Arrays.fill(tmp, ' ');
         this.indentation = String.valueOf(tmp);
@@ -33,15 +31,53 @@ public class JsonWriter implements AutoCloseable {
         write(elem, 0);
     }
 
+    public void write(Builder<? extends JsonValue> builder) throws IOException {
+        write(builder, 0);
+    }
+
+    private void write(Builder<? extends JsonValue> builder, int level) throws IOException {
+        switch (builder) {
+            case Builder.BasicBuilder bb -> write(bb.get(), level);
+            case Builder.ObjectBuilder ob -> {
+                indent(level);
+                out.append('{').append('\n');
+                var dataIterator = ob.data().entrySet().iterator();
+                if (dataIterator.hasNext()) {
+                    writeEntry(level, dataIterator);
+                    while (dataIterator.hasNext()) {
+                        out.append(',');
+                        writeEntry(level, dataIterator);
+                    }
+                    out.append('\n');
+                }
+                indent(level);
+                out.append('}');
+            }
+            case Builder.ArrayBuilder ab -> {
+                indent(level);
+                out.append('[');
+                var dataIterator = ab.data().iterator();
+                if (dataIterator.hasNext()) {
+                    write(dataIterator.next(), level);
+                    while (dataIterator.hasNext()) {
+                        out.append(", ");
+                        write(dataIterator.next(), level);
+                    }
+                }
+                out.append(']');
+            }
+        }
+    }
+
     private void write(JsonValue el, int level) throws IOException {
         switch (el) {
-            case JsonObject(var members)-> {
+            case JsonObject(var members) -> {
                 indent(level);
                 out.append('{').append('\n');
                 var memberIterator = members.entrySet().iterator();
-                if(memberIterator.hasNext()) {
+                if (memberIterator.hasNext()) {
                     writeMember(level, memberIterator);
-                    while(memberIterator.hasNext()) {
+                    while (memberIterator.hasNext()) {
                         out.append(',');
                         writeMember(level, memberIterator);
                     }
@@ -54,9 +90,9 @@ public class JsonWriter implements AutoCloseable {
                 indent(level);
                 out.append('[');
                 var itemIterator = elements.iterator();
-                if(itemIterator.hasNext()) {
+                if (itemIterator.hasNext()) {
                     write(itemIterator.next(), level);
-                    while(itemIterator.hasNext()) {
+                    while (itemIterator.hasNext()) {
                         out.append(", ");
                         write(itemIterator.next(), level);
                     }
@@ -72,13 +108,24 @@ public class JsonWriter implements AutoCloseable {
         write(escaped(member.getKey()), member.getValue(), level + 1);
     }
 
+    private void writeEntry(int level, Iterator<Map.Entry<String, Builder<? extends JsonValue>>> memberIterator) throws IOException {
+        var member = memberIterator.next();
+        write(escaped(member.getKey()), member.getValue(), level + 1);
+    }
+
     private void indent(int level) throws IOException {
-        for(int i=0;i<level;i++) {
+        for (int i = 0; i < level; i++) {
             out.append(indentation);
         }
     }
 
     private void write(String name, JsonValue elem, int level) throws IOException {
+        indent(level);
+        out.append('"').append(name).append('"').append(": ");
+        write(elem, level + 1);
+    }
+
+    private void write(String name, Builder<? extends JsonValue> elem, int level) throws IOException {
         indent(level);
         out.append('"').append(name).append('"').append(": ");
         write(elem, level + 1);

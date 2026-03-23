@@ -2,11 +2,12 @@ package io.github.ralfspoeth.json.io;
 
 import org.jspecify.annotations.Nullable;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
 
-class Lexer implements AutoCloseable {
+class Lexer implements Closeable {
 
     sealed interface Token permits LiteralToken, FixToken {
         String value();

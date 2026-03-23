@@ -18,37 +18,57 @@ Java's **BigDecimal** allows us to represent integral and floating point as well
 as decimal numbers without the risk of losing precision or scale in both
 the generation and consumption of numerical data between Java and other languages.
 
-## Treat all numbers as `double`s
+## Treat all numbers as `double`s?
 
 This interpretation fits perfectly to the JavaScript interpretation
 of numbers—with all its downsides, most notably that seemingly 
 simple numbers like 0.1 cannot be represented in a binary floating point
-bit structure.
+bit structure. `Double.parseDouble` works with the JSON representation of numbers.
 
-## Use `BigDecimal` allover the place
+## Use `BigDecimal` allover the place?
 
 Java's `BigDecimal` type parses any legal number representation 
 in a JSON document. Instances can be easily converted into
-`int` or `double` values. The downsides are that at least for the time being, 
+`int`, `long`, or `double` values.
+
+The downsides are that at least for the time being,
 there is no means in the Java type system to enforce these numbers to be non-null, 
-and that `BigDecimal`s tend to consume more memory and require more indirections
+and that `BigDecimal`s likely consume more memory and require more indirections
 than `double`s, thus placing a performance burden onto 
 the implementation.
 
 ## Let the User make their Choices?
 
-Both GSON and Jackson provide customizations as to the data type
-mapping from JSON to Java objects and vice versa. While
-both libraries implement a lot of magic to allow for (GSON)
+An option that we considered was to defer the conversion of the
+source into a number to the use site, such that the `JsonNumber`
+is rather
+```java
+    record JsonNumber(String source) {
+        // maybe
+        int intValue() {
+            return Integer.parseInt(source);
+        }
+        double doubleValue() {
+            return Double.parseDouble(source);
+        }
+        // ... others
+    }
+```
+We see two problems here: in order _not_ to fail in these
+`intValue` and similar methods we need to check the syntax of the
+source string, eventually leading to multiple parses of the same string.
+Secondly, we cannot determine in advance whether the data can be parsed
+into an int without loss of precision or scale.
 
-    var result = new Gson().fromJson(text, Result.class);
-
-or (Jackson)
-
-    var result = new ObjectMapper().readValue(test, Result.class);
-
-the Greyson library intentionally does not support this type
-of direct JSON-to-Java conversion.
+Compare this with
+```java
+    record JsonNumber(BigDecimal value) {}
+    // ...
+    var num = new JsonNumber(BigDecimal.TEN);
+    var i = num.intValueExact(); // throws if not lossless
+```
+which es both more concise, has better arithmetic support at the potential
+cost of unnecessary parsing, memory allocation and indirections.
 
 ## Conclusion
 

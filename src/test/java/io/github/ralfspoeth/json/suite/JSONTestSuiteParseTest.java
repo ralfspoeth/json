@@ -22,10 +22,10 @@ class JSONTestSuiteParseTest extends JSONTestSuiteBase {
     private final List<Result> rejectedIs = new ArrayList<>();
 
     @Test
-    void i_structure_UTF8_BOM_empty_object() throws IOException {
+    void i_structure_UTF8_BOM_empty_object() throws Exception {
         var srcFile = RESOURCES.resolve("i_structure_UTF-8_BOM_empty_object.json");
         try (var rdr = new JsonReader(Files.newBufferedReader(srcFile, StandardCharsets.UTF_8))) {
-            assertThrows(JsonParseException.class, rdr::readValue);
+            assertThrows(JsonParseException.class, ()->rdr.read().orElseThrow());
         }
     }
 
@@ -33,7 +33,7 @@ class JSONTestSuiteParseTest extends JSONTestSuiteBase {
     void n_string_backslash_00() throws Exception {
         var srcFile = RESOURCES.resolve("n_string_backslash_00.json");
         try (var rdr = new JsonReader(Files.newBufferedReader(srcFile, StandardCharsets.UTF_8))) {
-            assertThrows(JsonParseException.class, rdr::readValue);
+            assertThrows(JsonParseException.class, ()->rdr.read().orElseThrow());
         }
     }
 

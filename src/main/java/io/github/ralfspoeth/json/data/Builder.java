@@ -115,6 +115,10 @@ public sealed interface Builder<T extends JsonValue> {
 
         private final List<Builder<? extends JsonValue>> data = new ArrayList<>();
 
+        public List<Builder<? extends JsonValue>> data() {
+            return data;
+        }
+
         public ArrayBuilder add(JsonValue elem) {
             data.add(switch (elem) {
                 case JsonObject jo -> objectBuilder(jo);
@@ -184,6 +188,10 @@ public sealed interface Builder<T extends JsonValue> {
         // the data which will be turned into the
         // members map in the JsonObject instance later.
         private final Map<String, Builder<? extends JsonValue>> data = new TreeMap<>();
+
+        public Map<String, Builder<? extends JsonValue>> data() {
+            return data;
+        }
 
         /**
          * Add a name-value pair to the builder.

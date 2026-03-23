@@ -1,6 +1,5 @@
 package io.github.ralfspoeth.json;
 
-import io.github.ralfspoeth.json.data.Builder;
 import io.github.ralfspoeth.json.data.JsonValue;
 import io.github.ralfspoeth.json.io.JsonReader;
 import io.github.ralfspoeth.json.io.JsonWriter;
@@ -16,20 +15,6 @@ import static java.util.Objects.requireNonNull;
  */
 public class Greyson {
     private Greyson() {}
-
-    /**
-     * Parse the contents which the reader produces
-     * into a {@link Builder}.
-     *
-     * @param reader the source
-     * @return a builder instance
-     * @throws IOException upon IO exceptions
-     */
-    public static Optional<Builder<? extends JsonValue>> readBuilder(Reader reader) throws IOException {
-        try(var jr = new JsonReader(reader)) {
-            return jr.readBuilder();
-        }
-    }
 
     /**
      * Parse a JSON source into a {@link JsonValue}

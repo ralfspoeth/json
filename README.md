@@ -172,7 +172,8 @@ If you are using JPMS modules with a `module-info.java` file, add
 The module `io.github.ralfspoeth.greyson` exports three packages that you 
 may use in your application:
 ```java
-    import io.github.ralfspoeth.json.data.*;       // class hierarchy
+    import io.github.ralfspoeth.json.Greyson;
+    import io.github.ralfspoeth.json.data.*;  // class hierarchy
     import io.github.ralfspoeth.json.io.*;    // reader and writer
     import io.github.ralfspoeth.json.query.*; // Queries and Path API
 ```
@@ -183,53 +184,36 @@ which make the Query API of Greyson.
 This API allows for mapping operations like this:
 
 ```java
-    Reader r;
-    try(var rdr = new JsonReader(r)) { // auto-closeable
-        JsonValue elem = rdr.readValue(); 
-        // switch over elem
-        double dbl = switch(elem) {
-            case JsonNumber(double d) -> d;
-            case null, default -> throw new IllegalArgumentException("...");
-        };
-
-        // often, you may easily convert the element into a simple record
-        // {"x": 1, "y": 2}
-        record MyRecord(int x, int y) {} 
-        var rcd =  new MyRecord(
-            intValue(members(elem).get("x")), 
-            intValue(members(elem).get("y"))
-        );
-        
-        // or you may want to query some leaves in the JSON structure 
-        Path.of("[1..3]/a/#x.*y/c").apply(elem).forEach(...);
-    }
+    // given
+    // {"x": 1, "y": 2}
+        Reader r;
+    // target class
+    record MyRecord(int x, int y) {}
+    // parse and convert
+    MyRecord result = Greyson
+        .read(r) // returns an Optional<JsonValue>
+        .map(value -> new MyRecord(
+            value.get("x").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+            value.get("y").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+        ))
+        .orElseThrow();
 ```
-Writing data into a JSON stream works either through the builders
+Writing data into a JSON stream works similarly:
 ```java
-    Writer out;
-    JsonObject jo = Aggregate.objectBuilder()
-        .named("x", JsonBoolean.TRUE)
-        .named("y", Basic.of(5d))
-        .build();
-    try(var w = JsonWriter.createDefaultWriter(out)) {
-        w.write(jo);
-    }
-```
-or through conversions from a `record`
-```java
+    // given
     Writer out;
     record Rec(boolean x, double y) {}
     Rec r = new Rec(true, 5d);
-    JsonValue jo = Aggregate.objectBuilder()
-            .named("x", Basic.of(true))
-            .named("y", Basic.of(5))
-            .build();
-    try(var w = new JsonWriter(out)) {
-        w.write(jo); // {"x": true, "y": 5.0}
-    }
+    // use Builder API
+    JsonObject jo = Aggregate.objectBuilder()
+        .putBasic("x", r.x())
+        .putBasic("y", r.y())
+        .build();
+    // write into output stream
+    Greyson.write(out, jo);
 ```
 The entire API is designed such that it never returns
-`null` as an `JsonValue` reference, but is, however, resilient
+`null` as an `JsonValue` or `Builder` reference, but is, however, resilient
 towards `null` as an argument wherever reasonable.
 
 ## JSON
@@ -305,8 +289,8 @@ between basic and aggregate types like so:
 ```java
     public sealed interface JsonValue permits Basic, Aggregate {...}
     public sealed interface Basic extends JsonValue permits
-        JsonBoolean, JsonNull, JsonNumber, JsonString {}
-    public sealed interace Aggregate extends JsonValue permits
+        JsonBoolean, JsonNull, JsonNumber, JsonString {...}
+    public sealed interface Aggregate extends JsonValue permits
         JsonArray, JsonObject {...}
 ```
 Naming primitive types "basic" and structured types "aggregates" has
@@ -393,24 +377,6 @@ That said, the hierarchy of the data classes is this:
 
 ![Hierarchy](hierarchy.png "Data Classes Hierarchy")
 
-## All `JsonValue`s are `Predicate`s
-
-The query API uses structural patterns for validating JSON data
-before mapping it to some target Java object.
-The fact that every `JsonValue` already _is_ a pattern comes in handy 
-for this purpose. Consider this array of numbers
-```json
-    [1, 2, 2, 3]
-```
-which is parsed into
-```java
-    var a = new JsonArray(1, 2, 2, 3);
-```
-This `a` can now easily be filtered like
-```java
-    assert 2 == a.stream().filter(Basic.of(2)).count();
-```
-
 ## `JsonValue` Conversions
 
 The `JsonValue` interface contains conversions into `Optional`s 
@@ -433,7 +399,7 @@ Assuming a structure like this
 ```
 we may safely write
 ```java
-    JsonValue v = Greyson.readValue("...");
+    JsonValue v = Greyson.read("...").orElseThrow();
     boolean b = v.get("a")
             .flatMap(a -> a.get(2))
             .flatMap(a2 -> a2.get("b"))
@@ -464,15 +430,13 @@ class of the `Aggregate` interface with two implementations:
         // ...
     }
 ```
-Since the implementing classes reside within the same compilation unit
-as the `Builder` there is no need for the `permits` clause.
 
 ## ArrayBuilder
 
 The array builder simply provides a method that adds an `JsonValue`:
 ```java
     final class ArrayBuilder implements Builder<JsonArray> {
-        item(JsonValue e) {
+        add(JsonValue e) {
             // add to mutable list
         }
         JsonArray build() {
@@ -485,7 +449,7 @@ The array builder simply provides a method that adds an `JsonValue`:
 The object builder is not so different:
 ```java
     final class ObjectBuilder implements Builder<JsonObject> {
-        named(String name, JsonValue e) {
+        put(String name, JsonValue e) {
             // put into mutable map
         }
         JsonObject build() {
@@ -494,16 +458,12 @@ The object builder is not so different:
     }
 ```
 Both builders are instantiable through static methods in the 
-`JsonValue` interface exclusively:
+`Builder` interface exclusively:
 ```java
-    JsonObjectBuilder objectBuilder();
-    JsonArrayBuilder arrayBuilder();
+    ObjectBuilder objectBuilder();
+    ArrayBuilder arrayBuilder();
+    Builder<?> of();
 ```
-The implementing classes both need to be public because they provide
-different methods for adding intermediate data;
-`JsonArray` provides an `item(JsonValue)` method and
-`JsonObject` a `named(String, JsonValue)` method in order to
-add data their internal structures.
 
 ## BasicBuilder
 
@@ -522,13 +482,13 @@ Therefore, the following is always true:
 ## From JSON
 
 The parser implementation named `JsonReader` in package
-`io.github.ralfspoeth.json.io` implements the `AutoCloseable` interface and is
+`io.github.ralfspoeth.json.io` implements the `Closeable` interface and is
 meant to be used in try-with-resources statements.
 Given 
 ```java
     Reader src = new StringReader("""
         {"make": "BMW", "year": 1971}"""
-    );
+    ); // or Reader.of(...) available since JDK 24
 ```
 then
 ```java 
@@ -545,8 +505,8 @@ we'd write:
     try(var rdr = new JsonReader(src)) {
         return rdr.read() // Optional<JsonValue>
           .map(jv -> new Car(
-              stringValue(members(jv).get("make")),
-              intValue(members(jv).get("year"))
+              jv.get("make").flatMap(JsonValue::string).map(String::trim).orElseThrow(),
+              jv.get("year").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
           )) // Optional<Car>
           .orElseThrow(); // Car
     }
@@ -556,40 +516,21 @@ JSON object:
 ```java 
     try(var rdr = new JsonReader(src)) {
         return rdr.read() // Optional<JsonValue>
-          .filter(jv -> jv instanceof JsonObject)
-        // ...
+          .filter(JsonObject.class::isInstance)
+          .map(...) // as above
+          .orElseThrow();
     }
 ```
-or, with the help of the `Validation` class, we might enforce a structure
-and a mandatory set of keys:
-```java 
-    import static io.github.ralfspoeth.json.query.Validation.*;
-```
-
+or, we might test for a mandatory set of keys:
 ```java
     try(var rdr = new JsonReader(src)){
         return rdr.read() // Optional<JsonValue>
-          .filter(is(JsonObject.class)
-            .and(requiredKeys("make", "year"))
-            .and(matches(Map.of("make", is(JsonString.class)), "year", is(JsonNumber.class)")))
+            .filter(JsonObject.class::isInstance)
+            .filter(jo -> jo.members().keySet().containsAll(Set.of("year", "make")))
+            .filter(jo -> jo.members().get("year") instanceof JsonNumber && jo.members.get("make") instanceof JsonString)
             // ...
     }
 ```
-The `Validation` class even helps us build and reuse predicates as well as
-provide useful explanations:
-
-```java 
-    var predicate = is(JsonObject.class).and(...);
-    try(rdr = new JsonReader(src)) {
-        return rdr.read() // Optional<JsonValue>
-            .map(jv -> check(jv, predicate)) // Optional<Result>
-            .map(result -> explainIfFailed(result)) // Optional<Result>
-            .map(result -> valueOrThrow(result)) // Optional<JsonValue>
-            .map(jv -> new Car(<see above>)) // Optional<Car>
-            .orElseThrow(); // Car
-    }
-```
-
 
 ## To JSON
 
@@ -605,7 +546,7 @@ but not constructor:
 
     JsonValue object = ... 
     Writer w = ... 
-    try(var wrt = JsonWriter.createDefaultWriter(w)){
+    try(var wrt = new JsonWriter(w)){
         wrt.write(object);
     }
 
@@ -613,7 +554,7 @@ The `JsonWriter` provides the static method
 `minimize` which removes whitespace safely from 
 a given input stream.
 
-# Querying Data
+# Query API
 
 The package `query` provides simple utilities
 for querying data based on some root element.
@@ -658,6 +599,7 @@ will not throw an `AssertionError`.
 ### Syntax
 
 The syntax for the patterns is
+* `i` where `i` is an integer; which denotes the index in an array;
 * `a..b` where `a` and `b` are integers; a range pattern applicable to arrays;
 * `#regex` where `regex` is a regular expression filtering attributes of objects;
 * `name` where `name` is just the member name of the root object.
@@ -666,6 +608,10 @@ The syntax for the patterns is
 
 Given `[2, 3, 5, 7, 11]` then `Path.of("0..2")` yields
 the stream of the first two array elements `2` and `3`.
+
+Given `[2, 3, 5, 7, 11]` then `Path.of("0")` yields
+the stream of the first array element `2`, `Path.of("1")`
+the second element `3`, and `Path.of(-1) the last element `11`.
 
 Given `{"a0":true,"a1":false}` then `Path.of("#a.")`
 yields the stream of `true` and `false`.

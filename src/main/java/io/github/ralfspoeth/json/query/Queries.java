@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collector;
 
 import static io.github.ralfspoeth.basix.fn.Predicates.eq;
@@ -149,4 +150,74 @@ public class Queries {
                 JsonArray::new
         );
     }
+
+    // methods for frequent conversions
+
+    /**
+     * Shortcut for the sometimes lengthy sequence
+     * {@snippet :
+     * elem.decimal().map(BigDecimal::intValue);
+     * }.
+     * @param elem a JSON element, may not be {@code null}
+     * @return an optional Integer
+     */
+    public static Optional<Integer> intValue(JsonValue elem) {
+        return elem.decimal().map(BigDecimal::intValue);
+    }
+
+    /**
+     * Same as {@code intValue(elem).orElse(def)}.
+     * @param elem a JSON element, may not be {@code null}
+     * @param def the default value
+     * @return the int if present, {@code def} otherwise
+     */
+    public static int intValue(JsonValue elem, int def) {
+        return intValue(elem).orElse(def);
+    }
+
+
+    /**
+     * Shortcut for the sometimes lengthy sequence
+     * {@snippet :
+     * elem.decimal().map(BigDecimal::longValue);
+     * }.
+     * @param elem a JSON element, may not be {@code null}
+     * @return an optional Integer
+     */
+    public static Optional<Long> longValue(JsonValue elem) {
+        return elem.decimal().map(BigDecimal::longValue);
+    }
+
+    /**
+     * Same as {@code longValue(elem).orElse(def)}.
+     * @param elem a JSON element, may not be {@code null}
+     * @param def the default value
+     * @return the long if present, {@code def} otherwise
+     */
+    public static long longValue(JsonValue elem, long def) {
+        return longValue(elem).orElse(def);
+    }
+
+    /**
+     * Shortcut for the sometimes lengthy sequence
+     * {@snippet :
+     * elem.decimal().map(BigDecimal::doubleValue);
+     * }.
+     * @param elem a JSON element, may not be {@code null}
+     * @return an optional Integer
+     */
+    public static Optional<Double> doubleValue(JsonValue elem) {
+        return elem.decimal().map(BigDecimal::doubleValue);
+    }
+
+    /**
+     * Same as {@code doubleValue(elem).orElse(def)}.
+     * @param elem a JSON element, may not be {@code null}
+     * @param def the default value
+     * @return the double if present, {@code def} otherwise
+     */
+    public static double doubleValue(JsonValue elem, double def) {
+        return doubleValue(elem).orElse(def);
+    }
+
 }

@@ -56,6 +56,7 @@ public sealed interface JsonValue permits Aggregate, Basic {
      * The depth of tree of nested values.
      * The depth of each leaf node is 1.
      * The depth of container nodes is 1 + the maximum depth of its children.
+     * @return the depth
      */
     default int depth() {
         return 1;
@@ -124,31 +125,53 @@ public sealed interface JsonValue permits Aggregate, Basic {
     @Override
     boolean equals(Object o);
 
+    /**
+     * The boolean value of this element if reasonable.
+     * Only {@link JsonBoolean} overrides this method.
+     *
+     * @return an optional boolean, empty except for {@link JsonBoolean}
+     */
     default Optional<Boolean> bool() {
         return Optional.empty();
     }
 
+    /**
+     * Same as {@code boolValue().orElse(def)}.
+     * @param def the default value
+     */
     default boolean bool(boolean def) {
         return bool().orElse(def);
     }
 
+    /**
+     * The decimal value of this element if it is a {@link JsonNumber}.
+     * Only {@link JsonNumber} overrides this method.
+     * @return the decimal value, or an empty optional
+     */
     default Optional<BigDecimal> decimal() {
         return Optional.empty();
     }
 
     /**
      * Same as {@code decimalValue().orElse(def)}.
+     * @param def the default value
      */
     default BigDecimal decimal(BigDecimal def) {
         return decimal().orElse(requireNonNull(def));
     }
 
+    /**
+     * The string value of this element if it is a {@link JsonString}.
+     * Only {@link JsonString} overrides this method.
+     * @return the string value, or an empty optional
+     */
     default Optional<String> string() {
         return Optional.empty();
     }
 
     /**
      * Same as {@code stringValue().orElse(def)}.
+     * @param def the default value
      */
     default String string(String def) {
         return string().orElse(requireNonNull(def));
@@ -178,7 +201,7 @@ public sealed interface JsonValue permits Aggregate, Basic {
 
     /**
      * Get all the elements of this it is a JSON array,
-     * or an empty list if this is not an array.
+     * or an empty list if this is not a JSON array.
      */
     default List<JsonValue> elements() {
         return List.of();
@@ -192,10 +215,21 @@ public sealed interface JsonValue permits Aggregate, Basic {
         return Map.of();
     }
 
+    /**
+     * If this is a {@link Basic} instance, wrap it into an {@link Optional},
+     * other return an empty {@link Optional}.
+     * @return this wrapped if it is a {@link Basic}, empty optional otherwise
+     */
     default Optional<Basic<?>> basic() {
         return Optional.empty();
     }
 
+    /**
+     * Converts this value into a {@link Builder}
+     * the {@link Builder#build()} of which has the same type as this.
+     *
+     * @return a builder
+     */
     default Builder<?> builder() {
         return Builder.of(this);
     }

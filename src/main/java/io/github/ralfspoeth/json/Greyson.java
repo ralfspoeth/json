@@ -32,7 +32,9 @@ public class Greyson {
     }
 
     /**
-     * Shortcut for {@snippet : readBuilder(rdr).map(Builder::build)}.
+     * Shortcut for {@snippet :
+     *  readBuilder(rdr).map(Builder::build)
+     * }.
      */
     public static Optional<JsonValue> readValue(Reader rdr) throws IOException {
         return readBuilder(rdr).map(Builder::build);

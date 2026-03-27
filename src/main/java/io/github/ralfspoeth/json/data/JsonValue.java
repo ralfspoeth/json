@@ -233,4 +233,68 @@ public sealed interface JsonValue permits Aggregate, Basic {
     default Builder<?> builder() {
         return Builder.of(this);
     }
+
+
+    // methods for frequent conversions
+
+    /**
+     * Shortcut for the sometimes lengthy sequence
+     * {@snippet :
+     * elem.decimal().map(BigDecimal::intValue);
+     * }.
+     * @return an optional Integer
+     */
+    default Optional<Integer> intValue() {
+        return decimal().map(BigDecimal::intValue);
+    }
+
+    /**
+     * Same as {@code intValue(elem).orElse(def)}.
+     * @param def the default value
+     * @return the int if present, {@code def} otherwise
+     */
+    default int intValue(int def) {
+        return intValue().orElse(def);
+    }
+
+
+    /**
+     * Shortcut for the sometimes lengthy sequence
+     * {@snippet :
+     * elem.decimal().map(BigDecimal::longValue);
+     * }.
+     * @return an optional Integer
+     */
+    default Optional<Long> longValue() {
+        return decimal().map(BigDecimal::longValue);
+    }
+
+    /**
+     * Same as {@code longValue(elem).orElse(def)}.
+     * @param def the default value
+     * @return the long if present, {@code def} otherwise
+     */
+    default long longValue(long def) {
+        return longValue().orElse(def);
+    }
+
+    /**
+     * Shortcut for the sometimes lengthy sequence
+     * {@snippet :
+     * elem.decimal().map(BigDecimal::doubleValue);
+     * }.
+     * @return an optional Integer
+     */
+    default Optional<Double> doubleValue() {
+        return decimal().map(BigDecimal::doubleValue);
+    }
+
+    /**
+     * Same as {@code doubleValue().orElse(def)}.
+     * @param def the default value
+     * @return the double if present, {@code def} otherwise
+     */
+    default double doubleValue(double def) {
+        return doubleValue().orElse(def);
+    }
 }

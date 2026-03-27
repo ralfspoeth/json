@@ -193,8 +193,8 @@ This API allows for mapping operations like this:
     MyRecord result = Greyson
         .read(r) // returns an Optional<JsonValue>
         .map(value -> new MyRecord(
-            value.get("x").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-            value.get("y").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+            value.get("x").flatMap(JsonValue::intValue).orElseThrow(),
+            value.get("y").flatMap(JsonValue::intValue).orElseThrow()
         ))
         .orElseThrow();
 ```
@@ -505,8 +505,8 @@ we'd write:
     try(var rdr = new JsonReader(src)) {
         return rdr.read() // Optional<JsonValue>
           .map(jv -> new Car(
-              jv.get("make").flatMap(JsonValue::string).map(String::trim).orElseThrow(),
-              jv.get("year").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+              jv.get("make").flatMap(JsonValue::string).orElseThrow(),
+              jv.get("year").flatMap(JsonValue::intValue).orElseThrow()
           )) // Optional<Car>
           .orElseThrow(); // Car
     }

@@ -55,7 +55,7 @@ import static java.util.Objects.requireNonNull;
  * Path p = Path.of("[2, -1]/#a.*");
  *
  * // then
- * List<JsonValue> result = Greyson.read(given).map(p).stream().toList();
+ * List<JsonValue> result = Greyson.readValue(given).map(p).stream().toList();
  * assert result.size() == 3; // three JSON objects...
  * assert result.getFirst() == JsonBoolean.TRUE; // the "aa" member of the third object
  * assert result.get(1).equals(Basic.of(2)); // the "ab" member of the fourth

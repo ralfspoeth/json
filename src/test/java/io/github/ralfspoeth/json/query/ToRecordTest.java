@@ -26,7 +26,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var jo = Greyson.read(Reader.of(src)).orElseThrow();
+        var jo = Greyson.readValue(Reader.of(src)).orElseThrow();
         var result = new R(jo.get("x").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow());
 
         // then
@@ -53,7 +53,7 @@ class ToRecordTest {
                 """;
 
         // when
-        var value = Greyson.read(Reader.of(src)).orElseThrow();
+        var value = Greyson.readValue(Reader.of(src)).orElseThrow();
         var result = value.elements()
                 .stream()
                 .map(jo -> new R(

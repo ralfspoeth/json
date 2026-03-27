@@ -100,7 +100,7 @@ class JsonValueTest {
                 }
                 """;
         // when
-        var parsed = Greyson.read(Reader.of(src)).orElseThrow();
+        var parsed = Greyson.readValue(Reader.of(src)).orElseThrow();
         // then
         assertAll(
                 () -> assertTrue(parsed.get("a").isPresent()),

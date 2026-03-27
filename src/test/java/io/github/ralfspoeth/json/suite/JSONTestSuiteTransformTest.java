@@ -19,9 +19,9 @@ class JSONTestSuiteTransformTest extends JSONTestSuiteBase {
 
     private JsonValue serialAndParse(JsonValue element) throws IOException {
         var w = new StringWriter();
-        Greyson.write(w, element);
+        Greyson.writeValue(w, element);
         var str = w.toString();
-        return Greyson.read(Reader.of(str)).orElseThrow();
+        return Greyson.readValue(Reader.of(str)).orElseThrow();
     }
 
     private Executable testTransform(Path path) {

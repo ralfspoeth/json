@@ -29,7 +29,7 @@ class JsonWriterTest {
         try (var pw = new StringWriter(); var wrt = new JsonWriter(new PrintWriter(pw))) {
             wrt.write(orig);
             try(var sr = new StringReader(pw.toString()); var rdr = new JsonReader(sr)) {
-                var result = rdr.read().orElseThrow();
+                var result = rdr.readBuilder().map(Builder::build).orElseThrow();
                 assertEquals(orig, result);
             }
         }

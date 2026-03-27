@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json.suite;
 
+import io.github.ralfspoeth.json.data.Builder;
 import io.github.ralfspoeth.json.data.JsonValue;
 import io.github.ralfspoeth.json.io.JsonReader;
 
@@ -19,7 +20,7 @@ class JSONTestSuiteBase {
     // parse a single JSON file
     protected Result parse(Path p) {
         try (var rdr = new JsonReader(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
-            return new Result(p.getFileName(), rdr.read().orElseThrow(), null);
+            return new Result(p.getFileName(), rdr.readBuilder().map(Builder::build).orElseThrow(), null);
         } catch (Throwable t) {
             return new Result(p.getFileName(), null, t);
         }

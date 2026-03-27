@@ -43,7 +43,7 @@ class QueriesTest {
                     "o": null
                 }
                 """;
-        var jo = Greyson.read(Reader.of(src)).orElseThrow();
+        var jo = Greyson.readValue(Reader.of(src)).orElseThrow();
 
         var r = new R(
                 jo.get("s").flatMap(JsonValue::string).orElse(""),
@@ -61,7 +61,7 @@ class QueriesTest {
         var src = """
                 [{"d": 5}, {"d": 6}, {"d": 7}]
                 """;
-        var ja = Greyson.read(Reader.of(src)).orElseThrow();
+        var ja = Greyson.readValue(Reader.of(src)).orElseThrow();
         var result = ja.elements()
                 .stream()
                 .map(JsonValue::members)
@@ -82,7 +82,7 @@ class QueriesTest {
                 , "d": null
                 , "e": [1, 2, 3]
                 }""";
-        var jo = Greyson.read(Reader.of(src)).orElseThrow();
+        var jo = Greyson.readValue(Reader.of(src)).orElseThrow();
         assertAll(
                 () -> assertInstanceOf(Map.class, asObject(jo)),
                 () -> assertInstanceOf(BigDecimal.class, ((Map<String, ?>) asObject(jo)).get("a")),

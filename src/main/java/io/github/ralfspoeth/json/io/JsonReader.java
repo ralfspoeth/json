@@ -25,7 +25,7 @@ import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
  * // given
  * Reader r = new StringReader(); // @replace substring="new StringReader();" replacement="..."
  * try(var jr = new JsonReader(r)) {
- *     return jr.readNextElement();
+ *     return jr.readBuilder();
  * }
  *}
  * The class supports strict adherence to the JSON specification
@@ -71,19 +71,11 @@ public class JsonReader implements Closeable {
     private final Stack<Elem> stack = new Stack<>();
 
     /**
-     * Reads the first JSON element if there is one.
-     *
-     * @return a JSON value wrapped in an Optional
-     * @throws IOException whenever the lexer throws
-     */
-    public Optional<JsonValue> read() throws IOException {
-        return readBuilder().map(Builder::build);
-    }
-
-    /**
      * Reads the source and returns a {@link Builder} for
      * a {@link JsonValue}, if the source contains
      * a complete and terminated JSON structure.
+     *
+     * @throws IOException whenever the lexer throws
      */
     public Optional<Builder<? extends JsonValue>> readBuilder() throws IOException {
         var result = readNextElement();

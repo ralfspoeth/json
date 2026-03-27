@@ -196,7 +196,7 @@ class PathTest {
                  {"a": 1, "b": 2, "c": 9}
                 ]""";
         // when
-        var elem = Greyson.read(Reader.of(src)).orElseThrow();
+        var elem = Greyson.readValue(Reader.of(src)).orElseThrow();
         // then
         assertAll(
                 () -> assertEquals(1, single(elem, of("[0]/a")).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()),

@@ -1,5 +1,6 @@
 package io.github.ralfspoeth.json;
 
+import io.github.ralfspoeth.json.data.Builder;
 import io.github.ralfspoeth.json.data.JsonValue;
 import io.github.ralfspoeth.json.io.JsonReader;
 import io.github.ralfspoeth.json.io.JsonWriter;
@@ -24,10 +25,17 @@ public class Greyson {
      * @return a potentially empty representation
      * @throws IOException when the input stream throws
      */
-    public static Optional<JsonValue> read(Reader rdr) throws IOException {
+    public static Optional<Builder<? extends JsonValue>> readBuilder(Reader rdr) throws IOException {
         try(var jr = new JsonReader(rdr)) {
-            return jr.read();
+            return jr.readBuilder();
         }
+    }
+
+    /**
+     * Shortcut for {@snippet : readBuilder(rdr).map(Builder::build)}.
+     */
+    public static Optional<JsonValue> readValue(Reader rdr) throws IOException {
+        return readBuilder(rdr).map(Builder::build);
     }
 
 
@@ -36,9 +44,22 @@ public class Greyson {
      * @param writer a writer, must not be {@code null}
      * @param elem the element to serialize, must not be {@code null}
      */
-    public static void write(Writer writer, JsonValue elem) throws IOException {
+    public static void writeValue(Writer writer, JsonValue elem) throws IOException {
         try(var wrt = new JsonWriter(writer)) {
             wrt.write(requireNonNull(elem));
+        }
+    }
+
+    /**
+     * Serialize the {@link Builder} to the {@link Writer}.
+     *
+     * @param writer a writer, must not be {@code null}
+     * @param builder the builder, must not be {@code null}
+     * @throws IOException when the writer throws
+     */
+    public static void writeBuilder(Writer writer, Builder<? extends JsonValue> builder) throws IOException {
+        try(var wrt = new JsonWriter(writer)) {
+            wrt.writeBuilder(requireNonNull(builder));
         }
     }
 }

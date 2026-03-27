@@ -10,7 +10,12 @@ import java.util.Iterator;
 import java.util.Map;
 
 import static io.github.ralfspoeth.json.data.JsonString.escaped;
+import static java.util.Objects.requireNonNull;
 
+/**
+ * A Writer for JSON values and builders.
+ *
+ */
 public class JsonWriter implements Closeable {
 
     private final CharSequence indentation;
@@ -20,21 +25,38 @@ public class JsonWriter implements Closeable {
         var tmp = new char[indentation];
         Arrays.fill(tmp, ' ');
         this.indentation = String.valueOf(tmp);
-        this.out = out;
+        this.out = requireNonNull(out);
     }
 
+    /**
+     * Instantiate new JsonWriter.
+     * @param out the writer
+     */
     public JsonWriter(Writer out) {
         this(out, 4);
     }
 
+    /**
+     * Serialize the {@link JsonValue} to the {@link Writer}.
+     * @param elem the element to serialize, must not be {@code null}
+     * @throws IOException when the writer throws
+     */
     public void write(JsonValue elem) throws IOException {
-        write(elem, 0);
+        write(requireNonNull(elem), 0);
     }
 
-    public void write(Builder<? extends JsonValue> builder) throws IOException {
-        write(builder, 0);
+    /**
+     * Serialize the {@link Builder} to the {@link Writer}.
+     * @param builder the builder, must not be {@code null}
+     * @throws IOException when the writer throws
+     */
+    public void writeBuilder(Builder<? extends JsonValue> builder) throws IOException {
+        write(requireNonNull(builder), 0);
     }
 
+    /*
+     *
+     */
     private void write(Builder<? extends JsonValue> builder, int level) throws IOException {
         switch (builder) {
             case Builder.BasicBuilder bb -> write(bb.get(), level);

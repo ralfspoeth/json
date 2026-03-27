@@ -29,9 +29,9 @@ class GreysonTest {
     }
 
     @Test
-    void testReadFromString_validJson() throws IOException {
+    void testReadValueFromString_validJson() throws IOException {
         String jsonString = "{\"name\":\"test\",\"value\":123}";
-        JsonValue element = Greyson.read(Reader.of(jsonString)).orElseThrow();
+        JsonValue element = Greyson.readValue(Reader.of(jsonString)).orElseThrow();
         assertNotNull(element);
         assertInstanceOf(JsonObject.class, element);
         JsonObject jo = (JsonObject) element;
@@ -40,29 +40,29 @@ class GreysonTest {
     }
 
     @Test
-    void testReadFromString_invalidJson() {
+    void testReadValueFromString_invalidJson() {
         String invalidJsonString = "{\"name\":\"test\",\"value\":123"; // Missing closing brace
-        assertThrows(JsonParseException.class, () -> Greyson.read(Reader.of(invalidJsonString)));
+        assertThrows(JsonParseException.class, () -> Greyson.readValue(Reader.of(invalidJsonString)));
     }
 
     @Test
-    void testReadFromString_nullInput() {
-        assertThrows(NullPointerException.class, () -> Greyson.read(null));
+    void testReadValueFromString_nullInput() {
+        assertThrows(NullPointerException.class, () -> Greyson.readValue(null));
     }
 
     @Test
-    void testReadFromString_emptyString() {
+    void testReadValueFromString_emptyString() {
         // Behavior for empty string depends on JsonReader.readElement(String) implementation
         // It might throw an exception or return null/JsonNull if it's considered valid empty content.
         // Assuming it throws an exception for non-JSON content.
-        assertThrows(NoSuchElementException.class, () -> Greyson.read(Reader.of("")).orElseThrow());
+        assertThrows(NoSuchElementException.class, () -> Greyson.readValue(Reader.of("")).orElseThrow());
     }
 
     @Test
-    void testReadFromReader_validJson() throws IOException {
+    void testReadValueFromReader_validJson() throws IOException {
         String jsonString = "[\"apple\", \"banana\"]";
         Reader reader = new StringReader(jsonString);
-        JsonValue element = Greyson.read(reader).orElseThrow();
+        JsonValue element = Greyson.readValue(reader).orElseThrow();
         assertNotNull(element);
         assertInstanceOf(JsonArray.class, element);
         JsonArray ja = (JsonArray) element;
@@ -71,15 +71,15 @@ class GreysonTest {
     }
 
     @Test
-    void testReadFromReader_invalidJson() {
+    void testReadValueFromReader_invalidJson() {
         String invalidJsonString = "[1, 2,"; // Missing closing bracket
         Reader reader = new StringReader(invalidJsonString);
         // Json.read(Reader) wraps JsonReader, which might throw during parsing.
-        assertThrows(JsonParseException.class, () -> Greyson.read(reader));
+        assertThrows(JsonParseException.class, () -> Greyson.readValue(reader));
     }
 
     @Test
-    void testReadFromReader_ioExceptionDuringRead() throws IOException {
+    void testReadFromReader_ioExceptionDuringReadValue() throws IOException {
         try (Reader faultyReader = new Reader() {
             @Override
             public int read(char @NonNull [] cbuf, int off, int len) throws IOException {
@@ -91,12 +91,12 @@ class GreysonTest {
             }
         }) {
             // Json.read(Reader) declares IOException
-            assertThrows(IOException.class, () -> Greyson.read(faultyReader));
+            assertThrows(IOException.class, () -> Greyson.readValue(faultyReader));
         }
     }
 
     @Test
-    void testWrite_jsonArray() throws IOException {
+    void testWriteValue_jsonArray() throws IOException {
         // given
         JsonArray jsonArray = Builder.arrayBuilder()
                 .add(JsonBoolean.TRUE)
@@ -104,16 +104,45 @@ class GreysonTest {
                 .build();
         // when
         var w = new StringWriter();
-        Greyson.write(w, jsonArray);
+        Greyson.writeValue(w, jsonArray);
         var result = w.toString();
         String expectedOutput = "[true, null]";
         assertEquals(expectedOutput, result);
     }
 
     @Test
-    void testWrite_jsonNull() throws IOException {
+    void testWriteValue_jsonNull() throws IOException {
         StringWriter writer = new StringWriter();
-        Greyson.write(writer, JsonNull.INSTANCE);
+        Greyson.writeValue(writer, JsonNull.INSTANCE);
         assertEquals("null", writer.toString().trim());
+    }
+
+    @Test
+    void testWriteBuilder_arrayBuilder() throws IOException {
+        // given
+        var w = new StringWriter();
+        var ab = Builder.arrayBuilder().addBasic(1).addBasic(2).addBasic(true).addBasic(null);
+        var ja = ab.build();
+        // when
+        Greyson.writeBuilder(w, ab);
+        // then
+        assertEquals(ja, Greyson.readValue(Reader.of(w.getBuffer())).orElseThrow());
+    }
+
+    @Test
+    void testWriteBuilder_objectBuilder() throws IOException {
+        // given
+        var w = new StringWriter();
+        var ob = Builder.objectBuilder()
+                .putBasic("a", 1)
+                .putBasic("b", 2)
+                .putBasic("c", null)
+                .putBasic("d", true);
+        var jo = ob.build();
+        // when
+        Greyson.writeBuilder(w, ob);
+        // then
+        assertEquals(jo, Greyson.readValue(Reader.of(w.getBuffer())).orElseThrow());
+
     }
 }

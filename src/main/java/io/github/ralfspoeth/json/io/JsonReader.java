@@ -25,7 +25,7 @@ import static io.github.ralfspoeth.json.io.Lexer.Type.STRING;
  * // given
  * Reader r = new StringReader(); // @replace substring="new StringReader();" replacement="..."
  * try(var jr = new JsonReader(r)) {
- *     return jr.readBuilder();
+ *     return jr.read();
  * }
  *}
  * The class supports strict adherence to the JSON specification
@@ -77,7 +77,7 @@ public class JsonReader implements Closeable {
      *
      * @throws IOException whenever the lexer throws
      */
-    public Optional<Builder<? extends JsonValue>> readBuilder() throws IOException {
+    public Optional<Builder<? extends JsonValue>> read() throws IOException {
         var result = readNextElement();
         if (lexer.hasNext()) {
             throw new JsonParseException("Input contains tokens after the first element", lexer.row(), lexer.column());

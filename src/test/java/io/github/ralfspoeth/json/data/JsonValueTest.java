@@ -133,7 +133,7 @@ class JsonValueTest {
 
         try (var jr = new JsonReader(Reader.of(src))) {
             // when
-            var parsed = jr.readBuilder();
+            var parsed = jr.read();
             // then
             assertAll(
                     () -> assertDoesNotThrow(() -> parsed.orElseThrow())

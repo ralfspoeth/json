@@ -50,7 +50,7 @@ public class JsonWriter implements Closeable {
      * @param builder the builder, must not be {@code null}
      * @throws IOException when the writer throws
      */
-    public void writeBuilder(Builder<? extends JsonValue> builder) throws IOException {
+    public void write(Builder<? extends JsonValue> builder) throws IOException {
         write(requireNonNull(builder), 0);
     }
 

@@ -27,7 +27,7 @@ public class Greyson {
      */
     public static Optional<Builder<? extends JsonValue>> readBuilder(Reader rdr) throws IOException {
         try(var jr = new JsonReader(rdr)) {
-            return jr.readBuilder();
+            return jr.read();
         }
     }
 
@@ -61,7 +61,7 @@ public class Greyson {
      */
     public static void writeBuilder(Writer writer, Builder<? extends JsonValue> builder) throws IOException {
         try(var wrt = new JsonWriter(writer)) {
-            wrt.writeBuilder(requireNonNull(builder));
+            wrt.write(requireNonNull(builder));
         }
     }
 }

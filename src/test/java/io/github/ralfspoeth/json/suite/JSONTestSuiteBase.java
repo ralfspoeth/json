@@ -20,7 +20,7 @@ class JSONTestSuiteBase {
     // parse a single JSON file
     protected Result parse(Path p) {
         try (var rdr = new JsonReader(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
-            return new Result(p.getFileName(), rdr.readBuilder().map(Builder::build).orElseThrow(), null);
+            return new Result(p.getFileName(), rdr.read().map(Builder::build).orElseThrow(), null);
         } catch (Throwable t) {
             return new Result(p.getFileName(), null, t);
         }

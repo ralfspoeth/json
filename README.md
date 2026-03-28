@@ -477,11 +477,15 @@ Therefore, the following is always true:
 
 # IO: Reading and Writing JSON Data
 
+The `Greyson` class is used to read and write JSON data
+from and to streams, respectively. It supports both
+`JsonValue`s and `Builder`s, the latter being used relunctantly
+in well defined situations only.
+
 ## From JSON
 
-The parser implementation named `JsonReader` in package
-`io.github.ralfspoeth.json.io` implements the `Closeable` interface and is
-meant to be used in try-with-resources statements.
+The `Greyson` class in package `io.github.ralfspoeth.json`
+is used to parse JSON input streams into `JsonValue`s.
 Given 
 ```java
     Reader src = new StringReader("""
@@ -489,68 +493,59 @@ Given
     ); // or Reader.of(...) available since JDK 24
 ```
 then
-```java 
-    try(var rdr = new JsonReader(src)) {
-        return rdr.readElement();
-    }
+```java
+    Greyson.readValue(src);
 ```
 produces `new JsonObject(Map.of("make", new JsonString("BMW"), "year", Basic.of(1971)))`.
 When we want to read the JSON into a Java object of some type, say `record Car(String make, int year) {}`
 we'd write:
-```java 
-    import static io.github.ralfspoeth.json.query.Queries.*;
-    // ... later
-    try(var rdr = new JsonReader(src)) {
-        return rdr.read() // Optional<JsonValue>
-          .map(jv -> new Car(
-              jv.get("make").flatMap(JsonValue::string).orElseThrow(),
-              jv.get("year").flatMap(JsonValue::intValue).orElseThrow()
-          )) // Optional<Car>
-          .orElseThrow(); // Car
-    }
+```java
+    return Greyson.readValue() // Optional<JsonValue>
+        .map(jv -> new Car(
+            jv.get("make").flatMap(JsonValue::string).orElseThrow(),
+            jv.get("year").flatMap(JsonValue::intValue).orElseThrow()
+        )) // Optional<Car>
+        .orElseThrow(); // Car
 ```
 Consider now that we want to reject JSON data that is not - at least - a
 JSON object:
 ```java 
-    try(var rdr = new JsonReader(src)) {
-        return rdr.read() // Optional<JsonValue>
-          .filter(JsonObject.class::isInstance)
-          .map(...) // as above
-          .orElseThrow();
-    }
+    return rdr.readValue() // Optional<JsonValue
+        .filter(JsonObject.class::isInstance)
+        .map(...) // as above
+        .orElseThrow();
 ```
 or, we might test for a mandatory set of keys:
 ```java
-    try(var rdr = new JsonReader(src)){
-        return rdr.read() // Optional<JsonValue>
-            .filter(JsonObject.class::isInstance)
-            .filter(jo -> jo.members().keySet().containsAll(Set.of("year", "make")))
-            .filter(jo -> jo.members().get("year") instanceof JsonNumber && jo.members.get("make") instanceof JsonString)
-            // ...
+    return Greyson.readValue() // Optional<JsonValue>
+        .filter(JsonObject.class::isInstance)
+        .filter(jo -> jo.members().keySet().containsAll(Set.of("year", "make")))
+        .filter(jo -> jo.members().get("year") instanceof JsonNumber && jo.members.get("make") instanceof JsonString)
+        .map(...) // as above
+        .orElseThrow();
     }
+```
+`Greyson` supports reading an input stream into an optional `Builder`
+as well:
+```java
+    var bldr = Greyson.readBuilder(src).orElseThrow();
 ```
 
 ## To JSON
 
-The `JsonWriter` class is instantiated with its 
-default behavior of indenting the members of JSON 
-objects by four characters and putting each member in 
-a separate line. Arrays are printed interspersed 
-by commas and a white space but in a single line.
+Serializing `JsonValue`s and `Builder`s into a JSON stream is straightforward:
 
-The usage is similar to that of the `JsonReader` with
-the exception that it uses a single factory method currently
-but not constructor:
-
+```java
     JsonValue object = ... 
     Writer w = ... 
-    try(var wrt = new JsonWriter(w)){
-        wrt.write(object);
-    }
-
-The `JsonWriter` provides the static method
-`minimize` which removes whitespace safely from 
-a given input stream.
+    Greyson.write(w, object);
+```
+or
+```java
+    Builder<?> bldr = ...
+    Writer w = ...
+    Greyson.write(w, bldr);
+```
 
 # Query API
 

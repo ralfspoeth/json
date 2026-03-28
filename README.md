@@ -554,9 +554,9 @@ for querying data based on some root element.
 
 ## The `Path` Utility
 
-The `Path` class is inspired by the [XPath](https://www.w3.org/TR/xpath/)
-specification yet lacks almost all of its features;
-it's currently just a toy.
+The `Path` class is inspired by [XPath](https://www.w3.org/TR/xpath/)
+but doesn't provide support for the navigation to parent nodes -- and is therefore
+limited.
 
 ### Basic Usage
 
@@ -571,7 +571,7 @@ Given the statement above, we obtain the equivalent of
     var path = Path.of("c", Path.of("b", Path.of("a")));
 
 where the second parameter is the parent path.
-We then use `Path::evaluate` which returns a stream
+We then use `Path::apply` which returns a stream
 of `JsonValue`s. Consider this root object `root`
 
     {
@@ -584,10 +584,9 @@ of `JsonValue`s. Consider this root object `root`
 
 then
     
-    assert JsonBoolean.TRUE==path.evaluate(root).findFirst().get();
+    assert JsonBoolean.TRUE==path.apply(root).findFirst().get();
 
 will not throw an `AssertionError`.
-
 
 ### Syntax
 
@@ -596,6 +595,10 @@ The syntax for the patterns is
 * `a..b` where `a` and `b` are integers; a range pattern applicable to arrays;
 * `#regex` where `regex` is a regular expression filtering attributes of objects;
 * `name` where `name` is just the member name of the root object.
+
+The `Path` class provides more information about the creation of instances
+with its `range`, `index`, `regex` and `member` methods as well
+as the construction relative to other paths.
 
 ### Examples
 
@@ -611,58 +614,6 @@ yields the stream of `true` and `false`.
 
 Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
 the stream of `5d`.
-
-## The `Queries` and `Path`s
-
-The package `io.github.ralfspoeth.json.query` 
-contains the utility class `Queries`,
-which converts `JsonValue`s into primitive types `int`, `long`, `double` or 
-`boolean` and to `String` or a given `Enum` type, and `Path`, which
-builds on `Queries` and combines the navigation to elements in a 
-JSON structure and the conversions provided by `Queries`.
-
-All functions take any `JsonValue` type as an argument and may
-throw `IllegalArgumentException` for the sake of simplicity.
-The functions respects 
-that many JSON authors put all values into double-quotes, even `null`, `true`, and `false`
-as well as numbers. These values are parsed into `JsonString` instance;
-their contains is converted into numbers, boolean values and `null` if possible 
-as well.
-
-### Take the Clutter Away
-
-The JSON structure _done right_ as we think gives us the basis for further processing data
-utilizing the pattern matching features of Java. However, there are still situations
-where a JSON structure is replicated with each element mapped onto its natural counterpart,
-that is
-
-* `null` to `null`s,
-* `true` and `false` to `boolean`s,
-* `JsonDouble` to `double`s,
-* `JsonString` to `String`s,
-* `JsonObject` to immutable `Map<String, ?>`s, and 
-* `JsonArray` to immutable `List<?>`s.
-
-So, a nested JSON structure like
-
-    {"a": null, "b": true, "c": {
-        "x": [1, 2, null, true], "y": false, "z": null
-    }}
-
-is converted by `Queries.value` into 
-
-    Map.of( // "a" to null binding is cut out, cf. Map#of
-        "b", Boolean.TRUE, // note the primitive wrapper
-        "c", Map.of(
-            "x", List.of(1, 2, true), // null element is cut out 
-            "y", Boolean.FALSE // "z" to null binding is left out
-        )
-    )
-
-Things to note: maps and lists accept `null` values in principle,
-yet the factory methods `List.of` and `Map.of` do not accept `null` values
-or `null` bindings; so, `JsonNull` instances are filtered out of aggregates.
-That said, always consider the maps and lists regardless of the depth of the structure immutable.
 
 ### Numerical Conversions
 

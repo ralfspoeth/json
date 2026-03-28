@@ -125,13 +125,14 @@ public class Queries {
     /**
      * Collect a stream of {@link JsonValue}s into a {@link JsonArray}.
      * {@snippet :
+     * import java.util.*;
      * // given
-     * import java.util.Comparator;JsonObject jo = JsonObject.ofMap(Map.of("a", 1, "b", 2));
+     * JsonObject jo = JsonObject.ofMap(Map.of("a", 1, "b", 2));
      * // when
      * var result = jo.members()
      *     .entrySet()
      *     .stream()
-     *     .sorted(java.util.Map.Entry.comparingByKey())
+     *     .sorted(Map.Entry.comparingByKey())
      *     .map(Map.Entry::getValue)
      *     .collect(toJsonArray());
      * // then

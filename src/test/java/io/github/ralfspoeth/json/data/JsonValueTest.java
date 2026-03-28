@@ -157,4 +157,42 @@ class JsonValueTest {
                 () -> assertFalse(new JsonNumber(BigDecimal.TWO).bool(false))
         );
     }
+
+    @Test
+    void testInt() {
+        // given: {"a":1, "b": 2, "c": 3}
+        var jo = objectBuilder()
+                .putBasic("a", 1)
+                .putBasic("b", 2)
+                .putBasic("c", 3)
+                .build();
+        // when
+        record Equiv(int a, int b, int c) {}
+        record Partial(int a, int c) {}
+        record Renamed(int x, int y, int z) {}
+        record Different(int x, int y, double d, String name) {}
+        // then
+        assertAll(
+                () -> assertEquals(new Equiv(1, 2, 3), new Equiv(
+                        jo.get("a").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        jo.get("b").flatMap(JsonValue::intValue).orElseThrow(),
+                        jo.get("c").flatMap(JsonValue::intValue).orElseThrow()
+                )),
+                () -> assertEquals(new Partial(1, 3), new Partial(
+                        jo.get("a").flatMap(JsonValue::intValue).orElseThrow(),
+                        jo.get("c").flatMap(JsonValue::intValue).orElseThrow()
+                )),
+                () -> assertEquals(new Renamed(1, 2, 3), new Renamed(
+                        jo.get("a").flatMap(JsonValue::intValue).orElseThrow(),
+                        jo.get("b").flatMap(JsonValue::intValue).orElseThrow(),
+                        jo.get("c").flatMap(JsonValue::intValue).orElseThrow()
+                )),
+                () -> assertEquals(new Different(1, 2, 0d, null),  new Different(
+                        jo.get("a").flatMap(JsonValue::intValue).orElse(0),
+                        jo.get("b").flatMap(JsonValue::intValue).orElse(0),
+                        jo.get("d").flatMap(JsonValue::doubleValue).orElse(0d),
+                        jo.get("name").flatMap(JsonValue::string).orElse(null)
+                ))
+        );
+    }
 }

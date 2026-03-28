@@ -33,8 +33,7 @@ It contains breaking changes compared to version 1.1.x:
   because that naming pattern seems to be more in line with other libraries.
 * The package `io.github.ralfspoeth.json.data` has been added and contains
   these data carrier classes.
-* `JsonNumber` uses `BigDecimal` instead of `double` for its payload; 
-  cf. [numbers](numbers.md) for a detailed discussion.
+* `JsonNumber` uses `BigDecimal` instead of `double` for its payload.
 * `JsonBoolean` and `JsonNull` are implemented as `record`s, no longer as an `enum` or 
   singleton, respectively.
 * The new `Greyson` class has been added to simplify reading and writing JSON data.
@@ -101,8 +100,7 @@ an intermediate representation, and both libraries provide access to
 their token stream parsers. Both provide extensive customization options.
 All these features make these libraries quite large. Greyson is intentionally
 small both in terms of package size and in terms of classes, methods and more
-important: conceptual design. 
-Here are some thoughts about [why&when not GSON or Jackson](whynot.md)
+important: conceptual design.
 
 Greyson is not intended to be the fastest JSON parsing library on the planet...
 nor is it. Micro benchmarks and profiling tests show that 
@@ -117,7 +115,7 @@ We assume that value classes will help Greyson to close the gap to GSON and Jack
 in the future without compromising the current simplicity of the implementation.
 
 The Greyson library is really tiny: together with its dependencies on 
-`jspecify` nullness annotations (4kB) and my very own `basix` package (19kB) it's just about 100kB.
+`jspecify` nullness annotations (4kB) and my very own `basix` package (<20kB) it's less than 100kB.
 Google's GSON packages including dependencies are as large as about 300kB, 
 which is three times the size.
 Jackson's core library weighs about 600kB, the `databind` package about 1.7MB,

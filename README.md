@@ -549,10 +549,11 @@ or
 
 # Query API
 
-The package `query` provides simple utilities
-for querying data based on some root element.
+The package `query` provides two classes which help
+querying the data in a `JsonValue` especially
+when the structure is more complicated.
 
-## The `Path` Utility
+## `Path`s
 
 The `Path` class is inspired by [XPath](https://www.w3.org/TR/xpath/)
 but doesn't provide support for the navigation to parent nodes -- and is therefore
@@ -568,12 +569,11 @@ method `Path::of` like so:
 The path expression is split using the `/` character.
 Given the statement above, we obtain the equivalent of
 
-    var path = Path.of("c", Path.of("b", Path.of("a")));
+    var path = Path.root().member("a").member("b").member("c");
 
-where the second parameter is the parent path.
 We then use `Path::apply` which returns a stream
-of `JsonValue`s. Consider this root object `root`
-
+of `JsonValue`s. Given
+```JSON
     {
         "a": {
             "b": {
@@ -581,11 +581,12 @@ of `JsonValue`s. Consider this root object `root`
             }
         }
     }
-
+```
 then
-    
-    assert JsonBoolean.TRUE==path.apply(root).findFirst().get();
-
+```java
+    var elem = Greyson.readValue(Reader.of(src)).stream().map(path).findFirst().orElseThrow();
+    assert JsonBoolean.TRUE.equals(elem);
+```
 will not throw an `AssertionError`.
 
 ### Syntax
@@ -630,30 +631,11 @@ the method fails with `IllegalArgumentException` for `Aggregate`s. The companion
 There is no direct support for `byte`, `char`, `short` and `float` 
 which is very much in line with the choices of Java's functions and stream design.
 
-### String Conversion
-
-The `stringValue` conversion uses natural conversions for all
-`Basic` types, and the `toString` methods applied on the contained 
-`list`s and `map`s of the `Aggregate` types.
-
-### Boolean Conversion
-
-The `booleanValue` conversion does the obvious conversions for `JsonBoolean`
-and `JsonString`.
-
-### Enum Conversion
-
-The `enumValue...` methods takes two arguments: a class declared with the `enum` 
-keyword, and the `JsonValue` which must be of type `JsonString`. 
-While `enumValue` uses the `Enum::valueOf` method, the `enumValueIgnoreCase`
-converts the value and all the constants' names defined in the enum class 
-to uppercase strings before selecting the enum constant.
 
 ### JsonArray to Primitive Array
 
 A `JsonArray` can be converted into an array of primitives; 
 all elements are converted using `Queries.{int|long|double|...}Array(JsonValue)`.
-
 
 # Usage in Clojure
 
@@ -671,29 +653,29 @@ Import the `JsonValue` and IO classes into your namespace like this
 
     (ns your.name.space
         (:import 
-            (io.github.ralfspoeth.json JsonValue Basic JsonNull JsonArray JsonObject)
+            (io.github.ralfspoeth.json.data Basic, JsonValue, JsonNull, JsonArray, JsonObject)
             (java.io Reader)
-            (io.github.ralfspoeth.json.io JsonReader))
+            (io.github.ralfspoeth.json Greyson))
         (:require [clojure.java.io :as io]))
 
 
 Use this function in order to read JSON data from some
 `java.io.Reader`
 
+    ^JsonValue
     (defn read-elem [^Reader rdr]
-        (with-open [jsrd (JsonReader. rdr)]
-        (.readJsonValue jsrd)))
+        (.orElseThrow (Greyson/readValue rdr))
 
 and then to turn the resulting `JsonValue` into
 a clojure map
 
     (defn map-json ([^JsonValue elem]
         (cond
-          (instance? JsonNull elem) nil,             ; special case JsonNull
-          (instance? Basic elem) (.value elem)       ; basic types
+          (instance? JsonNull elem) nil,                              ; special case JsonNull
+          (instance? Basic elem) (.value elem)                        ; basic types
           (instance? JsonArray elem) (mapv map-json (.elements elem)) ; map into vector
-          (instance? JsonObject elem) (into {} (map  ; map into map  
-            (fn [[k, v]] [(keyword k) (map-json v)]) ; map k-v pair to keyword and json value 
-            (.members ^JsonObject elem)))))          ; each member of the JSON object
+          (instance? JsonObject elem) (into {} (map                   ; map into map
+            (fn [[k, v]] [(keyword k) (map-json v)])                  ; map k-v pair to keyword and json value
+            (.members elem)))))                                       ; each member of the JSON object
 
 

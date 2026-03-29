@@ -321,7 +321,7 @@ class PathTest {
         var value = arrayBuilder()
                 .add(objectBuilder().putBasic("a", 1))
                 .add(objectBuilder().putBasic("a", 2))
-                .build();
+                .build(); // [{"a": 1}, {"a": 2}]
         // when
         var aRelativeToTheFirstTwo = theFirstTwo.resolve(a);
         // then

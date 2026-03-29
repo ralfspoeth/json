@@ -187,12 +187,36 @@ class JsonValueTest {
                         jo.get("b").flatMap(JsonValue::intValue).orElseThrow(),
                         jo.get("c").flatMap(JsonValue::intValue).orElseThrow()
                 )),
-                () -> assertEquals(new Different(1, 2, 0d, null),  new Different(
+                () -> assertEquals(new Different(1, 2, 0d, null), new Different(
                         jo.get("a").flatMap(JsonValue::intValue).orElse(0),
                         jo.get("b").flatMap(JsonValue::intValue).orElse(0),
                         jo.get("d").flatMap(JsonValue::doubleValue).orElse(0d),
                         jo.get("name").flatMap(JsonValue::string).orElse(null)
                 ))
+        );
+    }
+
+    @Test
+    void testArrayOfPoints() throws IOException {
+        // Given
+        record Point(int x, int y) {}
+        var src = """
+                [{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 5, "y": 6}, {"x": 7, "y": 8}]
+                """;
+        // when
+        var points = Greyson.readValue(Reader.of(src))
+                .stream()
+                .flatMap(a -> a.elements().stream())
+                .map(o -> new Point(
+                        o.get("x").flatMap(JsonValue::intValue).orElseThrow(),
+                        o.get("y").flatMap(JsonValue::intValue).orElseThrow()
+                ))
+                .toList();
+        // then
+        assertAll(
+                () -> assertEquals(4, points.size()),
+                () -> assertEquals(new Point(1, 2), points.getFirst()),
+                () -> assertEquals(new Point(7, 8), points.getLast())
         );
     }
 }

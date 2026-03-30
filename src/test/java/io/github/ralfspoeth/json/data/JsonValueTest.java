@@ -175,22 +175,22 @@ class JsonValueTest {
         assertAll(
                 () -> assertEquals(new Equiv(1, 2, 3), new Equiv(
                         jo.get("a").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                        jo.get("b").flatMap(JsonValue::intValue).orElseThrow(),
-                        jo.get("c").flatMap(JsonValue::intValue).orElseThrow()
+                        jo.get("b").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        jo.get("c").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                 )),
                 () -> assertEquals(new Partial(1, 3), new Partial(
-                        jo.get("a").flatMap(JsonValue::intValue).orElseThrow(),
-                        jo.get("c").flatMap(JsonValue::intValue).orElseThrow()
+                        jo.get("a").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        jo.get("c").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                 )),
                 () -> assertEquals(new Renamed(1, 2, 3), new Renamed(
-                        jo.get("a").flatMap(JsonValue::intValue).orElseThrow(),
-                        jo.get("b").flatMap(JsonValue::intValue).orElseThrow(),
-                        jo.get("c").flatMap(JsonValue::intValue).orElseThrow()
+                        jo.get("a").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        jo.get("b").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        jo.get("c").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                 )),
                 () -> assertEquals(new Different(1, 2, 0d, null), new Different(
-                        jo.get("a").flatMap(JsonValue::intValue).orElse(0),
-                        jo.get("b").flatMap(JsonValue::intValue).orElse(0),
-                        jo.get("d").flatMap(JsonValue::doubleValue).orElse(0d),
+                        jo.get("a").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0),
+                        jo.get("b").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElse(0),
+                        jo.get("d").flatMap(JsonValue::decimal).map(BigDecimal::doubleValue).orElse(0d),
                         jo.get("name").flatMap(JsonValue::string).orElse(null)
                 ))
         );
@@ -208,8 +208,8 @@ class JsonValueTest {
                 .stream()
                 .flatMap(a -> a.elements().stream())
                 .map(o -> new Point(
-                        o.get("x").flatMap(JsonValue::intValue).orElseThrow(),
-                        o.get("y").flatMap(JsonValue::intValue).orElseThrow()
+                        o.get("x").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
+                        o.get("y").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
                 ))
                 .toList();
         // then

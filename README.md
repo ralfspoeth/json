@@ -616,22 +616,6 @@ yields the stream of `true` and `false`.
 Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
 the stream of `5d`.
 
-### Numerical Conversions
-
-The methods `intValue`, `longValue` and `doubleValue` utilize the 
-`parse<Type>` methods of the respective `Integer`, `Long` and `Double` 
-classes for `JsonString`s, and standard conversion from `double` to `int` and `long`
-for `JsonNumber`s. `JsonBoolean` are converted to 1 and 0 for `TRUE` and `FALSE`, 
-respectively.
-
-These functions are provided with and without a default value as their second parameter.
-`intValue(JsonValue elem, int def)` accepts `null` elements and return the `def`ault instead;
-the method fails with `IllegalArgumentException` for `Aggregate`s. The companion methods work likewise.
-
-There is no direct support for `byte`, `char`, `short` and `float` 
-which is very much in line with the choices of Java's functions and stream design.
-
-
 ### JsonArray to Primitive Array
 
 A `JsonArray` can be converted into an array of primitives; 

@@ -303,6 +303,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     /**
      * Create a path element that, if applied to some {@link JsonObject},
      * returns the associated {@link JsonObject#members()} key.
+     *
      * @param memberName the name of the member
      */
     public Path member(String memberName) {
@@ -324,7 +325,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * assert first.apply(a).findFirst().orElseThrow().equals(Basic.of(1));
      * assert last.apply(a).findFirst().orElseThrow().equals(Basic.of(3));
      * assert end.apply(a).findFirst().orElseThrow().equals(Basic.of(3));
-     * }
+     *}
      *
      * @param index the index
      */
@@ -337,8 +338,9 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * returns a stream of its elements from index {@code startInclusive}
      * to {@code endExclusive} exclusively.
      * If {@code endExclusive} is negative, it is replaced by {@link Integer#MAX_VALUE}.
+     *
      * @param startInclusive the first index, inclusively
-     * @param endExclusive the last index, exclusively
+     * @param endExclusive   the last index, exclusively
      */
     public Path range(int startInclusive, int endExclusive) {
         return new RangePath(startInclusive, endExclusive, this);
@@ -358,11 +360,20 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * var l = Stream.of(o).flatMap(p).toList();
      * var c = List.of(Basic.of(1), Basic.of(2));
      * assert l.containsAll(c) && c.containsAll(l);
-     * }
+     *}
+     *
      * @param regex a regular expression matched against the keys of
      */
     public Path regex(Pattern regex) {
         return new RegexPath(regex, this);
+    }
+
+    /**
+     * Same as {@code regex(Pattern.compile(regex));}
+     * @param regex the regular expression
+     */
+    public Path regex(String regex) {
+        return new RegexPath(Pattern.compile(regex), this);
     }
 
     /**
@@ -412,6 +423,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     /**
      * Search the first {@link JsonNumber} if found by this and return it as
      * {@code OptionalInt}; otherwise return {@link OptionalInt#empty()}.
+     *
      * @param v the value, may not be {@code null}
      * @return the int value if found wrapped in {@link OptionalInt}, empty otherwise
      */
@@ -424,6 +436,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     /**
      * Search the first {@link JsonNumber} if found by this and return it as
      * {@code OptionalLong}; otherwise return {@link OptionalLong#empty()}.
+     *
      * @param v the value, may not be {@code null}
      * @return the long value if found wrapped in {@link OptionalLong}, empty otherwise
      */
@@ -437,6 +450,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * Search the first {@link JsonNumber} if found by this and return it as
      * {@code OptionalInt} using {@link BigDecimal#intValueExact()};
      * otherwise return {@link OptionalInt#empty()}.
+     *
      * @param v the value, may not be {@code null}
      * @return the int value if found wrapped in {@link OptionalInt}, empty otherwise
      */
@@ -450,6 +464,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * Search the first {@link JsonNumber} if found by this and return it as
      * {@code OptionalLong} using {@link BigDecimal#longValueExact()};
      * otherwise return {@link OptionalLong#empty()}.
+     *
      * @param v the value, may not be {@code null}
      * @return the long value if found wrapped in {@link OptionalLong}, empty otherwise
      */
@@ -462,6 +477,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     /**
      * Search the first {@link JsonNumber} if found by this and return it as
      * {@code OptionalDouble}; otherwise return {@link OptionalDouble#empty()}.
+     *
      * @param v the value, may not be {@code null}
      * @return the double value if found wrapped in {@link OptionalDouble}, empty otherwise
      */
@@ -473,6 +489,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
     /**
      * Search the first {@link JsonBoolean} if found by this and return its value.
+     *
      * @param v the value, may not be {@code null}
      * @return the boolean value if found, empty otherwise
      */
@@ -482,6 +499,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
 
     /**
      * Search the first {@link JsonString} if found by this and return its value.
+     *
      * @param v the value, may not be {@code null}
      * @return the string value if found, empty otherwise
      */
@@ -489,7 +507,29 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         return first().apply(v).flatMap(JsonValue::string);
     }
 
+    /**
+     *
+     * @param f
+     * @param <T>
+     * @return
+     */
     public <T> Function<? super JsonValue, Optional<T>> first(Function<? super JsonValue, Optional<T>> f) {
         return first().andThen(r -> r.flatMap(f));
+    }
+
+    public <T, M> Function<? super JsonValue, Optional<T>> first(
+            Function<? super JsonValue, Optional<? extends M>> extractor,
+            Function<? super M, T> mapper) {
+        return v -> first().apply(v).flatMap(extractor).map(mapper);
+    }
+
+
+    public <T, M> Function<? super JsonValue, Stream<? extends T>> all(
+            Function<? super JsonValue, Optional<? extends M>> extractor,
+            Function<? super M, T> mapper) {
+        return v -> apply(v).flatMap(extractor
+                .andThen(r -> r.map(mapper))
+                .andThen(Optional::stream)
+        );
     }
 }

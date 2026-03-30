@@ -30,7 +30,7 @@ class PathTest {
         assertAll(
                 () -> assertThrows(NullPointerException.class, () -> of(null)),
                 () -> assertThrows(NullPointerException.class, () -> root().member(null)),
-                () -> assertThrows(NullPointerException.class, () -> root().regex(null))
+                () -> assertThrows(NullPointerException.class, () -> root().regex((String)null))
         );
     }
 
@@ -354,7 +354,11 @@ class PathTest {
                 """;
         // when
         Path p = Path.root().index(0);
-        var ldt = Greyson.readValue(Reader.of(src))
+        var ldFirstWithTwo = Greyson.readValue(Reader.of(src))
+                .flatMap(p.first(JsonValue::string, LocalDate::parse))
+                .orElseThrow();
+
+        var ldFirstWithSingle = Greyson.readValue(Reader.of(src))
                 .flatMap(p.first(v -> v.string().map(LocalDate::parse)))
                 .orElseThrow();
 
@@ -371,9 +375,30 @@ class PathTest {
 
         // then
         assertAll(
-                () -> assertEquals(LocalDate.of(2025, 12, 31), ldt),
+                () -> assertEquals(LocalDate.of(2025, 12, 31), ldFirstWithTwo),
+                () -> assertEquals(LocalDate.of(2025, 12, 31), ldFirstWithSingle),
                 () -> assertEquals(LocalDate.of(2025, 12, 31), alt1),
                 () -> assertEquals(LocalDate.of(2025, 12, 31), alt2)
         );
+    }
+
+    @Test
+    void testAll() throws IOException {
+        // given
+        var src = """
+             [
+                "2025-12-31",
+                1, 2, 3, 4, false, null, true, "hello",
+                {"a": 1},
+                {"a": 2, "b": -1}, {"a": 3}, {"a": 4}
+             ]""";
+        Path p = Path.root().range(0, -1).regex("[ab]");
+        // when
+        var l = Greyson.readValue(Reader.of(src))
+                .stream()
+                .flatMap(p.all(JsonValue::decimal, BigDecimal::intValue))
+                .toList();
+        // then
+        System.out.println(l);
     }
 }

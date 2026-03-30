@@ -341,7 +341,7 @@ class PathTest {
                         .getLast()
                 ),
                 () -> assertArrayEquals(new JsonValue[]{Basic.of(1), Basic.of(2)},
-                     Stream.of(value).flatMap(aRelativeToTheFirstTwo).toArray()
+                        Stream.of(value).flatMap(aRelativeToTheFirstTwo).toArray()
                 )
         );
     }
@@ -353,11 +353,27 @@ class PathTest {
                     ["2025-12-31"]
                 """;
         // when
+        Path p = Path.root().index(0);
         var ldt = Greyson.readValue(Reader.of(src))
-                .flatMap(Path.root().index(0).first(JsonValue::string))
+                .flatMap(p.first(v -> v.string().map(LocalDate::parse)))
+                .orElseThrow();
+
+        var alt1 = Greyson.readValue(Reader.of(src))
+                .flatMap(p.first(JsonValue::string))
                 .map(LocalDate::parse)
                 .orElseThrow();
+
+        var alt2 = Greyson.readValue(Reader.of(src))
+                .flatMap(p.first())
+                .flatMap(JsonValue::string)
+                .map(LocalDate::parse)
+                .orElseThrow();
+
         // then
-        assertEquals(LocalDate.of(2025, 12, 31), ldt);
+        assertAll(
+                () -> assertEquals(LocalDate.of(2025, 12, 31), ldt),
+                () -> assertEquals(LocalDate.of(2025, 12, 31), alt1),
+                () -> assertEquals(LocalDate.of(2025, 12, 31), alt2)
+        );
     }
 }

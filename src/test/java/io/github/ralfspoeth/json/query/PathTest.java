@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Path.of;
 import static io.github.ralfspoeth.json.query.Path.root;
+import static java.math.BigDecimal.ZERO;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
@@ -329,12 +331,12 @@ class PathTest {
                 () -> assertEquals(BigDecimal.ONE, Stream.of(value)
                         .flatMap(aRelativeToTheFirstTwo)
                         .findFirst()
-                        .map(jv -> jv.decimal(BigDecimal.ZERO))
+                        .map(jv -> jv.decimal().orElse(ZERO))
                         .orElseThrow()
                 ),
                 () -> assertEquals(BigDecimal.TWO, Stream.of(value)
                         .flatMap(aRelativeToTheFirstTwo)
-                        .map(jv -> jv.decimal(BigDecimal.ZERO))
+                        .map(jv -> jv.decimal().orElse(ZERO))
                         .toList()
                         .getLast()
                 ),
@@ -342,5 +344,20 @@ class PathTest {
                      Stream.of(value).flatMap(aRelativeToTheFirstTwo).toArray()
                 )
         );
+    }
+
+    @Test
+    void testFirstWithFunction() throws IOException {
+        // given
+        var src = """
+                    ["2025-12-31"]
+                """;
+        // when
+        var ldt = Greyson.readValue(Reader.of(src))
+                .flatMap(Path.root().index(0).first(JsonValue::string))
+                .map(LocalDate::parse)
+                .orElseThrow();
+        // then
+        assertEquals(LocalDate.of(2025, 12, 31), ldt);
     }
 }

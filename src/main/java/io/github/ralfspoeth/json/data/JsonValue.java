@@ -5,8 +5,6 @@ import org.jspecify.annotations.Nullable;
 import java.math.BigDecimal;
 import java.util.*;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * The root interface of the JSON hierarchy.
  * {@code JsonValue} is a sealed interface which allows for two subtypes
@@ -134,15 +132,6 @@ public sealed interface JsonValue permits Aggregate, Basic {
     default Optional<Boolean> bool() {
         return Optional.empty();
     }
-
-    /**
-     * Same as {@code boolValue().orElse(def)}.
-     * @param def the default value
-     */
-    default boolean bool(boolean def) {
-        return bool().orElse(def);
-    }
-
     /**
      * The decimal value of this element if it is a {@link JsonNumber}.
      * Only {@link JsonNumber} overrides this method.
@@ -153,28 +142,12 @@ public sealed interface JsonValue permits Aggregate, Basic {
     }
 
     /**
-     * Same as {@code decimalValue().orElse(def)}.
-     * @param def the default value
-     */
-    default BigDecimal decimal(BigDecimal def) {
-        return decimal().orElse(requireNonNull(def));
-    }
-
-    /**
      * The string value of this element if it is a {@link JsonString}.
      * Only {@link JsonString} overrides this method.
      * @return the string value, or an empty optional
      */
     default Optional<String> string() {
         return Optional.empty();
-    }
-
-    /**
-     * Same as {@code stringValue().orElse(def)}.
-     * @param def the default value
-     */
-    default String string(String def) {
-        return string().orElse(requireNonNull(def));
     }
 
     /**

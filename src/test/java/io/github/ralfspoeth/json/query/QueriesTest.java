@@ -66,7 +66,7 @@ class QueriesTest {
                 .stream()
                 .map(JsonValue::members)
                 .map(jo -> jo.get("d"))
-                .mapToDouble(e -> e.decimal(BigDecimal.ZERO).doubleValue())
+                .mapToDouble(e -> e.decimal().orElse(BigDecimal.ZERO).doubleValue())
                 .mapToObj(R::new)
                 .toList();
         assertEquals(List.of(new R(5), new R(6), new R(7)), result);

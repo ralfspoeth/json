@@ -1,11 +1,9 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.data.JsonArray;
-import io.github.ralfspoeth.json.data.JsonObject;
-import io.github.ralfspoeth.json.data.JsonValue;
+import io.github.ralfspoeth.json.data.*;
 
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -398,5 +396,100 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         } else {
             return this;
         }
+    }
+
+    /**
+     * Turns this into a function with return type {@link Optional<JsonValue>}
+     * rather than {@link Stream<JsonValue>}; intended to be used with
+     * {@link Optional#flatMap(Function)}.
+     *
+     * @return the same as {@code this.apply(value).findFirst()}
+     */
+    public Function<? super JsonValue, Optional<? extends JsonValue>> first() {
+        return andThen(Stream::findFirst);
+    }
+
+    /**
+     * Search the first {@link JsonNumber} if found by this and return it as
+     * {@code OptionalInt}; otherwise return {@link OptionalInt#empty()}.
+     * @param v the value, may not be {@code null}
+     * @return the int value if found wrapped in {@link OptionalInt}, empty otherwise
+     */
+    public OptionalInt intValue(JsonValue v) {
+        return first().apply(v).flatMap(JsonValue::decimal)
+                .map(d -> OptionalInt.of(d.intValue()))
+                .orElse(OptionalInt.empty());
+    }
+
+    /**
+     * Search the first {@link JsonNumber} if found by this and return it as
+     * {@code OptionalLong}; otherwise return {@link OptionalLong#empty()}.
+     * @param v the value, may not be {@code null}
+     * @return the long value if found wrapped in {@link OptionalLong}, empty otherwise
+     */
+    public OptionalLong longValue(JsonValue v) {
+        return first().apply(v).flatMap(JsonValue::decimal)
+                .map(d -> OptionalLong.of(d.longValue()))
+                .orElse(OptionalLong.empty());
+    }
+
+    /**
+     * Search the first {@link JsonNumber} if found by this and return it as
+     * {@code OptionalInt} using {@link BigDecimal#intValueExact()};
+     * otherwise return {@link OptionalInt#empty()}.
+     * @param v the value, may not be {@code null}
+     * @return the int value if found wrapped in {@link OptionalInt}, empty otherwise
+     */
+    public OptionalInt intValueExact(JsonValue v) {
+        return first().apply(v).flatMap(JsonValue::decimal)
+                .map(d -> OptionalInt.of(d.intValueExact()))
+                .orElse(OptionalInt.empty());
+    }
+
+    /**
+     * Search the first {@link JsonNumber} if found by this and return it as
+     * {@code OptionalLong} using {@link BigDecimal#longValueExact()};
+     * otherwise return {@link OptionalLong#empty()}.
+     * @param v the value, may not be {@code null}
+     * @return the long value if found wrapped in {@link OptionalLong}, empty otherwise
+     */
+    public OptionalLong longValueExact(JsonValue v) {
+        return first().apply(v).flatMap(JsonValue::decimal)
+                .map(d -> OptionalLong.of(d.longValueExact()))
+                .orElse(OptionalLong.empty());
+    }
+
+    /**
+     * Search the first {@link JsonNumber} if found by this and return it as
+     * {@code OptionalDouble}; otherwise return {@link OptionalDouble#empty()}.
+     * @param v the value, may not be {@code null}
+     * @return the double value if found wrapped in {@link OptionalDouble}, empty otherwise
+     */
+    public OptionalDouble doubleValue(JsonValue v) {
+        return first().apply(v).flatMap(JsonValue::decimal)
+                .map(d -> OptionalDouble.of(d.doubleValue()))
+                .orElse(OptionalDouble.empty());
+    }
+
+    /**
+     * Search the first {@link JsonBoolean} if found by this and return its value.
+     * @param v the value, may not be {@code null}
+     * @return the boolean value if found, empty otherwise
+     */
+    public Optional<Boolean> booleanValue(JsonValue v) {
+        return first().apply(v).flatMap(JsonValue::bool);
+    }
+
+    /**
+     * Search the first {@link JsonString} if found by this and return its value.
+     * @param v the value, may not be {@code null}
+     * @return the string value if found, empty otherwise
+     */
+    public Optional<String> stringValue(JsonValue v) {
+        return first().apply(v).flatMap(JsonValue::string);
+    }
+
+    public <T> Function<? super JsonValue, Optional<T>> first(Function<? super JsonValue, Optional<T>> f) {
+        return first().andThen(r -> r.flatMap(f));
     }
 }

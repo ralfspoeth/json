@@ -138,7 +138,7 @@ class BuilderTest {
         assertAll(
                 () -> assertEquals(2, array.elements().size()),
                 () -> assertEquals(JsonNull.INSTANCE, array.elements().getFirst().get("a").orElseThrow()),
-                () -> assertEquals(1, array.elements().getLast().elements().getFirst().decimal(BigDecimal.ZERO).intValue())
+                () -> assertEquals(1, array.elements().getLast().elements().getFirst().decimal().map(BigDecimal::intValue).orElseThrow())
         );
     }
 
@@ -169,9 +169,9 @@ class BuilderTest {
         var jab = arrayBuilder(new JsonArray(List.of(TRUE)));
         var vb = basicBuilder(TRUE);
         assertAll(
-                () -> assertInstanceOf(Builder.class, job),
-                () -> assertInstanceOf(Builder.class, jab),
-                () -> assertInstanceOf(Builder.class, vb),
+                () -> assertInstanceOf(Builder.ObjectBuilder.class, job),
+                () -> assertInstanceOf(Builder.ArrayBuilder.class, jab),
+                () -> assertInstanceOf(Builder.BasicBuilder.class, vb),
                 () -> assertEquals(TRUE, job.build().get("a").orElse(JsonNull.INSTANCE)),
                 () -> assertEquals(TRUE, jab.build().get(0).orElse(JsonNull.INSTANCE)),
                 () -> assertEquals(TRUE, vb.build())

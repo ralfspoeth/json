@@ -2,6 +2,7 @@ package io.github.ralfspoeth.json.data;
 
 import io.github.ralfspoeth.json.Greyson;
 import io.github.ralfspoeth.json.io.JsonReader;
+import io.github.ralfspoeth.json.query.Path;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -77,7 +78,7 @@ class JsonValueTest {
     void testDecimal() {
         assertAll(
                 () -> assertEquals(0, JsonValue.of(10).decimal().orElseThrow().compareTo(BigDecimal.TEN)),
-                () -> assertEquals(BigDecimal.TWO, JsonValue.of(null).decimal(BigDecimal.TWO)),
+                () -> assertEquals(BigDecimal.TWO, JsonValue.of(null).decimal().orElse(BigDecimal.TWO)),
                 () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).decimal().orElseThrow())
         );
     }
@@ -86,7 +87,7 @@ class JsonValueTest {
     void testString() {
         assertAll(
                 () -> assertEquals("hello", JsonValue.of("hello").string().orElseThrow()),
-                () -> assertEquals("hello", JsonValue.of(null).string("hello")),
+                () -> assertEquals("hello", JsonValue.of(null).string().orElse("hello")),
                 () -> assertThrows(NoSuchElementException.class, () -> Basic.of(null).string().orElseThrow())
         );
     }
@@ -150,11 +151,7 @@ class JsonValueTest {
                 () -> assertTrue(new JsonNumber(BigDecimal.ZERO).bool().isEmpty()),
                 () -> assertTrue(new JsonString("str").bool().isEmpty()),
                 () -> assertTrue(new JsonArray(List.of()).bool().isEmpty()),
-                () -> assertTrue(new JsonObject(Map.of()).bool().isEmpty()),
-                () -> assertTrue(JsonBoolean.TRUE.bool(false)),
-                () -> assertFalse(JsonBoolean.FALSE.bool(true)),
-                () -> assertFalse(JsonNull.INSTANCE.bool(false)),
-                () -> assertFalse(new JsonNumber(BigDecimal.TWO).bool(false))
+                () -> assertTrue(new JsonObject(Map.of()).bool().isEmpty())
         );
     }
 
@@ -208,8 +205,8 @@ class JsonValueTest {
                 .stream()
                 .flatMap(a -> a.elements().stream())
                 .map(o -> new Point(
-                        o.get("x").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
-                        o.get("y").flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow()
+                        Path.of("x").intValue(o).orElseThrow(),
+                        Path.of("y").intValue(o).orElseThrow()
                 ))
                 .toList();
         // then
@@ -217,6 +214,45 @@ class JsonValueTest {
                 () -> assertEquals(4, points.size()),
                 () -> assertEquals(new Point(1, 2), points.getFirst()),
                 () -> assertEquals(new Point(7, 8), points.getLast())
+        );
+    }
+
+    @Test
+    void testPathAsFunctionToOptional() throws IOException {
+        // given
+        record Point(int x, int y) {}
+        record Rectangle(Point topLeft, Point bottomRight){}
+        var src = """
+                [
+                    {"tl": {"x": 1, "y": 2}, "br": {"x": 3, "y": 4}},
+                    {"tl": {"x": 5, "y": 6}, "br": {"x": 7, "y": 8}}
+                ]
+                """;
+        // when
+        var topLeft = Path.root().member("tl");
+        var bottomRight = Path.root().member("br");
+        var x = Path.root().member("x");
+        var y = Path.root().member("y");
+
+        var rects = Greyson.readValue(Reader.of(src))
+                .stream()
+                .flatMap(a -> a.elements().stream())
+                .map(r -> new Rectangle(
+                        new Point(
+                                topLeft.resolve(x).intValue(r).orElse(0),
+                                topLeft.resolve(y).intValue(r).orElse(0)
+                        ),
+                        new Point(
+                                bottomRight.resolve(x).intValue(r).orElse(0),
+                                bottomRight.resolve(y).intValue(r).orElse(0)
+                        )
+                ))
+                .toList();
+        // then
+        assertAll(
+                () -> assertEquals(2, rects.size()),
+                () -> assertEquals(new Rectangle(new Point(1, 2), new Point(3, 4)), rects.getFirst()),
+                () -> assertEquals(new Rectangle(new Point(5, 6), new Point(7, 8)), rects.getLast())
         );
     }
 }

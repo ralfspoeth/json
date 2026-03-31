@@ -8,19 +8,18 @@ import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static io.github.ralfspoeth.basix.fn.Predicates.in;
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Path.of;
 import static io.github.ralfspoeth.json.query.Path.root;
 import static java.math.BigDecimal.ZERO;
+import static java.util.function.Function.identity;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
@@ -400,5 +399,43 @@ class PathTest {
                 .toList();
         // then
         System.out.println(l);
+    }
+
+    @Test
+    void testAddress() throws IOException {
+        // given
+        var src = """
+                [
+                    {"email": "max.muster@mail.com",
+                     "first": "Max", "last": "Muster",
+                     "addresses": [
+                        {"type":"home", "address":"10 Upper Street", "city": "Gardencity", "country": "DE"},
+                        {"type":"vacation", "address":"20 Hideway", "city": "Wellfare", "country": "US"},
+                        {"type":"work", "address":"30 Main Road", "city": "Hardwork", "country": "UK"}
+                     ]}
+                ]
+                """;
+        // when
+        var addresses = Path.root().range(0, -1).member("addresses").range(0, -1);
+        var result = Greyson.readValue(Reader.of(src)).orElseThrow();
+        // then
+        assertAll(
+                () -> assertEquals(3, Stream.of(result).flatMap(addresses).count()),
+                () -> assertEquals(3, Stream.of(result).flatMap(addresses.member("type")).count()),
+                () -> assertEquals(3, Stream.of(result).flatMap(addresses.member("type"))
+                        .filter(in(Set.of("home", "work", "vacation"), a -> a.string().orElseThrow()))
+                        .count()
+                ),
+                () -> assertEquals(3, Stream.of(result)
+                        .flatMap(addresses.member("type").all(JsonValue::string, identity()))
+                        .filter(in(Set.of("home", "work", "vacation"), identity()))
+                        .count()
+                ),
+                () -> assertEquals(3, Stream.of(result)
+                        .flatMap(addresses.member("country").all(JsonValue::string, Locale::of))
+                        .filter(in(Set.of("de", "us", "uk"), Locale::getLanguage))
+                        .count()
+                )
+        );
     }
 }

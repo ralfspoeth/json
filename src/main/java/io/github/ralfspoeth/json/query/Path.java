@@ -508,15 +508,29 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     }
 
     /**
+     * Create a function to be used with {@link Optional#flatMap(Function)}
+     * which takes a function that maps a {@link JsonValue} to an {@link Optional}.
      *
-     * @param f
-     * @param <T>
-     * @return
+     * @param f the function
+     * @param <T> the return type of the function
+     * @return a function to be used with {@link Optional#flatMap(Function)}
      */
     public <T> Function<? super JsonValue, Optional<T>> first(Function<? super JsonValue, Optional<T>> f) {
         return first().andThen(r -> r.flatMap(f));
     }
 
+    /**
+     * Create a function to be used with {@link Optional#flatMap(Function)}
+     * which extracts an optional value from the {@link JsonValue},
+     * maybe through {@link JsonValue#decimal()}, and then applies the
+     * {@code mapper} function to the payload.
+     *
+     * @param extractor an extraction function applied to a JSON value
+     * @param mapper a mapper function applied to the payload of the extractor
+     * @return a function to be used with {@link Optional#flatMap(Function)}
+     * @param <T> the return type of the mapper
+     * @param <M> some intermediary type
+     */
     public <T, M> Function<? super JsonValue, Optional<T>> first(
             Function<? super JsonValue, Optional<? extends M>> extractor,
             Function<? super M, T> mapper) {
@@ -524,6 +538,25 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     }
 
 
+    /**
+     * Create a function to be used with {@link Stream#flatMap(Function)} which
+     * first extracts an optional value from the {@link JsonValue}, as with {@link JsonValue#string()},
+     * and maps the payload of the optional value using the {@code mapper} function.
+     * Example:
+     * {@snippet :
+     * import java.time.LocalDate;
+     * import io.github.ralfspoeth.json.Greyson;
+     * String src = "[\"2025-05-05\"]";
+     * Path p = Path.root().index(0);
+     * var ld = Greyson.readValue(Reader.of(src)).stream().flatMap(p.all(JsonValue::string, LocalDate::parse)).toList();
+     * assert ld.size() == 1 && ld.getFirst().equals(LocalDate.of(2025, 5, 5));
+     *}
+     * @param extractor an extraction function, returning an optional value
+     * @param mapper a mapper function applied to the payload of the extractor
+     * @return a function to be used with {@link Stream#flatMap(Function)}
+     * @param <T> the return type of the mapper
+     * @param <M> some intermediary type
+     */
     public <T, M> Function<? super JsonValue, Stream<? extends T>> all(
             Function<? super JsonValue, Optional<? extends M>> extractor,
             Function<? super M, T> mapper) {

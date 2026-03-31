@@ -80,10 +80,6 @@ class PathTest {
         return Stream.of(value).flatMap(path).findFirst().isEmpty();
     }
 
-    private static Optional<? extends JsonValue> single(JsonValue value, String path) {
-        return single(value, Path.of(path));
-    }
-
     private static Optional<? extends JsonValue> single(JsonValue value, Path path) {
         var l = Stream.of(value).flatMap(path).toList();
         return l.size() == 1 ? Optional.of(l.getFirst()) : Optional.empty();
@@ -398,7 +394,7 @@ class PathTest {
                 .flatMap(p.all(JsonValue::decimal, BigDecimal::intValue))
                 .toList();
         // then
-        System.out.println(l);
+        assertEquals(List.of(1, 2, -1, 3, 4), l);
     }
 
     @Test

@@ -434,4 +434,36 @@ class PathTest {
                 )
         );
     }
+
+    private static final JsonArray TEST_ARRAY = arrayBuilder()
+            .add(JsonNull.INSTANCE)
+            .add(JsonBoolean.TRUE)
+            .add(JsonBoolean.FALSE)
+            .add(new JsonNumber(BigDecimal.valueOf(2147483647))) // 2^31-1
+            .add(new JsonNumber(BigDecimal.valueOf(2147483648L))) // 2^31
+            .add(new JsonNumber(BigDecimal.valueOf(9223372036854775807L))) // 2^63-1
+            .add(new JsonNumber(BigDecimal.valueOf(9223372036854775807L).add(BigDecimal.ONE))) // 2^63
+            .addBasic(0.5d)
+            .addBasic("")
+            .addBasic("Hello World")
+            .build();
+
+
+    @Test
+    void testValues() {
+        assertAll(
+                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().all(JsonValue::decimal, BigDecimal::intValue))),
+                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().all(JsonValue::decimal, BigDecimal::longValue))),
+                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().all(JsonValue::decimal, BigDecimal::doubleValue))),
+                () -> assertDoesNotThrow(() -> Path.root().index(3).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(4).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(5).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).intValueExact(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(5).longValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).longValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).longValueExact(TEST_ARRAY))
+
+        );
+    }
 }

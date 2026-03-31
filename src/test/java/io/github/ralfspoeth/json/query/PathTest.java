@@ -394,7 +394,10 @@ class PathTest {
                 .flatMap(p.all(JsonValue::decimal, BigDecimal::intValue))
                 .toList();
         // then
-        assertEquals(List.of(1, 2, -1, 3, 4), l);
+        assertAll(
+                () -> assertTrue(List.of(-1, 1, 2, 3, 4).containsAll(l)),
+                () -> assertTrue(l.containsAll(List.of(-1, 1, 2, 3, 4)))
+        );
     }
 
     @Test

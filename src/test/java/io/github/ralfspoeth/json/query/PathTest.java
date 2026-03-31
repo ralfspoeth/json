@@ -464,9 +464,16 @@ class PathTest {
                 () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).intValueExact(TEST_ARRAY)),
                 () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).intValueExact(TEST_ARRAY)),
                 () -> assertDoesNotThrow(() -> Path.root().index(5).longValueExact(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(6).longValue(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(7).longValue(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(7).doubleValue(TEST_ARRAY)),
                 () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).longValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).longValueExact(TEST_ARRAY))
-
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).longValueExact(TEST_ARRAY)),
+                () -> assertTrue(Path.root().index(1).booleanValue(TEST_ARRAY).orElseThrow()),
+                () -> assertFalse(Path.root().index(2).booleanValue(TEST_ARRAY).orElseThrow()),
+                () -> assertEquals(1, Path.root().index(0).apply(TEST_ARRAY).filter(JsonNull.class::isInstance).count()),
+                () -> assertEquals("", Path.root().index(8).stringValue(TEST_ARRAY).orElseThrow()),
+                () -> assertEquals("Hello World", Path.root().index(9).stringValue(TEST_ARRAY).orElseThrow())
         );
     }
 }

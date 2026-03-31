@@ -62,7 +62,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * The second approach to constructing paths is through the fluent API, as in
  * {@snippet :
- * Path.root().member("a").index(1).regex(Pattern.compile("b.*c")).range(0, 2);
+ * var p = Path.root().member("a").index(1).regex(Pattern.compile("b.*c")).range(0, 2);
  *}
  * <p>
  * The class implements {@link Function} such that it may be used in stream

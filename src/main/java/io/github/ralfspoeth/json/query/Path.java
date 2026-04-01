@@ -548,7 +548,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * import io.github.ralfspoeth.json.Greyson;
      * String src = "[\"2025-05-05\"]";
      * Path p = Path.root().index(0);
-     * var ld = Greyson.readValue(Reader.of(src)).stream().flatMap(p.all(JsonValue::string, LocalDate::parse)).toList();
+     * var ld = Greyson.readValue(Reader.of(src)).stream().flatMap(p.as(JsonValue::string, LocalDate::parse)).toList();
      * assert ld.size() == 1 && ld.getFirst().equals(LocalDate.of(2025, 5, 5));
      *}
      * @param extractor an extraction function, returning an optional value
@@ -557,7 +557,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @param <T> the return type of the mapper
      * @param <M> some intermediary type
      */
-    public <T, M> Function<? super JsonValue, Stream<? extends T>> all(
+    public <T, M> Function<? super JsonValue, Stream<? extends T>> as(
             Function<? super JsonValue, Optional<? extends M>> extractor,
             Function<? super M, T> mapper) {
         return v -> apply(v).flatMap(extractor

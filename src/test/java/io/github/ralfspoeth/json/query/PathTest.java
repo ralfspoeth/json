@@ -378,7 +378,7 @@ class PathTest {
     }
 
     @Test
-    void testAll() throws IOException {
+    void testAs() throws IOException {
         // given
         var src = """
              [
@@ -391,7 +391,7 @@ class PathTest {
         // when
         var l = Greyson.readValue(Reader.of(src))
                 .stream()
-                .flatMap(p.all(JsonValue::decimal, BigDecimal::intValue))
+                .flatMap(p.as(JsonValue::decimal, BigDecimal::intValue))
                 .toList();
         // then
         assertAll(
@@ -426,12 +426,12 @@ class PathTest {
                         .count()
                 ),
                 () -> assertEquals(3, Stream.of(result)
-                        .flatMap(addresses.member("type").all(JsonValue::string, identity()))
+                        .flatMap(addresses.member("type").as(JsonValue::string, identity()))
                         .filter(in(Set.of("home", "work", "vacation"), identity()))
                         .count()
                 ),
                 () -> assertEquals(3, Stream.of(result)
-                        .flatMap(addresses.member("country").all(JsonValue::string, Locale::of))
+                        .flatMap(addresses.member("country").as(JsonValue::string, Locale::of))
                         .filter(in(Set.of("de", "us", "uk"), Locale::getLanguage))
                         .count()
                 )
@@ -455,9 +455,9 @@ class PathTest {
     @Test
     void testValues() {
         assertAll(
-                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().all(JsonValue::decimal, BigDecimal::intValue))),
-                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().all(JsonValue::decimal, BigDecimal::longValue))),
-                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().all(JsonValue::decimal, BigDecimal::doubleValue))),
+                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().as(JsonValue::decimal, BigDecimal::intValue))),
+                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().as(JsonValue::decimal, BigDecimal::longValue))),
+                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Path.root().as(JsonValue::decimal, BigDecimal::doubleValue))),
                 () -> assertDoesNotThrow(() -> Path.root().index(3).intValueExact(TEST_ARRAY)),
                 () -> assertThrows(ArithmeticException.class, () -> Path.root().index(4).intValueExact(TEST_ARRAY)),
                 () -> assertThrows(ArithmeticException.class, () -> Path.root().index(5).intValueExact(TEST_ARRAY)),

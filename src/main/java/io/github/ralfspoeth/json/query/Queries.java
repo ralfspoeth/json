@@ -139,7 +139,7 @@ public class Queries {
      * assert new JsonArray(List.of(Basic.of(1), Basic.of(2))).equals(result);
      *}
      */
-    public static Collector<JsonValue, ?, JsonArray> toJsonArray() {
+    public static Collector<? extends JsonValue, ?, JsonArray> toJsonArray() {
         return Collector.of(
                 ArrayList::new,
                 ArrayList::add,

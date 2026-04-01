@@ -3,10 +3,12 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -78,20 +80,20 @@ import static java.util.Objects.requireNonNull;
  * List<JsonValue> result = a.elements().stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
  *}
  */
-public sealed abstract class Path implements Function<JsonValue, Stream<JsonValue>> {
+public sealed abstract class Path implements Function<JsonValue, Optional<JsonValue>> {
 
-    private static final class RootPath extends Path {
+    private static final class RootSelector extends Path {
 
-        private static final RootPath ROOT = new RootPath();
+        private static final RootSelector ROOT = new RootSelector();
 
         @Override
-        public Stream<JsonValue> apply(JsonValue jsonValue) {
-            return Stream.of(jsonValue);
+        public Optional<JsonValue> apply(JsonValue jsonValue) {
+            return Optional.of(jsonValue);
         }
 
         @Override
         public boolean equals(Object o) {
-            return o instanceof RootPath;
+            return o instanceof RootSelector;
         }
     }
 
@@ -100,7 +102,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * the given argument and returns it in a fresh {@link Stream}.
      */
     public static Path root() {
-        return RootPath.ROOT;
+        return RootSelector.ROOT;
     }
 
     private static abstract sealed class AbstractPath extends Path {
@@ -114,7 +116,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
             this.parent = requireNonNull(parent);
         }
 
-        abstract Stream<JsonValue> evalSegment(JsonValue elem);
+        abstract Optional<JsonValue> evalSegment(JsonValue elem);
 
         /**
          * To be used with {@link Stream#flatMap(Function)} in a stream
@@ -124,7 +126,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
          * @return all children of this path applied to the given root
          */
         @Override
-        public Stream<JsonValue> apply(JsonValue value) {
+        public Optional<JsonValue> apply(JsonValue value) {
             return parent.apply(value).flatMap(this::evalSegment);
         }
 
@@ -149,20 +151,15 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        Stream<JsonValue> evalSegment(JsonValue elem) {
-            return elem instanceof JsonObject(var members) && members.containsKey(memberName) ?
-                    Stream.of(members.get(memberName)) :
-                    Stream.of();
+        Optional<JsonValue> evalSegment(JsonValue elem) {
+            return elem instanceof JsonObject(var members) ?
+                    Optional.ofNullable(members.get(memberName)) :
+                    Optional.empty();
         }
 
         @Override
         AbstractPath withParent(Path parent) {
             return new MemberPath(memberName, parent);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return o instanceof MemberPath mp && memberName.equals(mp.memberName) && parent().equals(mp.parent());
         }
     }
 
@@ -175,14 +172,14 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
 
         @Override
-        Stream<JsonValue> evalSegment(JsonValue elem) {
+        Optional<JsonValue> evalSegment(JsonValue elem) {
             if (elem instanceof JsonArray(var elements)) {
-                if (index >= 0 && index < elements.size()) return Stream.of(elements.get(index));
+                if (index >= 0 && index < elements.size()) return Optional.of(elements.get(index));
                 else if (index < 0 && 0 <= elements.size() + index)
-                    return Stream.of(elements.get(elements.size() + index));
-                else return Stream.of();
+                    return Optional.of(elements.get(elements.size() + index));
+                else return Optional.empty();
             } else {
-                return Stream.of();
+                return Optional.empty();
             }
         }
 
@@ -197,78 +194,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         }
     }
 
-    private static final class RangePath extends AbstractPath {
-
-        private final int min, max;
-
-        private RangePath(int min, int max, Path parent) {
-            super(parent);
-            this.min = min;
-            this.max = (max > 0 ? max : Integer.MAX_VALUE);
-        }
-
-        private Stream<JsonValue> evalArray(List<JsonValue> array) {
-            return IntStream.range(min, max)
-                    .takeWhile(i -> i < array.size())
-                    .mapToObj(array::get);
-        }
-
-        @Override
-        Stream<JsonValue> evalSegment(JsonValue elem) {
-            return elem instanceof JsonArray(var elements) ? evalArray(elements) : Stream.of();
-        }
-
-        @Override
-        AbstractPath withParent(Path parent) {
-            return new RangePath(min, max, parent);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return o instanceof RangePath rp && min == rp.min && max == rp.max && parent().equals(rp.parent());
-        }
-    }
-
-    private static final class RegexPath extends AbstractPath {
-
-        private final Pattern regex;
-
-        private RegexPath(String regex, Path parent) {
-            this(Pattern.compile(regex), parent);
-        }
-
-        private RegexPath(Pattern regex, Path parent) {
-            super(parent);
-            this.regex = requireNonNull(regex);
-        }
-
-        @Override
-        Stream<JsonValue> evalSegment(JsonValue elem) {
-            return elem instanceof JsonObject o ? evalObject(o) : Stream.of();
-        }
-
-        Stream<JsonValue> evalObject(JsonObject o) {
-            return o.members()
-                    .entrySet()
-                    .stream()
-                    .filter(e -> regex.matcher(e.getKey()).matches())
-                    .map(Map.Entry::getValue);
-        }
-
-        @Override
-        AbstractPath withParent(Path parent) {
-            return new RegexPath(regex, parent);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return o instanceof RegexPath rp && regex.equals(rp.regex) && parent().equals(rp.parent());
-        }
-    }
-
     private static final Pattern INDEX_PATTERN = Pattern.compile("\\[(-?\\d+)]");
-
-    private static final Pattern RANGE_PATTERN = Pattern.compile("\\[(\\d+)\\.\\.(-?\\d+)]");
 
     /**
      * Instantiate a {@link Path} from a path pattern.
@@ -287,14 +213,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
                 var index = Integer.parseInt(im.group(1));
                 prev = new IndexPath(index, prev);
             } else {
-                var m = RANGE_PATTERN.matcher(part);
-                if (m.matches()) {
-                    prev = new RangePath(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), prev);
-                } else if (part.startsWith("#")) {
-                    prev = new RegexPath(part.substring(1), prev);
-                } else {
-                    prev = new MemberPath(part, prev);
-                }
+                prev = new MemberPath(part, prev);
             }
         }
         return prev;
@@ -334,49 +253,6 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
     }
 
     /**
-     * Create a path that, given a JSON array {@code a},
-     * returns a stream of its elements from index {@code startInclusive}
-     * to {@code endExclusive} exclusively.
-     * If {@code endExclusive} is negative, it is replaced by {@link Integer#MAX_VALUE}.
-     *
-     * @param startInclusive the first index, inclusively
-     * @param endExclusive   the last index, exclusively
-     */
-    public Path range(int startInclusive, int endExclusive) {
-        return new RangePath(startInclusive, endExclusive, this);
-    }
-
-    /**
-     * Create a path which, when applied to a {@link JsonObject},
-     * produces a stream of {@link JsonValue}s if its {@link JsonObject#members()}
-     * the keys of which match the given regular expression.
-     * {@snippet :
-     * // given
-     * import java.util.HashSet;
-     * var o = new JsonObject(Map.of("a1", Basic.of(1), "a2", Basic.of(2), "b", Basic.of(3)));
-     * // when
-     * var p = Path.regex("a[0-9]"); // a0, a1, a2, ..., a9
-     * // then
-     * var l = Stream.of(o).flatMap(p).toList();
-     * var c = List.of(Basic.of(1), Basic.of(2));
-     * assert l.containsAll(c) && c.containsAll(l);
-     *}
-     *
-     * @param regex a regular expression matched against the keys of
-     */
-    public Path regex(Pattern regex) {
-        return new RegexPath(regex, this);
-    }
-
-    /**
-     * Same as {@code regex(Pattern.compile(regex));}
-     * @param regex the regular expression
-     */
-    public Path regex(String regex) {
-        return new RegexPath(Pattern.compile(regex), this);
-    }
-
-    /**
      * Resolve the given path {@code p} against this path.
      * {@snippet :
      * // given
@@ -402,22 +278,11 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
         if (this instanceof AbstractPath tp && p instanceof AbstractPath ap) {
             return tp.resolve(ap);
         } else if (p instanceof AbstractPath ap) {
-            assert this instanceof RootPath;
+            assert this instanceof RootSelector;
             return ap;
         } else {
             return this;
         }
-    }
-
-    /**
-     * Turns this into a function with return type {@link Optional<JsonValue>}
-     * rather than {@link Stream<JsonValue>}; intended to be used with
-     * {@link Optional#flatMap(Function)}.
-     *
-     * @return the same as {@code this.apply(value).findFirst()}
-     */
-    public Function<? super JsonValue, Optional<? extends JsonValue>> first() {
-        return andThen(Stream::findFirst);
     }
 
     /**
@@ -428,7 +293,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @return the int value if found wrapped in {@link OptionalInt}, empty otherwise
      */
     public OptionalInt intValue(JsonValue v) {
-        return first().apply(v).flatMap(JsonValue::decimal)
+        return apply(v).flatMap(JsonValue::decimal)
                 .map(d -> OptionalInt.of(d.intValue()))
                 .orElse(OptionalInt.empty());
     }
@@ -441,7 +306,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @return the long value if found wrapped in {@link OptionalLong}, empty otherwise
      */
     public OptionalLong longValue(JsonValue v) {
-        return first().apply(v).flatMap(JsonValue::decimal)
+        return apply(v).flatMap(JsonValue::decimal)
                 .map(d -> OptionalLong.of(d.longValue()))
                 .orElse(OptionalLong.empty());
     }
@@ -455,7 +320,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @return the int value if found wrapped in {@link OptionalInt}, empty otherwise
      */
     public OptionalInt intValueExact(JsonValue v) {
-        return first().apply(v).flatMap(JsonValue::decimal)
+        return apply(v).flatMap(JsonValue::decimal)
                 .map(d -> OptionalInt.of(d.intValueExact()))
                 .orElse(OptionalInt.empty());
     }
@@ -469,7 +334,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @return the long value if found wrapped in {@link OptionalLong}, empty otherwise
      */
     public OptionalLong longValueExact(JsonValue v) {
-        return first().apply(v).flatMap(JsonValue::decimal)
+        return apply(v).flatMap(JsonValue::decimal)
                 .map(d -> OptionalLong.of(d.longValueExact()))
                 .orElse(OptionalLong.empty());
     }
@@ -482,7 +347,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @return the double value if found wrapped in {@link OptionalDouble}, empty otherwise
      */
     public OptionalDouble doubleValue(JsonValue v) {
-        return first().apply(v).flatMap(JsonValue::decimal)
+        return apply(v).flatMap(JsonValue::decimal)
                 .map(d -> OptionalDouble.of(d.doubleValue()))
                 .orElse(OptionalDouble.empty());
     }
@@ -494,7 +359,7 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @return the boolean value if found, empty otherwise
      */
     public Optional<Boolean> booleanValue(JsonValue v) {
-        return first().apply(v).flatMap(JsonValue::bool);
+        return apply(v).flatMap(JsonValue::bool);
     }
 
     /**
@@ -504,42 +369,11 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * @return the string value if found, empty otherwise
      */
     public Optional<String> stringValue(JsonValue v) {
-        return first().apply(v).flatMap(JsonValue::string);
+        return apply(v).flatMap(JsonValue::string);
     }
 
     /**
-     * Create a function to be used with {@link Optional#flatMap(Function)}
-     * which takes a function that maps a {@link JsonValue} to an {@link Optional}.
-     *
-     * @param f the function
-     * @param <T> the return type of the function
-     * @return a function to be used with {@link Optional#flatMap(Function)}
-     */
-    public <T> Function<? super JsonValue, Optional<T>> first(Function<? super JsonValue, Optional<T>> f) {
-        return first().andThen(r -> r.flatMap(f));
-    }
-
-    /**
-     * Create a function to be used with {@link Optional#flatMap(Function)}
-     * which extracts an optional value from the {@link JsonValue},
-     * maybe through {@link JsonValue#decimal()}, and then applies the
-     * {@code mapper} function to the payload.
-     *
-     * @param extractor an extraction function applied to a JSON value
-     * @param mapper a mapper function applied to the payload of the extractor
-     * @return a function to be used with {@link Optional#flatMap(Function)}
-     * @param <T> the return type of the mapper
-     * @param <M> some intermediary type
-     */
-    public <T, M> Function<? super JsonValue, Optional<T>> first(
-            Function<? super JsonValue, Optional<? extends M>> extractor,
-            Function<? super M, T> mapper) {
-        return v -> first().apply(v).flatMap(extractor).map(mapper);
-    }
-
-
-    /**
-     * Create a function to be used with {@link Stream#flatMap(Function)} which
+     * Create a function to be used with {@link Optional#flatMap(Function)} which
      * first extracts an optional value from the {@link JsonValue}, as with {@link JsonValue#string()},
      * and maps the payload of the optional value using the {@code mapper} function.
      * Example:
@@ -548,21 +382,21 @@ public sealed abstract class Path implements Function<JsonValue, Stream<JsonValu
      * import io.github.ralfspoeth.json.Greyson;
      * String src = "[\"2025-05-05\"]";
      * Path p = Path.root().index(0);
-     * var ld = Greyson.readValue(Reader.of(src)).stream().flatMap(p.as(JsonValue::string, LocalDate::parse)).toList();
-     * assert ld.size() == 1 && ld.getFirst().equals(LocalDate.of(2025, 5, 5));
+     * var ld = Greyson.readValue(Reader.of(src))
+     *     .flatMap(p.as(JsonValue::string, LocalDate::parse))
+     *     .orElseThrow();
+     * assert ld.equals(LocalDate.of(2025, 5, 5));
      *}
+     *
      * @param extractor an extraction function, returning an optional value
-     * @param mapper a mapper function applied to the payload of the extractor
-     * @return a function to be used with {@link Stream#flatMap(Function)}
-     * @param <T> the return type of the mapper
-     * @param <M> some intermediary type
+     * @param mapper    a mapper function applied to the payload of the extractor
+     * @param <T>       the return type of the mapper
+     * @param <M>       some intermediary type
+     * @return a function to be used with {@link Optional#flatMap(Function)}
      */
-    public <T, M> Function<? super JsonValue, Stream<? extends T>> as(
+    public <T, M> Function<? super JsonValue, Optional<? extends T>> as(
             Function<? super JsonValue, Optional<? extends M>> extractor,
             Function<? super M, T> mapper) {
-        return v -> apply(v).flatMap(extractor
-                .andThen(r -> r.map(mapper))
-                .andThen(Optional::stream)
-        );
+        return v -> apply(v).flatMap(extractor).map(mapper);
     }
 }

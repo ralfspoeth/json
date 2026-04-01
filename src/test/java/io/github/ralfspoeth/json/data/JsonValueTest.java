@@ -229,22 +229,23 @@ class JsonValueTest {
                 ]
                 """;
         // when
-        var topLeft = Path.root().member("tl");
-        var bottomRight = Path.root().member("br");
-        var x = Path.root().member("x");
-        var y = Path.root().member("y");
+        var r = Path.root();
+        var topLeft = r.member("tl");
+        var bottomRight = r.member("br");
+        var x = r.member("x");
+        var y = r.member("y");
 
         var rects = Greyson.readValue(Reader.of(src))
                 .stream()
                 .flatMap(a -> a.elements().stream())
-                .map(r -> new Rectangle(
+                .map(v -> new Rectangle(
                         new Point(
-                                topLeft.resolve(x).intValue(r).orElse(0),
-                                topLeft.resolve(y).intValue(r).orElse(0)
+                                topLeft.resolve(x).intValue(v).orElse(0),
+                                topLeft.resolve(y).intValue(v).orElse(0)
                         ),
                         new Point(
-                                bottomRight.resolve(x).intValue(r).orElse(0),
-                                bottomRight.resolve(y).intValue(r).orElse(0)
+                                bottomRight.resolve(x).intValue(v).orElse(0),
+                                bottomRight.resolve(y).intValue(v).orElse(0)
                         )
                 ))
                 .toList();

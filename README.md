@@ -564,12 +564,12 @@ limited.
 A `Path` instance is instantiated using the factory
 method `Path::of` like so:
 
-    var path = Path.of("a/b/c");
+    var selector = Path.of("a/b/c");
 
-The path expression is split using the `/` character.
+The selector expression is split using the `/` character.
 Given the statement above, we obtain the equivalent of
 
-    var path = Path.root().member("a").member("b").member("c");
+    var selector = Path.root().member("a").member("b").member("c");
 
 We then use `Path::apply` which returns a stream
 of `JsonValue`s. Given
@@ -584,7 +584,7 @@ of `JsonValue`s. Given
 ```
 then
 ```java
-    var elem = Greyson.readValue(Reader.of(src)).stream().map(path).findFirst().orElseThrow();
+    var elem = Greyson.readValue(Reader.of(src)).stream().map(selector).findFirst().orElseThrow();
     assert JsonBoolean.TRUE.equals(elem);
 ```
 will not throw an `AssertionError`.

@@ -327,4 +327,11 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
     public Function<? super JsonValue, Optional<? extends JsonValue>> first() {
         return andThen(Stream::findFirst);
     }
+
+    public <T, M> Function<? super JsonValue, Stream<T>> as(
+            Function<? super JsonValue, Optional<? extends M>> extractor,
+            Function<? super M, T> mapper) {
+        return v -> apply(v).
+                flatMap(x -> extractor.apply(x).map(mapper).stream());
+    }
 }

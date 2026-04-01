@@ -7,29 +7,24 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static io.github.ralfspoeth.basix.fn.Predicates.in;
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Selector.of;
 import static io.github.ralfspoeth.json.query.Selector.root;
 import static java.math.BigDecimal.ZERO;
-import static java.util.function.Function.identity;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SelectorTest {
-/*
     @Test
     void ofNull() {
         assertAll(
                 () -> assertThrows(NullPointerException.class, () -> of(null)),
-                () -> assertThrows(NullPointerException.class, () -> root().member(null)),
-                () -> assertThrows(NullPointerException.class, () -> root().regex((String)null))
+                () -> assertThrows(NullPointerException.class, () -> root().regex((String) null))
         );
     }
 
@@ -275,7 +270,9 @@ class SelectorTest {
         // given
         record Point(int x, int y) {}
         var rnd = ThreadLocalRandom.current();
-        var input = IntStream.range(0, 10).mapToObj(_ -> new Point(rnd.nextInt(), rnd.nextInt())).toList();
+        var input = IntStream.range(0, 10)
+                .mapToObj(_ -> new Point(rnd.nextInt(), rnd.nextInt()))
+                .toList();
         var jsonArray = input
                 .stream()
                 .map(p -> objectBuilder().putBasic("x", p.x).putBasic("y", p.y).build())
@@ -289,22 +286,20 @@ class SelectorTest {
                         && Set.of("x", "y").containsAll(members.keySet())
                 );
         // when
-        Selector x = Selector.root().member("x"), y = Selector.root().member("y"), z = Selector.root().member("z");
+        Path x = Path.root().member("x"),
+                y = Path.root().member("y"),
+                z = Path.root().member("z");
         // then
         assertAll(
                 // all elements do have an x and a y but not a z
-                () -> assertTrue(jsonArray.elements().stream().allMatch(e -> single(e, x).isPresent())),
+                /*() -> assertTrue(jsonArray.elements().stream().allMatch(e -> single(e, x).isPresent())),
                 () -> assertTrue(jsonArray.elements().stream().allMatch(e -> single(e, y).isPresent())),
                 () -> assertTrue(jsonArray.elements().stream().noneMatch(e -> single(e, z).isPresent())),
                 // output equals input
                 () -> assertEquals(input, jsonArray.elements().stream().map(e -> new Point(
                         single(e, x).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow(),
                         single(e, y).flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow())
-                ).toList()),
-                () -> assertInstanceOf(JsonObject.class, single(jsonArray, Selector.root().index(7)).orElseThrow()),
-                () -> assertInstanceOf(JsonNumber.class, single(jsonArray, Selector.root().index(8).resolve(x)).orElseThrow()),
-                () -> assertInstanceOf(JsonNumber.class, single(jsonArray, Selector.root().index(2).resolve(y)).orElseThrow()),
-                () -> assertTrue(single(jsonArray, Selector.root().index(3).resolve(z)).isEmpty()),
+                ).toList()),*/
                 () -> assertTrue(single(jsonArray, Selector.of("3/z")).isEmpty())
         );
     }
@@ -314,7 +309,7 @@ class SelectorTest {
         // given
         var root = Selector.root();
         var theFirstTwo = root.range(0, 2);
-        var a = root.member("a");
+        var a = Path.root().member("a");
         var value = arrayBuilder()
                 .add(objectBuilder().putBasic("a", 1))
                 .add(objectBuilder().putBasic("a", 2))
@@ -341,57 +336,22 @@ class SelectorTest {
         );
     }
 
-    @Test
-    void testFirstWithFunction() throws IOException {
-        // given
-        var src = """
-                    ["2025-12-31"]
-                """;
-        // when
-        Selector p = Selector.root().index(0);
-        var ldFirstWithTwo = Greyson.readValue(Reader.of(src))
-                .flatMap(p.first(JsonValue::string, LocalDate::parse))
-                .orElseThrow();
-
-        var ldFirstWithSingle = Greyson.readValue(Reader.of(src))
-                .flatMap(p.first(v -> v.string().map(LocalDate::parse)))
-                .orElseThrow();
-
-        var alt1 = Greyson.readValue(Reader.of(src))
-                .flatMap(p.first(JsonValue::string))
-                .map(LocalDate::parse)
-                .orElseThrow();
-
-        var alt2 = Greyson.readValue(Reader.of(src))
-                .flatMap(p.first())
-                .flatMap(JsonValue::string)
-                .map(LocalDate::parse)
-                .orElseThrow();
-
-        // then
-        assertAll(
-                () -> assertEquals(LocalDate.of(2025, 12, 31), ldFirstWithTwo),
-                () -> assertEquals(LocalDate.of(2025, 12, 31), ldFirstWithSingle),
-                () -> assertEquals(LocalDate.of(2025, 12, 31), alt1),
-                () -> assertEquals(LocalDate.of(2025, 12, 31), alt2)
-        );
-    }
 
     @Test
     void testAs() throws IOException {
         // given
         var src = """
-             [
-                "2025-12-31",
-                1, 2, 3, 4, false, null, true, "hello",
-                {"a": 1},
-                {"a": 2, "b": -1}, {"a": 3}, {"a": 4}
-             ]""";
-        Selector p = Selector.root().range(0, -1).regex("[ab]");
+                [
+                   "2025-12-31",
+                   1, 2, 3, 4, false, null, true, "hello",
+                   {"a": 1},
+                   {"a": 2, "b": -1}, {"a": 3}, {"a": 4}
+                ]""";
+        Selector s = Selector.root().range(0, -1).regex("[ab]");
         // when
         var l = Greyson.readValue(Reader.of(src))
                 .stream()
-                .flatMap(p.as(JsonValue::decimal, BigDecimal::intValue))
+                .flatMap(s.as(JsonValue::decimal, BigDecimal::intValue))
                 .toList();
         // then
         assertAll(
@@ -415,11 +375,13 @@ class SelectorTest {
                 ]
                 """;
         // when
-        var addresses = Selector.root().range(0, -1).member("addresses").range(0, -1);
+        var addresses = Selector.root().range(0, -1)
+                .resolve(Path.root().member("addresses"))
+                .range(0, -1);
         var result = Greyson.readValue(Reader.of(src)).orElseThrow();
         // then
         assertAll(
-                () -> assertEquals(3, Stream.of(result).flatMap(addresses).count()),
+                () -> assertEquals(3, Stream.of(result).flatMap(addresses).count())/*,
                 () -> assertEquals(3, Stream.of(result).flatMap(addresses.member("type")).count()),
                 () -> assertEquals(3, Stream.of(result).flatMap(addresses.member("type"))
                         .filter(in(Set.of("home", "work", "vacation"), a -> a.string().orElseThrow()))
@@ -434,7 +396,7 @@ class SelectorTest {
                         .flatMap(addresses.member("country").as(JsonValue::string, Locale::of))
                         .filter(in(Set.of("de", "us", "uk"), Locale::getLanguage))
                         .count()
-                )
+                )*/
         );
     }
 
@@ -455,27 +417,25 @@ class SelectorTest {
     @Test
     void testValues() {
         assertAll(
-                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::intValue))),
-                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::longValue))),
-                ()-> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::doubleValue))),
-                () -> assertDoesNotThrow(() -> Selector.root().index(3).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Selector.root().index(4).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Selector.root().index(5).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Selector.root().index(6).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Selector.root().index(7).intValueExact(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Selector.root().index(5).longValueExact(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Selector.root().index(6).longValue(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Selector.root().index(7).longValue(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Selector.root().index(7).doubleValue(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Selector.root().index(6).longValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Selector.root().index(7).longValueExact(TEST_ARRAY)),
-                () -> assertTrue(Selector.root().index(1).booleanValue(TEST_ARRAY).orElseThrow()),
-                () -> assertFalse(Selector.root().index(2).booleanValue(TEST_ARRAY).orElseThrow()),
-                () -> assertEquals(1, Selector.root().index(0).apply(TEST_ARRAY).filter(JsonNull.class::isInstance).count()),
-                () -> assertEquals("", Selector.root().index(8).stringValue(TEST_ARRAY).orElseThrow()),
-                () -> assertEquals("Hello World", Selector.root().index(9).stringValue(TEST_ARRAY).orElseThrow())
+                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::intValue))),
+                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::longValue))),
+                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::doubleValue))),
+                () -> assertDoesNotThrow(() -> Path.root().index(3).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(4).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(5).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).intValueExact(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(5).longValueExact(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(6).longValue(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(7).longValue(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Path.root().index(7).doubleValue(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).longValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).longValueExact(TEST_ARRAY)),
+                () -> assertTrue(Path.root().index(1).booleanValue(TEST_ARRAY).orElseThrow()),
+                () -> assertFalse(Path.root().index(2).booleanValue(TEST_ARRAY).orElseThrow()),
+                () -> assertTrue(Path.root().index(0).apply(TEST_ARRAY).filter(JsonNull.class::isInstance).isPresent()),
+                () -> assertEquals("", Path.root().index(8).stringValue(TEST_ARRAY).orElseThrow()),
+                () -> assertEquals("Hello World", Path.root().index(9).stringValue(TEST_ARRAY).orElseThrow())
         );
     }
-
- */
 }

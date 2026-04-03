@@ -9,32 +9,44 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
-import static io.github.ralfspoeth.json.query.Path.of;
-import static io.github.ralfspoeth.json.query.Selector.root;
+import static io.github.ralfspoeth.json.query.Pointer.parse;
+import static io.github.ralfspoeth.json.query.Selector.all;
 import static java.math.BigDecimal.ZERO;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SelectorTest {
+
     @Test
     void ofNull() {
+        // given
+        Pattern p = null;
+        String s = null;
+        // then
         assertAll(
-                () -> assertThrows(NullPointerException.class, () -> of(null)),
-                () -> assertThrows(NullPointerException.class, () -> root().regex((String) null))
+                () -> assertThrows(NullPointerException.class, () -> all().regex(p)),
+                () -> assertThrows(NullPointerException.class, () -> all().regex(s))
         );
     }
 
     @Test
-    void ofSingle() {
-        var five = Basic.of(5);
-        var singleElem = objectBuilder().put("one", five).build();
+    void testAll() {
+        // given
+        JsonArray ja = arrayBuilder().addBasic(1).addBasic(2).addBasic(3).build();
+        JsonObject jo = new JsonObject(Map.of());
+        Basic<?> b = JsonNull.INSTANCE;
+        // when
+        Selector allSelector = all();
+        // then
         assertAll(
-                () -> assertEquals(of("one"), of("one")),
-                () -> assertEquals(five, of("one").apply(singleElem).orElseThrow())
+                () -> assertEquals(ja.elements(), Stream.of(ja).flatMap(allSelector).toList()),
+                () -> assertEquals(List.of(jo), Stream.of(jo).flatMap(allSelector).toList()),
+                () -> assertEquals(List.of(b), Stream.of(b).flatMap(allSelector).toList())
         );
     }
 
@@ -87,12 +99,12 @@ class SelectorTest {
         var singleElemArray = Builder.arrayBuilder().add(five).build();
         var multiElemArray = Builder.arrayBuilder().add(five).add(five).add(five).build();
         // when
-        var all = Selector.root().range(0, -1);
-        var o1 = Selector.root().range(0, 1);
-        var o2 = Selector.root().range(0, 2);
+        var all = Selector.all().range(0, -1);
+        var o1 = Selector.all().range(0, 1);
+        var o2 = Selector.all().range(0, 2);
         // then
         assertAll(
-                () -> assertEquals(of("[0..-5]"), of("[0..-1]")),
+                () -> assertEquals(parse("[0..-5]"), parse("[0..-1]")),
                 () -> assertTrue(Selector.of("[0..-1]").apply(singleElemArray).allMatch(five::equals)),
                 () -> assertTrue(all.apply(singleElemArray).allMatch(five::equals)),
                 () -> assertTrue(Selector.of("[0..-1]").apply(multiElemArray).allMatch(five::equals)),
@@ -114,13 +126,13 @@ class SelectorTest {
                         new JsonObject(Map.of("two", Basic.of(5)))
                 )))
                 .build();
-        var path = of("one/[0..1]/#t.*o");
+        var path = parse("one/[0..1]/#t.*o");
         assertEquals(Basic.of(5), path.apply(root).orElseThrow());
     }
 
     @Test
     void ofRegex() {
-        var path = of("#o.*e");
+        var path = parse("#o.*e");
         var five = Basic.of(5);
         var singleElem = objectBuilder().put("oe", five).build();
         assertEquals(five, path.apply(singleElem).orElseThrow());
@@ -286,9 +298,9 @@ class SelectorTest {
                         && Set.of("x", "y").containsAll(members.keySet())
                 );
         // when
-        Path x = Path.root().member("x"),
-                y = Path.root().member("y"),
-                z = Path.root().member("z");
+        Pointer x = Pointer.self().member("x"),
+                y = Pointer.self().member("y"),
+                z = Pointer.self().member("z");
         // then
         assertAll(
                 // all elements do have an x and a y but not a z
@@ -307,9 +319,9 @@ class SelectorTest {
     @Test
     void testResolveTheFirstTwoThenA() {
         // given
-        var root = Selector.root();
+        var root = Selector.all();
         var theFirstTwo = root.range(0, 2);
-        var a = Path.root().member("a");
+        var a = Pointer.self().member("a");
         var value = arrayBuilder()
                 .add(objectBuilder().putBasic("a", 1))
                 .add(objectBuilder().putBasic("a", 2))
@@ -347,7 +359,7 @@ class SelectorTest {
                    {"a": 1},
                    {"a": 2, "b": -1}, {"a": 3}, {"a": 4}
                 ]""";
-        Selector s = Selector.root().range(0, -1).regex("[ab]");
+        Selector s = Selector.all().range(0, -1).regex("[ab]");
         // when
         var l = Greyson.readValue(Reader.of(src))
                 .stream()
@@ -375,8 +387,8 @@ class SelectorTest {
                 ]
                 """;
         // when
-        var addresses = Selector.root().range(0, -1)
-                .resolve(Path.root().member("addresses"))
+        var addresses = Selector.all().range(0, -1)
+                .resolve(Pointer.self().member("addresses"))
                 .range(0, -1);
         var result = Greyson.readValue(Reader.of(src)).orElseThrow();
         // then
@@ -417,25 +429,25 @@ class SelectorTest {
     @Test
     void testValues() {
         assertAll(
-                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::intValue))),
-                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::longValue))),
-                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.root().as(JsonValue::decimal, BigDecimal::doubleValue))),
-                () -> assertDoesNotThrow(() -> Path.root().index(3).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(4).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(5).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).intValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).intValueExact(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Path.root().index(5).longValueExact(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Path.root().index(6).longValue(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Path.root().index(7).longValue(TEST_ARRAY)),
-                () -> assertDoesNotThrow(() -> Path.root().index(7).doubleValue(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(6).longValueExact(TEST_ARRAY)),
-                () -> assertThrows(ArithmeticException.class, () -> Path.root().index(7).longValueExact(TEST_ARRAY)),
-                () -> assertTrue(Path.root().index(1).booleanValue(TEST_ARRAY).orElseThrow()),
-                () -> assertFalse(Path.root().index(2).booleanValue(TEST_ARRAY).orElseThrow()),
-                () -> assertTrue(Path.root().index(0).apply(TEST_ARRAY).filter(JsonNull.class::isInstance).isPresent()),
-                () -> assertEquals("", Path.root().index(8).stringValue(TEST_ARRAY).orElseThrow()),
-                () -> assertEquals("Hello World", Path.root().index(9).stringValue(TEST_ARRAY).orElseThrow())
+                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.all().as(JsonValue::decimal, BigDecimal::intValue))),
+                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.all().as(JsonValue::decimal, BigDecimal::longValue))),
+                () -> assertDoesNotThrow(() -> TEST_ARRAY.elements().stream().flatMap(Selector.all().as(JsonValue::decimal, BigDecimal::doubleValue))),
+                () -> assertDoesNotThrow(() -> Pointer.self().index(3).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Pointer.self().index(4).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Pointer.self().index(5).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Pointer.self().index(6).intValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Pointer.self().index(7).intValueExact(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Pointer.self().index(5).longValueExact(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Pointer.self().index(6).longValue(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Pointer.self().index(7).longValue(TEST_ARRAY)),
+                () -> assertDoesNotThrow(() -> Pointer.self().index(7).doubleValue(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Pointer.self().index(6).longValueExact(TEST_ARRAY)),
+                () -> assertThrows(ArithmeticException.class, () -> Pointer.self().index(7).longValueExact(TEST_ARRAY)),
+                () -> assertTrue(Pointer.self().index(1).booleanValue(TEST_ARRAY).orElseThrow()),
+                () -> assertFalse(Pointer.self().index(2).booleanValue(TEST_ARRAY).orElseThrow()),
+                () -> assertTrue(Pointer.self().index(0).apply(TEST_ARRAY).filter(JsonNull.class::isInstance).isPresent()),
+                () -> assertEquals("", Pointer.self().index(8).stringValue(TEST_ARRAY).orElseThrow()),
+                () -> assertEquals("Hello World", Pointer.self().index(9).stringValue(TEST_ARRAY).orElseThrow())
         );
     }
 }

@@ -2,7 +2,7 @@ package io.github.ralfspoeth.json.data;
 
 import io.github.ralfspoeth.json.Greyson;
 import io.github.ralfspoeth.json.io.JsonReader;
-import io.github.ralfspoeth.json.query.Path;
+import io.github.ralfspoeth.json.query.Pointer;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -205,8 +205,8 @@ class JsonValueTest {
                 .stream()
                 .flatMap(a -> a.elements().stream())
                 .map(o -> new Point(
-                        Path.of("x").intValue(o).orElseThrow(),
-                        Path.of("y").intValue(o).orElseThrow()
+                        Pointer.parse("x").intValue(o).orElseThrow(),
+                        Pointer.parse("y").intValue(o).orElseThrow()
                 ))
                 .toList();
         // then
@@ -229,7 +229,7 @@ class JsonValueTest {
                 ]
                 """;
         // when
-        var r = Path.root();
+        var r = Pointer.self();
         var topLeft = r.member("tl");
         var bottomRight = r.member("br");
         var x = r.member("x");

@@ -1,8 +1,12 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.data.*;
+import io.github.ralfspoeth.json.data.JsonArray;
+import io.github.ralfspoeth.json.data.JsonObject;
+import io.github.ralfspoeth.json.data.JsonValue;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -61,7 +65,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * The second approach to constructing paths is through the fluent API, as in
  * {@snippet :
- * var p = Selector.root().member("a").index(1).regex(Pattern.compile("b.*c")).range(0, 2);
+ * var p = Selector.all().member("a").index(1).regex(Pattern.compile("b.*c")).range(0, 2);
  *}
  * <p>
  * The class implements {@link Function} such that it may be used in stream
@@ -79,22 +83,27 @@ import static java.util.Objects.requireNonNull;
  */
 public sealed abstract class Selector implements Function<JsonValue, Stream<JsonValue>> {
 
-    private static final class RootSelector extends Selector {
+    private static final class AllSelector extends Selector {
 
-        private static final RootSelector ROOT = new RootSelector();
+        private static final AllSelector INSTANCE = new AllSelector();
 
         @Override
         public Stream<JsonValue> apply(JsonValue jsonValue) {
-            return Stream.of(jsonValue);
+            return jsonValue instanceof JsonArray(var elements) ?
+                    elements.stream() :
+                    Stream.of(jsonValue);
         }
     }
 
     /**
-     * Always start with a root path, which matches
-     * the given argument and returns it in a fresh {@link Stream}.
+     * Every {@code Selector} starts with this special selector
+     * which creates a stream of the elements of a {@link JsonArray}
+     * or else the singleton stream of the {@link JsonValue} which it
+     * is applied to.
+     * @return the selector which returns the contents of the {@link JsonValue}
      */
-    public static Selector root() {
-        return RootSelector.ROOT;
+    public static Selector all() {
+        return AllSelector.INSTANCE;
     }
 
     private static abstract sealed class AbstractSelector extends Selector {
@@ -188,22 +197,22 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
         }
     }
 
-    private static final class PathSelector extends AbstractSelector {
-        private final Path path;
+    private static final class PointerSelector extends AbstractSelector {
+        private final Pointer pointer;
 
-        private PathSelector(Path path, Selector parent) {
+        private PointerSelector(Pointer pointer, Selector parent) {
             super(parent);
-            this.path = requireNonNull(path);
+            this.pointer = requireNonNull(pointer);
         }
 
         @Override
         Stream<JsonValue> evalSegment(JsonValue elem) {
-            return path.apply(elem).stream();
+            return pointer.apply(elem).stream();
         }
 
         @Override
         AbstractSelector withParent(Selector parent) {
-            return new PathSelector(path, parent);
+            return new PointerSelector(pointer, parent);
         }
 
     }
@@ -220,7 +229,7 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
      */
     public static Selector of(String pattern) {
         var parts = requireNonNull(pattern).split("/");
-        Selector prev = root();
+        Selector prev = all();
         for (String part : parts) {
             var m = RANGE_PATTERN.matcher(part);
             if (m.matches()) {
@@ -286,7 +295,7 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
      *         Basic.of(4),
      *         JsonNull.INSTANCE
      *         );
-     * var root = Selector.root();
+     * var root = Selector.all();
      * var theFirstTwo = root.range(0, 2);
      * var a = root.member("a");
      * // when
@@ -301,7 +310,7 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
         if (this instanceof AbstractSelector tp && p instanceof AbstractSelector ap) {
             return tp.resolve(ap);
         } else if (p instanceof AbstractSelector ap) {
-            assert this instanceof RootSelector;
+            assert this instanceof AllSelector;
             return ap;
         } else {
             return this;
@@ -309,12 +318,13 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
     }
 
     /**
-     * Append a {@link Path}
-     * @param p a path
+     * Append a {@link Pointer}
+     *
+     * @param p a pointer
      * @return a new selector
      */
-    public Selector resolve(Path p) {
-        return new PathSelector(p, this);
+    public Selector resolve(Pointer p) {
+        return new PointerSelector(p, this);
     }
 
     /**

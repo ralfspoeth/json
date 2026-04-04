@@ -3,10 +3,7 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 
 import java.math.BigDecimal;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -154,6 +151,32 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         }
     }
 
+    private static final class RegexPointer extends AbstractPointer {
+
+        private final Pattern pattern;
+
+        private RegexPointer(Pattern pattern, Pointer parent) {
+            super(parent);
+            this.pattern = pattern;
+        }
+
+        @Override
+        Optional<JsonValue> evalSegment(JsonValue elem) {
+            return elem instanceof JsonObject(var members) ?
+                    members.entrySet()
+                    .stream()
+                    .filter(e -> pattern.matcher(e.getKey()).matches())
+                    .map(Map.Entry::getValue)
+                    .findFirst() :
+                    Optional.empty();
+        }
+
+        @Override
+        AbstractPointer withParent(Pointer parent) {
+            return new RegexPointer(pattern, parent);
+        }
+    }
+
     private static final class IndexPointer extends AbstractPointer {
         private final int index;
 
@@ -193,7 +216,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * var p = Pointer.parse("a/2/b/3");
      * var q = Pointer.self().member("a").index(2).member("b").index(3);
      * // p and q are equivalent
-     * }
+     *}
+     *
      * @param text a pointer text
      * @return a pointer
      */
@@ -245,6 +269,17 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         return new IndexPointer(index, this);
     }
 
+
+    /**
+     * Similar to {@link #member(String)}, but finding
+     * members by matching its name against a pattern.
+     *
+     * @param pattern the pattern for the member name
+     * @return a pointer
+     */
+    public Pointer regex(Pattern pattern) {
+        return new RegexPointer(pattern, this);
+    }
     /**
      * Resolve the given pointer {@code p} relative to this pointer.
      * {@snippet :

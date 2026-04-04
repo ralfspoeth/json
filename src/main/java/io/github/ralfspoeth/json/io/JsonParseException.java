@@ -5,20 +5,13 @@ package io.github.ralfspoeth.json.io;
  * both starting by 1
  */
 public class JsonParseException extends RuntimeException {
+
     private final int row, column;
 
     public JsonParseException(String message, int row, int column) {
         super(message);
         this.row = row;
         this.column = column;
-    }
-
-    public int getRow() {
-        return row;
-    }
-
-    public int getColumn() {
-        return column;
     }
 
     @Override

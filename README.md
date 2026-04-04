@@ -1,29 +1,18 @@
 # Greyson - Java JSON IO Library
 
-A modern Java library for parsing JSON into **immutable data structures** 
-and serializing them back to text. It features a robust parser, a fluent builder API, 
-efficient UTF-8 serialization, and powerful query functions to transform JSON 
-elements into any Java objects.
+A precision JSON engine for Java, designed for developers who
+value architectural purity.
 
 ![greyson.png](greyson.png "JSON")
 
 ## Goals
 
-*   **Immutable JSON Representation**: Work with JSON data that cannot change after creation, ensuring thread safety and predictable state.
-*   **Robust Parsing**: Reliably parse all legal JSON documents and streams.
-*   **Fluent Builder API**: Construct complex JSON objects and arrays with ease.
-*   **Efficient Serialization**: Quickly serialize JSON elements into UTF-8 documents and streams.
+
 
 Greyson parses the original version of JSON only with the relaxation
 that ALL values may be root elements, not just objects and arrays. There are 
 no options to customize the contents, to be more relaxed or even stricter at the 
 parsing level.
-
-## Current Status
-
-We are heading towards release 1.2. and are going into the beta phase.
-The public API is stable, some tests plus some JavaDoc comments
-are still to be added.
 
 ### Changes
 
@@ -620,3 +609,22 @@ the stream of `5d`.
 
 A `JsonArray` can be converted into an array of primitives; 
 all elements are converted using `Queries.{int|long|double|...}Array(JsonValue)`.
+
+## MIT License
+
+Copyright 2025, 2026 Ralf Spöth
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the “Software”), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

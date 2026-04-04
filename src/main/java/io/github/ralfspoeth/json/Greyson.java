@@ -57,11 +57,13 @@ public class Greyson {
      *
      * @param writer a writer, must not be {@code null}
      * @param builder the builder, must not be {@code null}
-     * @throws IOException when the writer throws
+     * @throws UncheckedIOException when the writer throws an IOException
      */
-    public static void writeBuilder(Writer writer, Builder<? extends JsonValue> builder) throws IOException {
+    public static void writeBuilder(Writer writer, Builder<? extends JsonValue> builder) throws UncheckedIOException {
         try(var wrt = new JsonWriter(writer)) {
             wrt.write(requireNonNull(builder));
+        } catch (IOException ioex) {
+            throw new UncheckedIOException(ioex);
         }
     }
 }

@@ -2,31 +2,17 @@ package io.github.ralfspoeth.json;
 
 import io.github.ralfspoeth.json.data.*;
 import io.github.ralfspoeth.json.io.JsonParseException;
+import io.github.ralfspoeth.json.query.Pointer;
 import org.jspecify.annotations.NonNull;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class GreysonTest {
-
-    private final PrintStream originalSystemOut = System.out;
-    private ByteArrayOutputStream systemOutContent;
-
-    @BeforeEach
-    void setUpSystemOut() {
-        systemOutContent = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(systemOutContent));
-    }
-
-    @AfterEach
-    void restoreSystemOut() {
-        System.setOut(originalSystemOut);
-    }
 
     @Test
     void testReadValueFromString_validJson() throws IOException {
@@ -143,6 +129,32 @@ class GreysonTest {
         Greyson.writeBuilder(w, ob);
         // then
         assertEquals(jo, Greyson.readValue(Reader.of(w.getBuffer())).orElseThrow());
+    }
 
+    @Test
+    void testAddTimeStamp() throws IOException {
+        // given
+        var src = """
+                {
+                    "make": "BMW",
+                    "year": 1971
+                }
+                """;
+        // when
+        var target = new StringWriter();
+        Greyson.readBuilder(Reader.of(src))
+                .filter(Builder.ObjectBuilder.class::isInstance)
+                .map(Builder.ObjectBuilder.class::cast)
+                .map(ob -> ob.putBasic("ts", LocalDateTime.now().toString()))
+                .ifPresent(ob -> Greyson.writeBuilder(target, ob));
+        // then
+        var expected = Greyson.readValue(Reader.of(src)).orElseThrow();
+        var result = Greyson.readValue(Reader.of(target.getBuffer())).orElseThrow();
+        Pointer make = Pointer.self().member("make"), year = Pointer.self().member("year");
+        assertAll(
+                () -> assertEquals(make.stringValue(expected).orElseThrow(), make.stringValue(result).orElseThrow()),
+                () -> assertEquals(year.intValue(expected).orElseThrow(), year.intValue(result).orElseThrow()),
+                () -> assertTrue(result.get("ts").isPresent())
+        );
     }
 }

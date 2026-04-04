@@ -1,18 +1,112 @@
 # Greyson - Java JSON IO Library
 
-A precision JSON engine for Java, designed for developers who
-value architectural purity.
+A JSON engine for Java, designed for developers who
+value architectural purity and simplicity over ease.
 
 ![greyson.png](greyson.png "JSON")
 
-## Goals
+## 🛠 Real-World Resilience: Functional Mapping
+Greyson excels at turning "imperfect" JSON into clean Java Records.
+`Greyson.readValue()` returns an `Optional<JsonValue>`, so that you can chain
+operations using standard Java Streams to handle both single objects and arrays of data identically.
 
+### Example: The Functional Factory
+This pattern handles missing keys, inconsistent structures, and "Object vs. Array" inputs in a single, fluent pipeline.
 
+```java
+    record UserProfile(String id, List<String> tags, double balance) {}
 
-Greyson parses the original version of JSON only with the relaxation
-that ALL values may be root elements, not just objects and arrays. There are 
-no options to customize the contents, to be more relaxed or even stricter at the 
-parsing level.
+    static List<UserProfile> fromJson(Reader rdr) throws IOException {
+        return Greyson.readValue(rdr)
+            .flatMap(Selector.all()) // Promotes either a single Object or an Array to a Stream
+            .map(v -> new UserProfile(
+                Pointer.self().member("id").stringValue().orElseThrow(), // making id mandatory
+                Pointer.self().member("tags").elements().stream().flatMap(t -> t.string().stream()).toList(),
+                Pointer.self().member("bal").doubleValue().orElse(0.0)
+            ))
+            .toList();
+    }
+```
+works for
+```json
+    {"id": "p1", "tags":["one", "two"]}
+```
+as well as
+```json
+    [
+        {"id": "p1", "tags":["one", "two"]},
+        {"id": "p2"}
+        {"id": "p3", "bal": 100}
+    ]
+```
+and
+```json
+    {"id": "p4", "misspelled": "ignored", "balance": -500}
+```
+
+Gson and Jackson shine when the JSON structure and the target classes match nicely.
+Greyson excels with the absence of intrusive annotations or complex configurations.
+
+## 🔁 The Duality: Value ↔ Builder
+
+Greyson uses builders to instantiate immutable values.
+In fact, every `JsonValue` can be turned into its mutable dual
+through its `builder` method, and every `Builder` is converted into an
+immutable `JsonValue` through its `build` method.
+
+Greyson enforces strict symmetry.
+For any JsonValue, the following assertion must always hold true:
+
+```java
+    assert value.equals(value.builder().build());
+```
+
+Greyson supports reading and writing both `JsonValue`s and `Builder`s.
+The former is best used when converting to objects in your application domain,
+the latter when all you want to do is manipulated some data in the JSON stream.
+
+#### Example: Add a Timestamp
+```java
+    Greyson.readBuilder(src)
+        .filter(Builder.ObjectBuilder.class::isInstance)
+        .map(Builder.ObjectBuilder.class::cast)
+        .map(ob -> ob.putBasic("ts", LocalDateTime.now().toString()))
+        .ifPresent(ob -> Greyson.writeBuilder(target, ob));
+```
+(turns
+```json
+    {"make":"BMW", "year": 1971}
+```
+into 
+```json
+    {"make":"BMW", "year": 1971, "ts": "..."}
+```
+
+#### Example: Wrap Message
+```java
+    Greyson.readBuilder(src)
+        .map(b -> objectBuilder()
+            .putBasic("ts", LocalDateTime.now().toString())
+            .putBasic("msg", b))
+            .ifPresent(ob -> Greyson.writeBuilder(target, ob));
+```
+(turns
+```json
+   [...]
+```
+into
+```json
+   {
+    "ts": "2026....",
+    "msg": [...]
+   }
+```)
+
+## Querying Data
+
+Greyson provides `Pointer`s to extract scalar values from
+a `JsonValue` and `Selector`s to identify a (sub-)set of
+a given value.
 
 ### Changes
 
@@ -602,7 +696,7 @@ the second element `3`, and `Path.of(-1) the last element `11`.
 Given `{"a0":true,"a1":false}` then `Path.of("#a.")`
 yields the stream of `true` and `false`.
 
-Given `{"a":{"b":5}}` then `Path.of("a/b")` yields 
+Given `{"a":{"b":5}}` then `Path.of("a/b")` yields
 the stream of `5d`.
 
 ### JsonArray to Primitive Array

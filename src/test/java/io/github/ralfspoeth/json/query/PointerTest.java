@@ -77,8 +77,18 @@ class PointerTest {
     @Test
     void testRegex() {
         // given
-        var doubleA = objectBuilder().putBasic("a", 1).putBasic("A", 2).build();
-
+        var jo = objectBuilder()
+                .putBasic("a", 1d)
+                .putBasic("balance", 2d)
+                .build();
+        // when
+        var ra = Pointer.self().regex("[aA]");
+        var bal = Pointer.self().regex("bal(ance)?");
+        // then
+        assertAll(
+                () -> assertEquals(1d, ra.doubleValue(jo).orElseThrow()),
+                () -> assertEquals(2d, bal.doubleValue(jo).orElseThrow())
+        );
     }
 
     @Test

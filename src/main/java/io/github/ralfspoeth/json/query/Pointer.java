@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Gatherer;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -167,8 +168,22 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
                     .stream()
                     .filter(e -> pattern.matcher(e.getKey()).matches())
                     .map(Map.Entry::getValue)
-                    .findFirst() :
-                    Optional.empty();
+                    .gather(Gatherer.of(
+                            ArrayList<JsonValue>::new,
+                            (l, e, _) -> {
+                                l.add(e);
+                                return l.size() < 2;
+                            },
+                            (a, b) -> {
+                                a.addAll(b);
+                                return a;
+                            },
+                            (a, d) -> {
+                                if (a.size() == 1) d.push(a.getFirst());
+                            }
+                    ))
+                    .findFirst().map(JsonValue.class::cast)
+                    : Optional.empty();
         }
 
         @Override
@@ -209,14 +224,19 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * Instantiate a {@link Pointer} from a text.
      * The text is first split into parts
      * using {@code '/'}. Integers are passed into
-     * {@link #index(int)}, all others as literal strings
-     * into {@link #member(String)}.
+     * {@link #index(int)}, parts starting with '#'
+     * are passed to {@link #regex(String)}, and the rest
+     * is passed to {@link #member(String)}.
      * Example:
      * {@snippet :
      * var p = Pointer.parse("a/2/b/3");
      * var q = Pointer.self().member("a").index(2).member("b").index(3);
      * // p and q are equivalent
      *}
+     * There is no support to disambiguate {@code index(n)} from
+     * {@code member(n)} when {@code n} is an integer.
+     * If you identify members with an integer name, use {@link #member(String)}
+     * and {@link #resolve(Pointer)} cascades instead.
      *
      * @param text a pointer text
      * @return a pointer
@@ -229,6 +249,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
             if (im.matches()) {
                 var index = Integer.parseInt(im.group(1));
                 prev = new IndexPointer(index, prev);
+            } else if (part.startsWith("#")) {
+                prev = new RegexPointer(Pattern.compile(part.substring(1)), prev);
             } else {
                 prev = new MemberPointer(part, prev);
             }
@@ -280,6 +302,17 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
     public Pointer regex(Pattern pattern) {
         return new RegexPointer(pattern, this);
     }
+
+    /**
+     * Same as {@code regex(Pattern.compile(pattern))}
+     *
+     * @param pattern the regex pattern
+     * @return a Pointer
+     */
+    public Pointer regex(String pattern) {
+        return regex(Pattern.compile(pattern));
+    }
+
     /**
      * Resolve the given pointer {@code p} relative to this pointer.
      * {@snippet :

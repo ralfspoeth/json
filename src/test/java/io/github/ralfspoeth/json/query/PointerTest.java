@@ -75,6 +75,13 @@ class PointerTest {
     }
 
     @Test
+    void testRegex() {
+        // given
+        var doubleA = objectBuilder().putBasic("a", 1).putBasic("A", 2).build();
+
+    }
+
+    @Test
     void testResolve() throws IOException {
         // given
         var json = """

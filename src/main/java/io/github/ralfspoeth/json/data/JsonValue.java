@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * The root interface of the JSON hierarchy.
@@ -42,7 +43,7 @@ import java.util.*;
  * }
  * </p>
  */
-public sealed interface JsonValue permits Aggregate, Basic {
+public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits Aggregate, Basic {
 
     /**
      * A minimalistic JSON representation of the value.
@@ -205,5 +206,10 @@ public sealed interface JsonValue permits Aggregate, Basic {
      */
     default Builder<?> builder() {
         return Builder.of(this);
+    }
+
+    @Override
+    default boolean test(@Nullable JsonValue jsonValue) {
+        return jsonValue != null && jsonValue.equals(this);
     }
 }

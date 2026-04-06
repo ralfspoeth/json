@@ -54,6 +54,7 @@ public class Queries {
     }
 
     private static Map<String, ?> asMap(Map<String, JsonValue> members) {
+        //noinspection DataFlowIssue
         return members.entrySet().stream()
                 .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
                 .collect(toMap(Map.Entry::getKey, e -> asObject(e.getValue())));

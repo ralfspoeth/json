@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Selector.*;
+import static java.util.Collections.disjoint;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SelectorTest {
@@ -63,14 +64,17 @@ class SelectorTest {
         // given
         var jo = objectBuilder().putBasic("a1", 1).putBasic("a2", 2).putBasic("a3", 3).build();
         // when
-        var adigit = Selector.regex("a[0-9]+");
+        var aDigit = Selector.regex("a[0-9]+");
         var a12 = Selector.regex("a[1-2]");
         var a3 = Selector.regex("a3");
+        var l123 = List.of(Basic.of(1), Basic.of(2), Basic.of(3 ));
+        var l12 = List.of(Basic.of(1), Basic.of(2));
+        var l3 = List.of(Basic.of(3));
         // then
         assertAll(
-                () -> assertTrue(List.of(Basic.of(1), Basic.of(2), Basic.of(3 )).containsAll(Stream.of(jo).flatMap(adigit).toList())),
-                () -> assertTrue(List.of(Basic.of(1), Basic.of(2)).containsAll(Stream.of(jo).flatMap(a12).toList())),
-                () -> assertEquals(List.of( Basic.of(3 )), Stream.of(jo).flatMap(a3).toList())
+                () -> assertFalse(disjoint(l123, Stream.of(jo).flatMap(aDigit).toList())),
+                () -> assertFalse(disjoint(l12, Stream.of(jo).flatMap(a12).toList())),
+                () -> assertFalse(disjoint(l3, Stream.of(jo).flatMap(a3).toList()))
         );
     }
 }

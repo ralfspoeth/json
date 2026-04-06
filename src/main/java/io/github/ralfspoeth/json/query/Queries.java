@@ -45,7 +45,7 @@ public class Queries {
      * @return either a {@link Map}, a {@link List}
      * or a {@code String}, {@code BigDecimal}, {@code Boolean}, or {@code null}
      */
-    public static Object asObject(JsonValue elem) {
+    public static @Nullable Object asObject(JsonValue elem) {
         return switch (requireNonNull(elem)) {
             case JsonObject(var members) -> asMap(members);
             case JsonArray(var elements) -> asList(elements);

@@ -1,16 +1,18 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.*;
+import io.github.ralfspoeth.json.Greyson;
 import io.github.ralfspoeth.json.data.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
+import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Queries.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -104,4 +106,18 @@ class QueriesTest {
         );
     }
 
+    @Test
+    void testSome() {
+        // given
+        JsonObject jo = JsonObject.ofMap(Map.of("a", 1, "b", 2));
+        // when
+        JsonArray result = jo
+                .members()
+                .values()
+                .stream()
+                .collect(toJsonArray());
+        // then
+        var alt = objectBuilder().putBasic("a", 1).putBasic("b", 2).build();
+        assertFalse(Collections.disjoint(List.of(Basic.of(1), Basic.of(2)), result.elements()));
+    }
 }

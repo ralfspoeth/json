@@ -68,7 +68,7 @@ class GreysonTest {
     void testReadFromReader_ioExceptionDuringReadValue() throws IOException {
         try (Reader faultyReader = new Reader() {
             @Override
-            public int read(char @NonNull [] cbuf, int off, int len) throws IOException {
+            public int read(char @NonNull [] buffer, int off, int len) throws IOException {
                 throw new IOException("Simulated read error");
             }
 

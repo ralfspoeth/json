@@ -1,7 +1,10 @@
 package io.github.ralfspoeth.json.data;
 
+import org.jspecify.annotations.Nullable;
+
 import java.lang.reflect.Array;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
@@ -81,5 +84,18 @@ public record JsonArray(List<JsonValue> elements) implements Aggregate, IntFunct
         } else {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+        return switch(o) {
+            case JsonArray(var elems) -> elements.equals(elems);
+            case null, default -> false;
+        };
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(elements);
     }
 }

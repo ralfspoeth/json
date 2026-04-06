@@ -8,15 +8,17 @@ import java.util.Optional;
 
 /**
  * The basic data types in the JSON hierarchy.
+ *
  * @param <T> the type of the (immutable) value wrapped in the {@code Basic} instance.
  */
 public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull, JsonNumber, JsonString {
 
     /**
      * The payload wrapped inside this instance.
+     *
      * @return the value, never {@code null` except for `JsonNull}
      */
-    T value();
+    @Nullable T value();
 
 
     /**
@@ -28,11 +30,12 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
      * to {@code JsonNumber}
      * and all others to {@code JsonString} using the object's {@link  Object#toString}
      * method.
+     *
      * @param o an object
      * @return a {@code Basic} instance, never {@code null}
      */
     static Basic<?> of(@Nullable Object o) {
-        return switch(o) {
+        return switch (o) {
             case null -> JsonNull.INSTANCE;
             case BigDecimal bd -> new JsonNumber(bd);
             case BigInteger bi -> new JsonNumber(new BigDecimal(bi));
@@ -57,6 +60,7 @@ public sealed interface Basic<T> extends JsonValue permits JsonBoolean, JsonNull
     /**
      * Wraps this into a non-empty {@link Optional} for all
      * {@link Basic} instances.
+     *
      * @return this wrapped in an {@link Optional}
      */
     default Optional<Basic<?>> basic() {

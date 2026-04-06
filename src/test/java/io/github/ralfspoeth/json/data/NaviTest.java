@@ -22,14 +22,14 @@ class NaviTest {
         // when
         var a = jo.get("a");
         var ab = jo.get("a").flatMap(o -> o.get("b"));
-        var abtrue = jo.get("a").flatMap(o -> o.get("b")).flatMap(arr -> arr.get(0));
+        var abTrue = jo.get("a").flatMap(o -> o.get("b")).flatMap(arr -> arr.get(0));
         var ab1 = jo.get("a").flatMap(o -> o.get("b")).flatMap(arr -> arr.get(1));
         // then
         assertAll(
                 () -> assertTrue(a.isPresent()),
                 () -> assertTrue(ab.isPresent()),
-                () -> assertTrue(abtrue.isPresent()),
-                () -> assertEquals(true, abtrue.flatMap(JsonValue::bool).orElseThrow()),
+                () -> assertTrue(abTrue.isPresent()),
+                () -> assertEquals(true, abTrue.flatMap(JsonValue::bool).orElseThrow()),
                 () -> assertEquals(1, ab1.flatMap(JsonValue::decimal).map(BigDecimal::intValue).orElseThrow())
         );
     }

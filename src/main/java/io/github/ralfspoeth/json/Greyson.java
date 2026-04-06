@@ -62,8 +62,8 @@ public class Greyson {
     public static void writeBuilder(Writer writer, Builder<? extends JsonValue> builder) throws UncheckedIOException {
         try(var wrt = new JsonWriter(writer)) {
             wrt.write(requireNonNull(builder));
-        } catch (IOException ioex) {
-            throw new UncheckedIOException(ioex);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

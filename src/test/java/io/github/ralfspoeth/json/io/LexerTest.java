@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class LexerTest {
 
     @Test
-    void testuc() throws IOException {
+    void testUniCode() throws IOException {
         var source = "\"" +
                 '\\' +
                 'u' +

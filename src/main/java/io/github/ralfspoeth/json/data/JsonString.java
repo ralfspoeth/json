@@ -64,4 +64,14 @@ public record JsonString(String value) implements Basic<String> {
     public Optional<String> string() {
         return Optional.of(value);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof JsonString(var s) && value.equals(s);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }

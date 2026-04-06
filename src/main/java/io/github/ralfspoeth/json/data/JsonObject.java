@@ -32,7 +32,10 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     public static JsonObject ofMap(Map<?, ?> map) {
         var members = map.entrySet()
                 .stream()
-                .collect(toMap(String::valueOf, JsonValue::of));
+                .collect(toMap(
+                        o -> String.valueOf(o.getKey()),
+                        o -> JsonValue.of(o.getValue())
+                ));
         return new JsonObject(members);
     }
 
@@ -96,5 +99,15 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     @Override
     public @Nullable JsonValue apply(String key) {
         return members.get(key);
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+        return o instanceof JsonObject(var otherMembers) && members.equals(otherMembers);
+    }
+
+    @Override
+    public int hashCode() {
+        return members.hashCode();
     }
 }

@@ -121,9 +121,9 @@ class PointerTest {
     @Test
     void testLargeArray() {
         // given
-        var bldr = arrayBuilder();
+        var b = arrayBuilder();
         var ptr =  Pointer.self();
-        var ab = bldr;
+        var ab = b;
         for(int i=0;i<499;i++) {
             var tmp = arrayBuilder();
             ab.add(tmp);
@@ -131,7 +131,7 @@ class PointerTest {
             ptr = ptr.resolve(Pointer.self().index(0));
         }
         // when
-        var ja = bldr.build();
+        var ja = b.build();
 
         // then
         System.out.println(ja);
@@ -143,9 +143,9 @@ class PointerTest {
     @Test
     void testLargeObject() {
         // given
-        var bldr = objectBuilder();
+        var b = objectBuilder();
         var ptr =  Pointer.self();
-        var ob =  bldr;
+        var ob =  b;
         for(int i=0;i<499;i++) {
             var tmp = objectBuilder();
             ob.put("a", tmp);
@@ -153,7 +153,7 @@ class PointerTest {
             ptr = ptr.resolve(Pointer.self().member("a"));
         }
         // when
-        var jo = bldr.build();
+        var jo = b.build();
         // then
         System.out.println(jo);
         System.out.println(ptr.apply(jo).orElseThrow());

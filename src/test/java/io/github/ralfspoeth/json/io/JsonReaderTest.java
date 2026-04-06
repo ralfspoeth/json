@@ -32,13 +32,13 @@ class JsonReaderTest {
     }
 
     @Test
-    void nume01() {
+    void num01() {
         var result = parse("0e+1");
         assertEquals(Basic.of(0), result.elem);
     }
 
     @Test
-    void numplus1() {
+    void numPlus1() {
         var result = parse("+1");
         assertAll(
                 () -> assertNull(result.elem),
@@ -47,7 +47,7 @@ class JsonReaderTest {
     }
 
     @Test
-    void testMinus1twodots() {
+    void testMinus1TwoDots() {
         var result = parse("[-1.0.]");
         assertAll(
                 () -> assertNull(result.elem),
@@ -128,8 +128,8 @@ class JsonReaderTest {
             try (var parser = new JsonReader(new StringReader(source))) {
                 var v = parser.read().map(Builder::build).orElseThrow();
                 assertAll(() -> assertInstanceOf(Basic.class, v));
-            } catch (IOException ioex) {
-                assertNull(ioex);
+            } catch (IOException e) {
+                assertNull(e);
             }
         });
     }
@@ -145,8 +145,8 @@ class JsonReaderTest {
                         () -> assertNotNull(result),
                         () -> assertTrue(result instanceof JsonArray(var elements) && elements.size() == 1)
                 );
-            } catch (IOException ioex) {
-                assertNull(ioex);
+            } catch (IOException e) {
+                assertNull(e);
             }
         });
     }
@@ -224,11 +224,11 @@ class JsonReaderTest {
                         () -> assertEquals(1, members.size()),
                         () -> assertTrue(members.containsKey("a"))
                 );
-                if (members.get("a") instanceof JsonObject(var membersa)) {
+                if (members.get("a") instanceof JsonObject(var membersOfA)) {
                     assertAll(
-                            () -> assertEquals(1, membersa.size()),
-                            () -> assertTrue(membersa.containsKey("b")),
-                            () -> assertEquals(new JsonArray(List.of()), membersa.get("b"))
+                            () -> assertEquals(1, membersOfA.size()),
+                            () -> assertTrue(membersOfA.containsKey("b")),
+                            () -> assertEquals(new JsonArray(List.of()), membersOfA.get("b"))
                     );
                 } else {
                     fail("not a JsonObject");

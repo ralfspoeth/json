@@ -1,5 +1,8 @@
 package io.github.ralfspoeth.json.data;
 
+import org.jspecify.annotations.Nullable;
+
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -43,6 +46,16 @@ public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     @Override
     public String json() {
         return Boolean.toString(boolValue);
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+        return o instanceof JsonBoolean(boolean value) && value == boolValue;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(boolValue);
     }
 }
 

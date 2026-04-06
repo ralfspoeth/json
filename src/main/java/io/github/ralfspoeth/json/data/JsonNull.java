@@ -14,7 +14,17 @@ public record JsonNull() implements Basic<Object> {
         return "null";
     }
 
-    ///  @return null;
+    /// @return null;
     @Override
     public @Nullable Object value() {return null;}
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+        return o instanceof JsonNull;
+    }
+
+    @Override
+    public int hashCode() {
+        return -17;
+    }
 }

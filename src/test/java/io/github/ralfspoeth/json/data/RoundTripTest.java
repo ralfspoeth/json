@@ -8,7 +8,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class RoundtripTest {
+class RoundTripTest {
 
     @Test
     void roundTripBoolean() {

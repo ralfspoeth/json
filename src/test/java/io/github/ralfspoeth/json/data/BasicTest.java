@@ -6,10 +6,20 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BasicTest {
+
+    @Test
+    void testValue() {
+        assertAll(
+                () -> assertNull(JsonNull.INSTANCE.value()),
+                () -> assertTrue(JsonBoolean.TRUE.value()),
+                () -> assertFalse(JsonBoolean.FALSE.value()),
+                () -> assertEquals("hello", new JsonString("hello").value()),
+                () -> assertEquals(BigDecimal.TWO, new JsonNumber(BigDecimal.valueOf(2)).value())
+        );
+    }
 
     @Test
     void testOfNull() {

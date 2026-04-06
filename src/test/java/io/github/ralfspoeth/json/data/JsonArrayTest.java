@@ -11,10 +11,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class JsonArrayTest {
 
     @Test
+    void testEmpty() {
+        // given
+        var jaEmpty = new JsonArray(List.of());
+        var jaNonEmpty = new JsonArray(List.of(JsonNull.INSTANCE));
+        // then
+        assertAll(
+                () -> assertTrue(jaEmpty.isEmpty()),
+                () -> assertFalse(jaNonEmpty.isEmpty())
+        );
+    }
+
+    @Test
     void testImmutable() {
         var ja = new JsonArray(new ArrayList<>());
         assertAll(
-                () ->assertThrows(UnsupportedOperationException.class, () -> ja.elements().add(JsonNull.INSTANCE))
+                () -> assertThrows(UnsupportedOperationException.class, () -> ja.elements().add(JsonNull.INSTANCE))
         );
     }
 

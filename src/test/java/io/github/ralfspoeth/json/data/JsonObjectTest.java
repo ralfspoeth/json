@@ -10,6 +10,18 @@ import static org.junit.jupiter.api.Assertions.*;
 class JsonObjectTest {
 
     @Test
+    void testEmpty() {
+        // given
+        var joEmpty = new JsonObject(Map.of());
+        var joNonEmpty = new JsonObject(Map.of("a", Basic.of(1)));
+        // then
+        assertAll(
+                ()->assertTrue(joEmpty.isEmpty()),
+                ()->assertFalse(joNonEmpty.isEmpty())
+        );
+    }
+
+    @Test
     void testImmutable() {
         var jo = new JsonObject(new HashMap<>());
         assertAll(

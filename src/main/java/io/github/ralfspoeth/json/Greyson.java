@@ -46,9 +46,11 @@ public class Greyson {
      * @param writer a writer, must not be {@code null}
      * @param elem the element to serialize, must not be {@code null}
      */
-    public static void writeValue(Writer writer, JsonValue elem) throws IOException {
+    public static void writeValue(Writer writer, JsonValue elem) throws UncheckedIOException {
         try(var wrt = new JsonWriter(writer)) {
             wrt.write(requireNonNull(elem));
+        } catch(IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

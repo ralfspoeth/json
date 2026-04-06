@@ -13,7 +13,15 @@ import static java.util.Objects.requireNonNull;
 /**
  * The <b>Greyson</b> class provides static read and write operations
  * for JSON input and output streams.
- * The {@code write...} methods throw unchecked exceptions as they
+ * The class is the starting point when dealing with incoming JSON data,
+ * and the end point when submitting JSON data to some receiver.
+ * {@link #readValue(Reader)} reads JSON data into
+ * {@link JsonValue}s, and {@link #writeValue(Writer, JsonValue)} writes
+ * {@link JsonValue}s to output streams.
+ * {@link #readBuilder(Reader)} reads JSON data into
+ * a builder instance meant to be manipulated "on the fly", where
+ * The {@link #writeValue(Writer, JsonValue)} and {@link #writeBuilder(Writer, Builder)}
+ * methods throw unchecked exceptions as they
  * are assumed to be used in fluent invocation chains.
  */
 public class Greyson {

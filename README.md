@@ -5,6 +5,11 @@ value architectural purity and simplicity over ease.
 
 ![greyson.png](greyson.png "JSON")
 
+---
+Easter Gift 2026: Version 1.2.0 is available!
+---
+
+
 ## 🛠 Real-World Resilience: Functional Mapping
 Greyson excels at turning "imperfect" JSON into clean Java Records.
 `Greyson.readValue()` returns an `Optional<JsonValue>`, so that you can chain

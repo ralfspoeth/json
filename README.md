@@ -744,25 +744,12 @@ The `Path` class provides more information about the creation of instances
 with its `range`, `index`, `regex` and `member` methods as well
 as the construction relative to other paths.
 
-### Examples
+## `Queries`
 
-Given `[2, 3, 5, 7, 11]` then `Path.of("0..2")` yields
-the stream of the first two array elements `2` and `3`.
-
-Given `[2, 3, 5, 7, 11]` then `Path.of("0")` yields
-the stream of the first array element `2`, `Path.of("1")`
-the second element `3`, and `Path.of(-1) the last element `11`.
-
-Given `{"a0":true,"a1":false}` then `Path.of("#a.")`
-yields the stream of `true` and `false`.
-
-Given `{"a":{"b":5}}` then `Path.of("a/b")` yields
-the stream of `5d`.
-
-### JsonArray to Primitive Array
-
-A `JsonArray` can be converted into an array of primitives; 
-all elements are converted using `Queries.{int|long|double|...}Array(JsonValue)`.
+The `Queries` class provides support for three types of conversions:
+* `JsonValue`s to their most natural Java counterparts,
+* `JsonArray`s to primitive arrays using `Queries.{int|long|double|...}Array(JsonValue)`, and
+* a `Collector` to collect a `Stream` of `JsonValue`s to a `JsonArray`.
 
 ## MIT License
 

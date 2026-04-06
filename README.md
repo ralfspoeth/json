@@ -636,26 +636,79 @@ The package `query` provides two classes which help
 querying the data in a `JsonValue` especially
 when the structure is more complicated.
 
-## `Path`s
+## `Pointer`s and `Selector`s
 
-The `Path` class is inspired by [XPath](https://www.w3.org/TR/xpath/)
-but doesn't provide support for the navigation to parent nodes -- and is therefore
-limited.
+`Selector`s are functions of `JsonValue`s to `Stream`s of `JsonValue`s
+to be used with `Stream.flatMap`, while `Pointer`s are functions
+of `JsonValue`s to `Optional`s of `JsonValue`s to be used with `Optional.flatMap`.
+Both are used to map `JsonValue`s to business domain objects and
+are working together.
 
-### Basic Usage
+While `Selector`s are typically used to identify the elements of
+some JSON source to be mapped to objects, `Pointer`s are used to
+pick scalar elements and map them to fields in these objects.
 
-A `Path` instance is instantiated using the factory
-method `Path::of` like so:
+JSON-RPC 2.0 for example allows to batch requests, such that a single
+call may contain either an array of objects or a single object.
+`Selector.all` caters for these scenarios, so both
+```json
+    {"jsonrpc": "2.0", "method": "myCall", "id": "single", "params": [0]}
+```
+and
+```json
+    [
+        {"jsonrpc": "2.0", "method": "myCall", "id": 1, "params": [1, 2, 3]},
+        {"jsonrpc": "2.0", "method": "myCall", "id": 2, "params": [4, 5, 6]}
+    ]
+```
+variants can consumed like this:
+```java
+    Greyson.readValue(src)
+        .flatMap(Selector.all())
+        .filter(v -> v.get("jsonrpc").isPresent()) // required by JSON-RPC
+        .filter(v -> v.get("jsonrpc").orElseThrow().equals("2.0")) // required by JSON-RPC 2.0
+        .map(v ->
+            new RequestObject(
+                Pointer.self().member("id").stringValue(v).orElseThrow(),
+                Pointer.self().member("method").stringValue(v).orElseThrow(),
+                Pointer.self().member("params").orElse(null)
+            )
+        )
+        .map(myServer.call(ro)); /// and deal with the results
+```
 
-    var selector = Path.of("a/b/c");
+### `Selector`s
 
-The selector expression is split using the `/` character.
+There are three kinds of `Selector`s:
+* `all` which returns the elements of a `JsonArray` or the `JsonValue` itself;
+* `range` which limit an array to the elements from some `min` inclusively and some `max` exclusively; and
+* `regex` selectors which select members of `JsonObject`s matching the keys to the regular expression.
+
+`Selector`s are meant to be stacked, such that subsequent calls to `Stream.flatMap` produce the
+required values:
+```java
+    Greyson.readValue(...)
+        .flatMap(Selector.all())             // rollup arrays
+        .flatMap(Selector.regex("a[0-9]*"))  // all members beginning with an 'a' followed by a number
+        .flatMap(Selector.range(0, 2))       // first two members only
+        .map(...);
+```
+
+### `Pointer`s
+
+A `Pointer` instance is instantiated using the factory
+method `Path::parse` like so:
+```java
+    var p = Pointer.parse("a/b/c");
+```
+The expression is split using the `/` character.
 Given the statement above, we obtain the equivalent of
-
-    var selector = Path.root().member("a").member("b").member("c");
-
-We then use `Path::apply` which returns a stream
-of `JsonValue`s. Given
+```java
+    var q = Pointer.self().member("a").member("b").member("c");
+```
+`Pointer`s implement `Function<JsonValue, Optional<JsonValue>`
+and can therefore be used with `Optional.flatMap`.
+Given
 ```JSON
     {
         "a": {
@@ -667,16 +720,23 @@ of `JsonValue`s. Given
 ```
 then
 ```java
-    var elem = Greyson.readValue(Reader.of(src)).stream().map(selector).findFirst().orElseThrow();
-    assert JsonBoolean.TRUE.equals(elem);
+    var elem = Greyson
+            .readValue(Reader.of(src))
+            .flatMap(Pointer.parse("a/b/c"))
+            .orElseThrow();
+    assert JsonBoolean.TRUE.equals(elem); // true
 ```
-will not throw an `AssertionError`.
+The `Pointer` provides support for extracting primitives, such that we may write instead
+```java
+    Pointer abc = Pointer.self().member("a").member("b").member("c");
+    JsonValue v = Greyson.readValue(src).orElseThrow();
+    assert JsonBoolean.TRUE.equals(abc.booleanValue(v).orElseThrow());
+```
 
 ### Syntax
 
 The syntax for the patterns is
 * `i` where `i` is an integer; which denotes the index in an array;
-* `a..b` where `a` and `b` are integers; a range pattern applicable to arrays;
 * `#regex` where `regex` is a regular expression filtering attributes of objects;
 * `name` where `name` is just the member name of the root object.
 

@@ -11,8 +11,10 @@ import java.util.Optional;
 import static java.util.Objects.requireNonNull;
 
 /**
- * The Greyson class provides convenient access to common IO operations.
- *
+ * The <b>Greyson</b> class provides static read and write operations
+ * for JSON input and output streams.
+ * The {@code write...} methods throw unchecked exceptions as they
+ * are assumed to be used in fluent invocation chains.
  */
 public class Greyson {
     private Greyson() {}

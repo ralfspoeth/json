@@ -78,7 +78,7 @@ the latter when all you want to do is manipulated some data in the JSON stream.
         .map(ob -> ob.putBasic("ts", LocalDateTime.now().toString()))
         .ifPresent(ob -> Greyson.writeBuilder(target, ob));
 ```
-(turns
+turns
 ```json
     {"make":"BMW", "year": 1971}
 ```
@@ -95,7 +95,7 @@ into
             .putBasic("msg", b))
             .ifPresent(ob -> Greyson.writeBuilder(target, ob));
 ```
-(turns
+turns
 ```json
    [...]
 ```
@@ -113,7 +113,9 @@ Greyson provides `Pointer`s to extract scalar values from
 a `JsonValue` and `Selector`s to identify a (sub-)set of
 a given value.
 
-### Changes
+--- 
+
+## Changes
 
 The current version of the library is 1.2.0.
 It contains breaking changes compared to version 1.1.x:
@@ -162,6 +164,8 @@ A `JsonArray` of `JsonObject`s is turned into a `JsonArrayBuilder`
 with mutable `JsonObjectBuilder` instances in its mutable `ArrayList` data collection.
 The `build` method turns it into a fresh, immutable `JsonArray` instance
 of `JsonObject`s.
+
+# Detailed Discussion
 
 ## The Greyson Workflow
 
@@ -232,16 +236,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.2.0</version>
+        <version>1.2.1</version>
     </dependency>
 ```
 or, when using Gradle (Groovy)
 ```groovy 
-    implementation 'io.github.ralfspoeth:json:1.2.0'
+    implementation 'io.github.ralfspoeth:json:1.2.1'
 ```
 or, with Gradle (Kotlin), put 
 ```kotlin
-    implementation("io.github.ralfspoeth:json:1.2.0")
+    implementation("io.github.ralfspoeth:json:1.2.1")
 ```
 in your build file.
 

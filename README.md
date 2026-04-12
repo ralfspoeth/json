@@ -5,11 +5,6 @@ value architectural purity and simplicity over ease.
 
 ![greyson.png](greyson.png "JSON")
 
----
-Easter Gift 2026: Version 1.2.0 is available!
----
-
-
 ## 🛠 Real-World Resilience: Functional Mapping
 Greyson excels at turning "imperfect" JSON into clean Java Records.
 `Greyson.readValue()` returns an `Optional<JsonValue>`, so that you can chain
@@ -117,7 +112,7 @@ a given value.
 
 ## Changes
 
-The current version of the library is 1.2.0.
+The current version of the library is 1.2.2.
 It contains breaking changes compared to version 1.1.x:
 * The common interface has been renamed from `Element` to `JsonValue`
   because that naming pattern seems to be more in line with other libraries.
@@ -236,16 +231,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.2</version>
     </dependency>
 ```
 or, when using Gradle (Groovy)
 ```groovy 
-    implementation 'io.github.ralfspoeth:json:1.2.1'
+    implementation 'io.github.ralfspoeth:json:1.2.2'
 ```
 or, with Gradle (Kotlin), put 
 ```kotlin
-    implementation("io.github.ralfspoeth:json:1.2.1")
+    implementation("io.github.ralfspoeth:json:1.2.2")
 ```
 in your build file.
 

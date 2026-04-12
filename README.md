@@ -426,7 +426,7 @@ The same is true for `JsonObject`s. We model the properties
 or attributes or members as a map of `String`s (not `JsonString`s since
 this wouldn't add any value and is much easier to use by clients)
 to `JsonValue`s:
-```
+```java
     public record JsonObject(Map<String, JsonValue> members) implements JsonValue {
         public JsonObject {
             members = Map.copyOf(members); // defensive copy

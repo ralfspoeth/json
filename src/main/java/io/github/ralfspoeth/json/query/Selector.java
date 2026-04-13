@@ -103,13 +103,13 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
      * the keys of which match the given regular expression.
      * {@snippet :
      * // given
-     *      * var o = new JsonObject(Map.of("a1", Basic.of(1), "a2", Basic.of(2), "b", Basic.of(3)));
+     * import io.github.ralfspoeth.basix.fn.Functions; var o = new JsonObject(Map.of("a1", Basic.of(1), "a2", Basic.of(2), "b", Basic.of(3)));
      * // when
-     * var p = Selector.regex("a[0-9]"); // a0, a1, a2, ..., a9
+     * var aN = Selector.regex("a[0-9]"); // a0, a1, a2, ..., a9, not b
      * // then
-     * var l = Stream.of(o).flatMap(p).toList();
+     * var l = Stream.of(o).flatMap(aN).toList();
      * var c = List.of(Basic.of(1), Basic.of(2));
-     * assert l.containsAll(c) && c.containsAll(l);
+     * assert Functions.contentsEquals(l, c);
      *}
      *
      * @param regex a regular expression matched against the keys of

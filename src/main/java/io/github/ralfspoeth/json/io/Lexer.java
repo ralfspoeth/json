@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
 
+import static java.util.Objects.requireNonNull;
+
 class Lexer implements Closeable {
 
     sealed interface Token permits LiteralToken, FixToken {
@@ -172,13 +174,9 @@ class Lexer implements Closeable {
     }
 
     Token next() {
-        if (nextToken == null) {
-            throw new IllegalStateException("Lexer has no next token");
-        } else {
-            var tmp = nextToken;
-            nextToken = null;
-            return tmp;
-        }
+        var tmp = requireNonNull(nextToken);
+        nextToken = null;
+        return tmp;
     }
 
     private void readNextToken() throws IOException {

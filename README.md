@@ -112,7 +112,7 @@ a given value.
 
 ## Changes
 
-The current version of the library is 1.2.3.
+The current version of the library is 1.2.4.
 It contains breaking changes compared to version 1.1.x:
 * The common interface has been renamed from `Element` to `JsonValue`
   because that naming pattern seems to be more in line with other libraries.
@@ -231,16 +231,16 @@ In your `pom.xml` add
     <dependency>
         <groupId>io.github.ralfspoeth</groupId>
         <artifactId>json</artifactId>
-        <version>1.2.3</version>
+        <version>1.2.4</version>
     </dependency>
 ```
 or, when using Gradle (Groovy)
 ```groovy 
-    implementation 'io.github.ralfspoeth:json:1.2.3'
+    implementation 'io.github.ralfspoeth:json:1.2.4'
 ```
 or, with Gradle (Kotlin), put 
 ```kotlin
-    implementation("io.github.ralfspoeth:json:1.2.3")
+    implementation("io.github.ralfspoeth:json:1.2.4")
 ```
 in your build file.
 

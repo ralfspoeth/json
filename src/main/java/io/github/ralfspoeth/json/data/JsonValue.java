@@ -185,7 +185,7 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      * Get all the elements of this it is a JSON array,
      * or an empty list if this is not a JSON array.
      */
-    default List<JsonValue> elements() {
+    default List<? extends JsonValue> elements() {
         return List.of();
     }
 

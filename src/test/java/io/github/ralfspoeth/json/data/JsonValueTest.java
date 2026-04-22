@@ -256,4 +256,38 @@ class JsonValueTest {
                 () -> assertEquals(new Rectangle(new Point(5, 6), new Point(7, 8)), rects.getLast())
         );
     }
+
+    @Test
+    void testValueOf() {
+        // given
+        // 1. primitives
+        int i = 1;
+        long l = 2L;
+        float f = 3.14f;
+        double d = 4.23;
+        boolean b = true;
+        String s = "Hello";
+        // 2. array'ish structures
+        Object o = new int[]{1, 2, 3};
+        List<Integer> li = List.of(1, 2, 3);
+        Iterable<Integer> it = List.of(1, 2, 3);
+        // 3. map
+        Map<?, ?> m = Map.of(1, 1, 2, 2, 3, 3);
+        // then
+        assertAll(
+                () -> assertInstanceOf(JsonNumber.class, JsonValue.of(i)),
+                () -> assertInstanceOf(JsonNumber.class, JsonValue.of((short)i)),
+                () -> assertInstanceOf(JsonNumber.class, JsonValue.of((byte)i)),
+                () -> assertInstanceOf(JsonNumber.class, JsonValue.of(l)),
+                () -> assertInstanceOf(JsonNumber.class, JsonValue.of(f)),
+                () -> assertInstanceOf(JsonNumber.class, JsonValue.of(d)),
+                () -> assertInstanceOf(JsonBoolean.class, JsonValue.of(b)),
+                () -> assertInstanceOf(JsonNull.class, JsonValue.of(null)),
+                () -> assertInstanceOf(JsonString.class, JsonValue.of(s)),
+                () -> assertInstanceOf(JsonArray.class, JsonValue.of(o)),
+                () -> assertInstanceOf(JsonArray.class, JsonValue.of(li)),
+                () -> assertInstanceOf(JsonArray.class, JsonValue.of(it)),
+                () -> assertInstanceOf(JsonObject.class, JsonValue.of(m))
+        );
+    }
 }

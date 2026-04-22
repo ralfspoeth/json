@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collector;
@@ -39,32 +40,47 @@ public class Queries {
      * its {@link JsonArray#elements() elements}.
      * All other {@link Basic} elements are converted using the basic's
      * {@link Basic#value()} function.
-     * {@link JsonNull} instances in {@link Aggregate}s are suppressed.
+     * {@link JsonNull} instances in {@link Aggregate}s are suppressed
+     * if parameter skipNulls is {@code true}, allowing for the immutable
+     * containers provided by {@link List#of()} and {@link Map#of()}.
      *
      * @param elem a JSON element, may not be {@code null}
+     * @param skipNulls if true, {code JsonNull}s are excluded
      * @return either a {@link Map}, a {@link List}
      * or a {@code String}, {@code BigDecimal}, {@code Boolean}, or {@code null}
      */
-    public static @Nullable Object asObject(JsonValue elem) {
+    public static @Nullable Object asObject(JsonValue elem, boolean skipNulls) {
         return switch (requireNonNull(elem)) {
-            case JsonObject(var members) -> asMap(members);
-            case JsonArray(var elements) -> asList(elements);
+            case JsonObject(var members) -> asMap(members, skipNulls);
+            case JsonArray(var elements) -> asList(elements, skipNulls);
             case Basic<?> basic -> basic.value();
         };
     }
 
-    private static Map<String, ?> asMap(Map<String, JsonValue> members) {
-        //noinspection DataFlowIssue
-        return members.entrySet().stream()
-                .filter(not(eq(JsonNull.INSTANCE, Map.Entry::getValue)))
-                .collect(toMap(Map.Entry::getKey, e -> asObject(e.getValue())));
+    /**
+     * Same as {@code asObject(elem, true)}, kept mainly
+     * for backward compatibility reasons
+     */
+    public static @Nullable Object asObject(JsonValue elem) {
+        return asObject(elem, true);
+    }
+
+    private static Map<String, ?> asMap(Map<String, JsonValue> members, boolean skipNulls) {
+        Map<String, Object> result = new HashMap<>();
+        members.entrySet().stream()
+                .filter(e -> !skipNulls || !JsonNull.INSTANCE.equals(e.getValue()))
+                .forEach(e -> {
+                    result.put(e.getKey(), asObject(e.getValue(), skipNulls));
+                });
+        return result;
+
     }
 
     // turns a JsonArray into a list
-    private static List<?> asList(List<JsonValue> elements) {
+    private static List<?> asList(List<JsonValue> elements, boolean skipNulls) {
         return elements.stream()
-                .filter(not(eq(JsonNull.INSTANCE, identity())))
-                .map(Queries::asObject)
+                .filter(e -> !skipNulls || !JsonNull.INSTANCE.equals(e))
+                .map(v -> asObject(v, skipNulls))
                 .toList();
     }
 

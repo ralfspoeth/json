@@ -120,4 +120,33 @@ class QueriesTest {
         var alt = objectBuilder().putBasic("a", 1).putBasic("b", 2).build();
         assertFalse(Collections.disjoint(List.of(Basic.of(1), Basic.of(2)), result.elements()));
     }
+
+    @Test
+    void testDualityAsObjectJsonValueOf() {
+        // given
+        var ja = new JsonArray(List.of(
+                Basic.of(1), // BigDecimal
+                JsonBoolean.TRUE, // Boolean
+                JsonNull.INSTANCE, // will be skipped
+                objectBuilder()
+                        .putBasic("id", 1)
+                        .putBasic("value", null)
+                        .putBasic("bool",  true)
+                        .build()) // Map
+        );
+        // when
+        var o = Queries.asObject(ja, false);
+        // then
+        assertAll(
+                () -> assertInstanceOf(List.class, o),
+                () -> assertInstanceOf(BigDecimal.class, ((List<?>)o).getFirst()),
+                () -> assertInstanceOf(Boolean.class, ((List<?>)o).get(1)),
+                () -> assertNull(((List<?>)o).get(2)),
+                () -> assertInstanceOf(Map.class, ((List<?>) o).getLast()),
+                () -> assertEquals(3, ((Map<?, ?>)((List<?>) o).getLast()).size()),
+                () -> assertNull(((Map<?, ?>)(((List<?>) o).getLast())).get("value")),
+                () -> assertTrue((boolean)((Map<?, ?>)(((List<?>) o).getLast())).get("bool")),
+                () -> assertEquals(4, ((List<?>)o).size())
+        );
+    }
 }

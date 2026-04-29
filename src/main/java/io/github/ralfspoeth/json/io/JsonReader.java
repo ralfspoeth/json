@@ -9,7 +9,6 @@ import org.jspecify.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
-import java.math.BigDecimal;
 import java.util.Optional;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.ArrBuilderElem.arrBuilderElem;
@@ -161,8 +160,8 @@ public class JsonReader implements Closeable {
                         parseEx("unexpected token: " + tkn);
                     }
                 }
-                // literal tokens including null, true, false, number, string
-                // where string is a special case because it can be the name part of a name-value-pair
+                // literal tokens for null, true, false, string;
+                // string is a special case because it can be the name part of a name-value-pair
                 case Lexer.LiteralToken(var type, var val) -> {
                     if (type == STRING &&
                             stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
@@ -180,6 +179,8 @@ public class JsonReader implements Closeable {
                         handle(val, Builder.of(literalToken));
                     }
                 }
+                // number tokens already carry a parsed BigDecimal; no further parsing required
+                case Lexer.NumberToken(var number) -> handle(number.toString(), Builder.of(new JsonNumber(number)));
             }
         }
 
@@ -244,8 +245,8 @@ public class JsonReader implements Closeable {
                 case TRUE -> JsonBoolean.TRUE;
                 case FALSE -> JsonBoolean.FALSE;
                 case STRING -> new JsonString(val);
-                case NUMBER -> new JsonNumber(new BigDecimal(val));
             };
+            case Lexer.NumberToken(var number) -> new JsonNumber(number);
             case Lexer.FixToken ignored -> throw new AssertionError();
         };
     }

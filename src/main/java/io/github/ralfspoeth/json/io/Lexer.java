@@ -5,21 +5,36 @@ import org.jspecify.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
+import java.math.BigDecimal;
 import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
 class Lexer implements Closeable {
 
-    sealed interface Token permits LiteralToken, FixToken {
+    sealed interface Token permits LiteralToken, NumberToken, FixToken {
         String value();
     }
 
     enum Type {
-        STRING, NUMBER, NULL, TRUE, FALSE
+        STRING, NULL, TRUE, FALSE
     }
 
     record LiteralToken(Type type, String value) implements Token {}
+
+    /**
+     * Number tokens carry a parsed {@link BigDecimal} payload so that the
+     * reader does not have to re-parse a {@link String} representation.
+     * The lexer constructs the {@code BigDecimal} directly from the scan
+     * buffer's {@code char[]}, taking a {@code long} fast path for small
+     * integers.
+     */
+    record NumberToken(BigDecimal number) implements Token {
+        @Override
+        public String value() {
+            return number.toString();
+        }
+    }
 
     enum FixToken implements Token {
         COMMA(","),
@@ -41,7 +56,7 @@ class Lexer implements Closeable {
         }
     }
 
-    static final class InternalPushbackReader implements AutoCloseable {
+    static final class InternalPushbackReader implements Closeable {
 
         private final Reader source;
 
@@ -121,6 +136,20 @@ class Lexer implements Closeable {
             return ret;
         }
 
+        /**
+         * Direct read access to the backing array. The valid range is
+         * {@code [0, length())}; callers must not mutate the array. Used
+         * by {@link Lexer#numberToken()} to construct a {@link BigDecimal}
+         * without going through an intermediate {@link String}.
+         */
+        char[] array() {
+            return buffer;
+        }
+
+        void reset() {
+            bufferPos = 0;
+        }
+
         @Override
         public int length() {
             return bufferPos;
@@ -145,22 +174,30 @@ class Lexer implements Closeable {
     // buffer for string and const literals
     private final Buffer buffer = new Buffer();
 
-    // intermediate unicode sequence
+    // intermediate unicode sequence: accumulates four hex digits in an int.
+    // The state machine only feeds valid hex digits ([0-9a-fA-F]) into add(c),
+    // so we can decode each nibble with simple bit tricks: digits map via
+    // {@code c - '0'}, letters via {@code (c & 0x5F) - 'A' + 10} which folds
+    // {@code 'a'..'f'} onto {@code 'A'..'F'} before subtracting.
     static final class UnicodeSequence {
-        private final char[] unicSeq = new char[4];
-        private int unicSeqPos = 0;
+        private int acc = 0;
+        private int len = 0;
 
         void add(char c) {
-            unicSeq[unicSeqPos++] = c;
+            int nibble = (c <= '9') ? (c - '0') : ((c & 0x5F) - 'A' + 10);
+            acc = (acc << 4) | nibble;
+            len++;
         }
 
         boolean isFull() {
-            return unicSeqPos == 4;
+            return len == 4;
         }
 
         int toCodePoint() {
-            unicSeqPos = 0;
-            return Integer.parseInt(String.valueOf(unicSeq), 16);
+            int r = acc;
+            acc = 0;
+            len = 0;
+            return r;
         }
     }
 
@@ -300,14 +337,21 @@ class Lexer implements Closeable {
     }
 
     private State literal() {
+        // The state we're transitioning out of disambiguating which kind of
+        // literal sits in the buffer: NUM_LIT means a JSON number, CONST_LIT
+        // means one of {null, true, false}.
+        nextToken = (state == State.NUM_LIT) ? numberToken() : constLiteralToken();
+        return State.INITIAL;
+    }
+
+    private Token constLiteralToken() {
         var text = buffer.contentsAndReset();
-        nextToken = switch (text) {
+        return switch (text) {
             case "null" -> new LiteralToken(Type.NULL, text);
             case "true" -> new LiteralToken(Type.TRUE, text);
             case "false" -> new LiteralToken(Type.FALSE, text);
-            default -> numLiteral(text);
+            default -> throw new JsonParseException("misspelled literal: " + text, row, column);
         };
-        return State.INITIAL;
     }
 
     private State appendAndState(char c, Lexer.State s) {
@@ -324,11 +368,57 @@ class Lexer implements Closeable {
         throw new JsonParseException(msg, row, column);
     }
 
-    private Token numLiteral(String s) {
-        if (jsonNumber(s))
-            return new LiteralToken(Type.NUMBER, s);
-        else
-            throw new JsonParseException("cannot parse %s as double".formatted(s), row, column);
+    private Token numberToken() {
+        if (!jsonNumber(buffer)) {
+            // Capture the offending text before resetting the buffer.
+            var text = buffer.contentsAndReset();
+            throw new JsonParseException("cannot parse %s as a JSON number".formatted(text), row, column);
+        }
+        var bd = parseBigDecimal(buffer.array(), buffer.length());
+        buffer.reset();
+        return new NumberToken(bd);
+    }
+
+    /**
+     * Convert digits in {@code arr[0..len)} into a {@link BigDecimal}.
+     * The caller must have validated the slice via {@link #jsonNumber(CharSequence)};
+     * we rely on that and avoid re-validation here.
+     *
+     * <p>Two performance shortcuts:</p>
+     * <ul>
+     *   <li>Pure integers up to 18 digits (with optional leading {@code '-'})
+     *       are returned via {@link BigDecimal#valueOf(long)}, which caches
+     *       small values and skips numeric parsing entirely.</li>
+     *   <li>Everything else uses {@link BigDecimal#BigDecimal(char[], int, int)},
+     *       avoiding the intermediate {@link String} that
+     *       {@link BigDecimal#BigDecimal(String)} would allocate.</li>
+     * </ul>
+     *
+     * <p>{@code Long.MAX_VALUE} has 19 digits; we cap the long path at 18 to
+     * sidestep overflow checks. {@code -1L * Long.MIN_VALUE} would also
+     * overflow, but that requires 19 digits, so the cap covers it.</p>
+     */
+    private static BigDecimal parseBigDecimal(char[] arr, int len) {
+        int start = 0;
+        boolean negative = false;
+        if (arr[0] == '-') {
+            negative = true;
+            start = 1;
+        }
+        int digits = len - start;
+        if (digits >= 1 && digits <= 18) {
+            long val = 0;
+            for (int i = start; i < len; i++) {
+                char c = arr[i];
+                if (c < '0' || c > '9') {
+                    // Has a fractional or exponent part — fall through.
+                    return new BigDecimal(arr, 0, len);
+                }
+                val = val * 10 + (c - '0');
+            }
+            return BigDecimal.valueOf(negative ? -val : val);
+        }
+        return new BigDecimal(arr, 0, len);
     }
 
     // parse numbers; hand-rolled, no longer using a regular expression

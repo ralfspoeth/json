@@ -6,7 +6,7 @@ A small, opinionated JSON library for Java.
 <dependency>
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.2.4</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
@@ -273,19 +273,12 @@ isn't, the simplicity is worth the trade.
 
 ---
 
-## What's new in 1.2
+## What's new in 1.3
 
-Breaking changes from 1.1.x:
+Version 1.3 incorporates changes with the help of Claude.
 
-- `Element` is now `JsonValue` (in line with most other JSON libraries).
-- `JsonNumber` carries a `BigDecimal` instead of a `double`.
-- `JsonBoolean` and `JsonNull` are records, not enums or singletons.
-- New `Greyson` facade for read/write.
-- `JsonReader` and `JsonWriter` now also accept `Builder` instances.
-- New package `io.github.ralfspoeth.json.data` collects the data carriers.
-- Record-to-JSON reflection has been removed. Build records by hand —
-  that's the point.
-- Nullness is annotated with [JSpecify](https://jspecify.dev).
+- `README.md` has been rewritten
+- `Lexer` and therefore the `JsonReader` have gained some speed-up
 
 ---
 

@@ -128,18 +128,6 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
     }
 
     /**
-     * Turns this into a function with return type {@link Optional<JsonValue>}
-     * rather than {@link Stream<JsonValue>}; intended to be used with
-     * {@link Optional#flatMap(Function)}.
-     *
-     * @return the same as {@code this.apply(value).findFirst()}
-     */
-    public Function<? super JsonValue, Optional<? extends JsonValue>> first() {
-        return andThen(Stream::findFirst);
-    }
-
-
-    /**
      * Mapping function that uses an {@code extractor} for some derived value,
      * and a {@code mapper} which maps the extracted value to the target domain.
      * @param extractor a function that derives some property of the given input

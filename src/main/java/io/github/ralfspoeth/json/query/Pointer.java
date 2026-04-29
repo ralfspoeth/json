@@ -3,16 +3,18 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Gatherer;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@code Path}s are inspired by the {@code XPath} querying facility invented
+ * {@link Pointer}s are inspired by the {@code XPath} querying facility invented
  * with and for XML. Instances are created through the factory method
  * {@link Pointer#parse(String)} where the argument is first split into components
  * using the slash {@code /} as separator and then each component matches a
@@ -152,46 +154,6 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         }
     }
 
-    private static final class RegexPointer extends AbstractPointer {
-
-        private final Pattern pattern;
-
-        private RegexPointer(Pattern pattern, Pointer parent) {
-            super(parent);
-            this.pattern = pattern;
-        }
-
-        @Override
-        Optional<JsonValue> evalSegment(JsonValue elem) {
-            return elem instanceof JsonObject(var members) ?
-                    members.entrySet()
-                    .stream()
-                    .filter(e -> pattern.matcher(e.getKey()).matches())
-                    .map(Map.Entry::getValue)
-                    .gather(Gatherer.of(
-                            ArrayList<JsonValue>::new,
-                            (l, e, _) -> {
-                                l.add(e);
-                                return l.size() < 2;
-                            },
-                            (a, b) -> {
-                                a.addAll(b);
-                                return a;
-                            },
-                            (a, d) -> {
-                                if (a.size() == 1) d.push(a.getFirst());
-                            }
-                    ))
-                    .findFirst().map(JsonValue.class::cast)
-                    : Optional.empty();
-        }
-
-        @Override
-        AbstractPointer withParent(Pointer parent) {
-            return new RegexPointer(pattern, parent);
-        }
-    }
-
     private static final class IndexPointer extends AbstractPointer {
         private final int index;
 
@@ -224,8 +186,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * Instantiate a {@link Pointer} from a text.
      * The text is first split into parts
      * using {@code '/'}. Integers are passed into
-     * {@link #index(int)}, parts starting with '#'
-     * are passed to {@link #regex(String)}, and the rest
+     * {@link #index(int)}, and the rest
      * is passed to {@link #member(String)}.
      * Example:
      * {@snippet :
@@ -249,8 +210,6 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
             if (im.matches()) {
                 var index = Integer.parseInt(im.group(1));
                 prev = new IndexPointer(index, prev);
-            } else if (part.startsWith("#")) {
-                prev = new RegexPointer(Pattern.compile(part.substring(1)), prev);
             } else {
                 prev = new MemberPointer(part, prev);
             }
@@ -289,28 +248,6 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      */
     public Pointer index(int index) {
         return new IndexPointer(index, this);
-    }
-
-
-    /**
-     * Similar to {@link #member(String)}, but finding
-     * members by matching its name against a pattern.
-     *
-     * @param pattern the pattern for the member name
-     * @return a pointer
-     */
-    public Pointer regex(Pattern pattern) {
-        return new RegexPointer(pattern, this);
-    }
-
-    /**
-     * Same as {@code regex(Pattern.compile(pattern))}
-     *
-     * @param pattern the regex pattern
-     * @return a Pointer
-     */
-    public Pointer regex(String pattern) {
-        return regex(Pattern.compile(pattern));
     }
 
     /**

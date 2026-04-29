@@ -13,6 +13,7 @@ import java.io.Reader;
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
 import static io.github.ralfspoeth.json.query.Pointer.parse;
+import static io.github.ralfspoeth.json.query.Pointer.self;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PointerTest {
@@ -25,8 +26,8 @@ class PointerTest {
         JsonValue result = null;
         // then
         assertAll(
-                () -> assertThrows(NullPointerException.class, ()->Pointer.self().member(member)),
-                () -> assertThrows(NullPointerException.class, ()->Pointer.self().apply(result))
+                () -> assertThrows(NullPointerException.class, ()-> self().member(member)),
+                () -> assertThrows(NullPointerException.class, ()-> self().apply(result))
         );
     }
 
@@ -48,7 +49,7 @@ class PointerTest {
         var jo = objectBuilder().putBasic("a", 1).putBasic("b", 2).build();
         var b = Basic.of(3);
         // when
-        Pointer a = Pointer.self().member("a");
+        Pointer a = self().member("a");
         // then
         assertAll(
                 () -> assertFalse(a.apply(ja).isPresent()),
@@ -64,30 +65,13 @@ class PointerTest {
         var jo = objectBuilder().putBasic("a", 1).putBasic("b", 2).build();
         var b = Basic.of(3);
         // when
-        Pointer i1 = Pointer.self().index(1);
+        Pointer i1 = self().index(1);
         // then
         assertAll(
                 () -> assertTrue(i1.apply(ja).isPresent()),
                 () -> assertEquals(2, i1.intValue(ja).orElseThrow()),
                 () -> assertFalse(i1.apply(jo).isPresent()),
                 () -> assertFalse(i1.apply(b).isPresent())
-        );
-    }
-
-    @Test
-    void testRegex() {
-        // given
-        var jo = objectBuilder()
-                .putBasic("a", 1d)
-                .putBasic("balance", 2d)
-                .build();
-        // when
-        var ra = Pointer.self().regex("[aA]");
-        var bal = Pointer.self().regex("bal(ance)?");
-        // then
-        assertAll(
-                () -> assertEquals(1d, ra.doubleValue(jo).orElseThrow()),
-                () -> assertEquals(2d, bal.doubleValue(jo).orElseThrow())
         );
     }
 
@@ -102,9 +86,9 @@ class PointerTest {
                 ]
                 """;
         // when
-        Pointer i0 = Pointer.self().index(0);
-        Pointer i1 = Pointer.self().index(1);
-        Pointer ma = Pointer.self().member("a");
+        Pointer i0 = self().index(0);
+        Pointer i1 = self().index(1);
+        Pointer ma = self().member("a");
         Pointer i0ma = i0.resolve(ma);
         Pointer i0mai1 = i0ma.resolve(i1);
         // then
@@ -122,13 +106,13 @@ class PointerTest {
     void testLargeArray() {
         // given
         var b = arrayBuilder();
-        var ptr =  Pointer.self();
+        var ptr =  self();
         var ab = b;
         for(int i=0;i<499;i++) {
             var tmp = arrayBuilder();
             ab.add(tmp);
             ab = tmp;
-            ptr = ptr.resolve(Pointer.self().index(0));
+            ptr = ptr.resolve(self().index(0));
         }
         // when
         var ja = b.build();
@@ -144,13 +128,13 @@ class PointerTest {
     void testLargeObject() {
         // given
         var b = objectBuilder();
-        var ptr =  Pointer.self();
+        var ptr =  self();
         var ob =  b;
         for(int i=0;i<499;i++) {
             var tmp = objectBuilder();
             ob.put("a", tmp);
             ob = tmp;
-            ptr = ptr.resolve(Pointer.self().member("a"));
+            ptr = ptr.resolve(self().member("a"));
         }
         // when
         var jo = b.build();

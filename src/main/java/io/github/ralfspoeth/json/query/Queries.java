@@ -10,9 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collector;
 
-import static io.github.ralfspoeth.basix.fn.Predicates.eq;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
@@ -44,7 +42,7 @@ public class Queries {
      * if parameter skipNulls is {@code true}, allowing for the immutable
      * containers provided by {@link List#of()} and {@link Map#of()}.
      *
-     * @param elem a JSON element, may not be {@code null}
+     * @param elem      a JSON element, may not be {@code null}
      * @param skipNulls if true, {code JsonNull}s are excluded
      * @return either a {@link Map}, a {@link List}
      * or a {@code String}, {@code BigDecimal}, {@code Boolean}, or {@code null}
@@ -66,22 +64,31 @@ public class Queries {
     }
 
     private static Map<String, ?> asMap(Map<String, JsonValue> members, boolean skipNulls) {
-        Map<String, Object> result = new HashMap<>();
-        members.entrySet().stream()
-                .filter(e -> !skipNulls || !JsonNull.INSTANCE.equals(e.getValue()))
-                .forEach(e -> {
-                    result.put(e.getKey(), asObject(e.getValue(), skipNulls));
-                });
-        return result;
-
+        if (skipNulls) {
+            Map<String, Object> result = new HashMap<>();
+            members.entrySet().stream()
+                    .filter(e -> !skipNulls || !JsonNull.INSTANCE.equals(e.getValue()))
+                    .forEach(e -> {
+                        result.put(e.getKey(), requireNonNull(asObject(e.getValue(), skipNulls)));
+                    });
+            return result;
+        } else {
+            return members.entrySet().stream()
+                    .filter(e -> !JsonNull.INSTANCE.equals(e.getValue()))
+                    .collect(toMap(Map.Entry::getKey,
+                            e -> asObject(e.getValue(), false)));
+        }
     }
 
     // turns a JsonArray into a list
     private static List<?> asList(List<JsonValue> elements, boolean skipNulls) {
-        return elements.stream()
-                .filter(e -> !skipNulls || !JsonNull.INSTANCE.equals(e))
-                .map(v -> asObject(v, skipNulls))
-                .toList();
+        return skipNulls ? elements.stream()
+                           .filter(not(JsonNull.INSTANCE::equals))
+                           .map(v -> asObject(v, true))
+                           .toList()
+                : elements.stream()
+                  .map(e -> asObject(e, false))
+                  .toList();
     }
 
     /**

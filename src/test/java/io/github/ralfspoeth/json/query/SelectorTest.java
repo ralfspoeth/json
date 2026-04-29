@@ -1,15 +1,22 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.data.*;
+import io.github.ralfspoeth.json.data.Basic;
+import io.github.ralfspoeth.json.data.JsonArray;
+import io.github.ralfspoeth.json.data.JsonNull;
+import io.github.ralfspoeth.json.data.JsonObject;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
-import static io.github.ralfspoeth.json.query.Selector.*;
+import static io.github.ralfspoeth.json.query.Pointer.self;
+import static io.github.ralfspoeth.json.query.Selector.all;
+import static io.github.ralfspoeth.json.query.Selector.regex;
 import static java.util.Collections.disjoint;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -53,9 +60,9 @@ class SelectorTest {
         var rg0neg = Selector.range(0, -1);
         // then
         assertAll(
-                ()->assertEquals(List.of(Basic.of(2)), Stream.of(ja).flatMap(rg12).toList()),
-                ()->assertEquals(List.of(Basic.of(1), Basic.of(2), Basic.of(3)), Stream.of(ja).flatMap(rg03).toList()),
-                ()->assertEquals(List.of(Basic.of(1), Basic.of(2), Basic.of(3)), Stream.of(ja).flatMap(rg0neg).toList())
+                () -> assertEquals(List.of(Basic.of(2)), Stream.of(ja).flatMap(rg12).toList()),
+                () -> assertEquals(List.of(Basic.of(1), Basic.of(2), Basic.of(3)), Stream.of(ja).flatMap(rg03).toList()),
+                () -> assertEquals(List.of(Basic.of(1), Basic.of(2), Basic.of(3)), Stream.of(ja).flatMap(rg0neg).toList())
         );
     }
 
@@ -67,7 +74,7 @@ class SelectorTest {
         var aDigit = Selector.regex("a[0-9]+");
         var a12 = Selector.regex("a[1-2]");
         var a3 = Selector.regex("a3");
-        var l123 = List.of(Basic.of(1), Basic.of(2), Basic.of(3 ));
+        var l123 = List.of(Basic.of(1), Basic.of(2), Basic.of(3));
         var l12 = List.of(Basic.of(1), Basic.of(2));
         var l3 = List.of(Basic.of(3));
         // then
@@ -77,4 +84,27 @@ class SelectorTest {
                 () -> assertFalse(disjoint(l3, Stream.of(jo).flatMap(a3).toList()))
         );
     }
+
+    @Test
+    void testMeAndPointer() {
+        // given [{"a": 1}, {"a":2, "b": 2}, {"d": 4}, {"a":4}]
+        var ja = arrayBuilder()
+                .add(objectBuilder().putBasic("a", 1))
+                .add(objectBuilder().putBasic("a", 2).putBasic("b", 2))
+                .add(objectBuilder().putBasic("d", 4))
+                .add(objectBuilder().putBasic("a", 3).putBasic("c", 4))
+                .build();
+        // when
+        var as = Stream.of(ja)
+                .flatMap(Selector
+                        .all() // a singleton or every array element
+                        .point(self().member("a")) // member "a"
+                )
+                .flatMap(a -> a.decimal().map(BigDecimal::intValue).stream())
+                .toList();
+        // then
+        assertEquals(List.of(1, 2, 3), as);
+    }
+
+
 }

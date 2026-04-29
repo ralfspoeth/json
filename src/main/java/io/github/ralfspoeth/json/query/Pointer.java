@@ -190,8 +190,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * is passed to {@link #member(String)}.
      * Example:
      * {@snippet :
-     * var p = Pointer.parse("a/2/b/3");
-     * var q = Pointer.self().member("a").index(2).member("b").index(3);
+     * var p = parse("a/2/b/3");
+     * var q = self().member("a").index(2).member("b").index(3);
      * // p and q are equivalent
      *}
      * There is no support to disambiguate {@code index(n)} from
@@ -397,5 +397,9 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
             Function<? super JsonValue, Optional<? extends M>> extractor,
             Function<? super M, T> mapper) {
         return v -> apply(v).flatMap(extractor).map(mapper);
+    }
+
+    public static Function<JsonValue, Stream<? extends JsonValue>> select(Selector selector) {
+        return v -> Stream.of(v).flatMap(selector);
     }
 }

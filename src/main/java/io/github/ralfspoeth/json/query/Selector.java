@@ -49,7 +49,7 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
 
         private RangeSelector(int min, int max) {
             this.min = min;
-            this.max = (max > 0 ? max : Integer.MAX_VALUE);
+            this.max = (max > min ? max : Integer.MAX_VALUE);
         }
 
         @Override
@@ -138,10 +138,24 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
         return andThen(Stream::findFirst);
     }
 
+
+    /**
+     * Mapping function that uses an {@code extractor} for some derived value,
+     * and a {@code mapper} which maps the extracted value to the target domain.
+     * @param extractor a function that derives some property of the given input
+     * @param mapper a function that maps the result of the {@code extractor} into the target domain
+     * @return a function
+     * @param <T> the type of the resulting stream contents
+     * @param <M> an intermediary type
+     */
     public <T, M> Function<? super JsonValue, Stream<T>> as(
             Function<? super JsonValue, Optional<? extends M>> extractor,
             Function<? super M, T> mapper) {
         return v -> apply(v).
                 flatMap(x -> extractor.apply(x).map(mapper).stream());
+    }
+
+    public Function<? super JsonValue, Stream<JsonValue>> point(Pointer p) {
+        return v -> apply(v).flatMap(x -> p.apply(x).stream());
     }
 }

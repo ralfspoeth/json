@@ -26,8 +26,8 @@ class PointerTest {
         JsonValue result = null;
         // then
         assertAll(
-                () -> assertThrows(NullPointerException.class, ()-> self().member(member)),
-                () -> assertThrows(NullPointerException.class, ()-> self().apply(result))
+                () -> assertThrows(NullPointerException.class, () -> self().member(member)),
+                () -> assertThrows(NullPointerException.class, () -> self().apply(result))
         );
     }
 
@@ -106,9 +106,9 @@ class PointerTest {
     void testLargeArray() {
         // given
         var b = arrayBuilder();
-        var ptr =  self();
+        var ptr = self();
         var ab = b;
-        for(int i=0;i<499;i++) {
+        for (int i = 0; i < 499; i++) {
             var tmp = arrayBuilder();
             ab.add(tmp);
             ab = tmp;
@@ -128,9 +128,9 @@ class PointerTest {
     void testLargeObject() {
         // given
         var b = objectBuilder();
-        var ptr =  self();
-        var ob =  b;
-        for(int i=0;i<499;i++) {
+        var ptr = self();
+        var ob = b;
+        for (int i = 0; i < 499; i++) {
             var tmp = objectBuilder();
             ob.put("a", tmp);
             ob = tmp;

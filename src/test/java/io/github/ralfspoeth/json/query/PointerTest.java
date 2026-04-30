@@ -76,6 +76,110 @@ class PointerTest {
     }
 
     @Test
+    void testRegexFirstMatch() {
+        // given
+        var jo = objectBuilder()
+                .putBasic("a", 1d)
+                .putBasic("balance", 2d)
+                .build();
+        // when
+        var ra = self().regex("[aA]");
+        var bal = self().regex("bal(ance)?");
+        // then single matches behave like a member lookup
+        assertAll(
+                () -> assertEquals(1d, ra.doubleValue(jo).orElseThrow()),
+                () -> assertEquals(2d, bal.doubleValue(jo).orElseThrow())
+        );
+    }
+
+    @Test
+    void testRegexMultiMatchPicksLexicographicallySmallest() {
+        // given an object with both abbreviated and spelled-out forms
+        var jo = objectBuilder()
+                .putBasic("bal", 1d)
+                .putBasic("balance", 2d)
+                .build();
+        // when the regex matches both keys
+        var bal = self().regex("bal(ance)?");
+        // then the value of the lexicographically smallest matching key wins
+        assertEquals(1d, bal.doubleValue(jo).orElseThrow());
+    }
+
+    @Test
+    void testFromJsonPointerEmpty() throws IOException {
+        var json = """
+                {"a": 1}
+                """;
+        var doc = Greyson.readValue(Reader.of(json)).orElseThrow();
+        // empty string addresses the document root
+        assertSame(doc, Pointer.fromJsonPointer("").apply(doc).orElseThrow());
+    }
+
+    @Test
+    void testFromJsonPointerMustStartWithSlash() {
+        assertThrows(IllegalArgumentException.class, () -> Pointer.fromJsonPointer("a/b"));
+    }
+
+    @Test
+    void testFromJsonPointerMemberAndIndexDispatch() {
+        // RFC 6901: the same token "0" resolves as a member name in objects
+        // and as an array index in arrays.
+        var asObject = """
+                {"0": "obj-zero"}
+                """;
+        var asArray = """
+                ["arr-zero", "arr-one"]
+                """;
+        assertAll(
+                () -> assertEquals("obj-zero",
+                        Pointer.fromJsonPointer("/0")
+                                .apply(Greyson.readValue(Reader.of(asObject)).orElseThrow())
+                                .flatMap(JsonValue::string)
+                                .orElseThrow()),
+                () -> assertEquals("arr-zero",
+                        Pointer.fromJsonPointer("/0")
+                                .apply(Greyson.readValue(Reader.of(asArray)).orElseThrow())
+                                .flatMap(JsonValue::string)
+                                .orElseThrow())
+        );
+    }
+
+    @Test
+    void testFromJsonPointerEscapes() throws IOException {
+        // ~1 -> '/', ~0 -> '~'; the order matters so that "~01" decodes as "~1"
+        var json = """
+                {"a/b": "slash", "m~n": "tilde", "~1": "literal-tilde-one"}
+                """;
+        var doc = Greyson.readValue(Reader.of(json)).orElseThrow();
+        assertAll(
+                () -> assertEquals("slash",
+                        Pointer.fromJsonPointer("/a~1b").apply(doc).flatMap(JsonValue::string).orElseThrow()),
+                () -> assertEquals("tilde",
+                        Pointer.fromJsonPointer("/m~0n").apply(doc).flatMap(JsonValue::string).orElseThrow()),
+                // "~01" should decode as the literal "~1", not "/"
+                () -> assertEquals("literal-tilde-one",
+                        Pointer.fromJsonPointer("/~01").apply(doc).flatMap(JsonValue::string).orElseThrow())
+        );
+    }
+
+    @Test
+    void testFromJsonPointerArrayIndexValidation() throws IOException {
+        var arr = """
+                [10, 20, 30]
+                """;
+        var doc = Greyson.readValue(Reader.of(arr)).orElseThrow();
+        assertAll(
+                () -> assertEquals(20, Pointer.fromJsonPointer("/1").intValue(doc).orElseThrow()),
+                // RFC 6901 forbids leading zeros — "01" is not a valid index
+                () -> assertTrue(Pointer.fromJsonPointer("/01").apply(doc).isEmpty()),
+                // Out-of-bounds is also empty, not an exception
+                () -> assertTrue(Pointer.fromJsonPointer("/99").apply(doc).isEmpty()),
+                // Negative tokens are not valid RFC 6901 array indices
+                () -> assertTrue(Pointer.fromJsonPointer("/-1").apply(doc).isEmpty())
+        );
+    }
+
+    @Test
     void testResolve() throws IOException {
         // given
         var json = """

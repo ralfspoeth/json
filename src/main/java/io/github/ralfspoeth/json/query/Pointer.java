@@ -3,6 +3,7 @@ package io.github.ralfspoeth.json.query;
 import io.github.ralfspoeth.json.data.*;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -23,16 +24,6 @@ import static java.util.Objects.requireNonNull;
  * <li>{@code [n]} where {@code n} is an integer denoting the index of the
  * element in JSON array. Negative values of {@code n} point to the n-th element
  * from the end of the array.</li>
- * <li>{@code [a..b]} where {@code a} is non-negative integer and {@code b} any
- * integer; resolves to the range from {@code a} inclusively to {@code b}
- * exclusively and may be applied to JSON arrays. A negative value of {@code b}
- * is interpreted such that there is no upper bound; that is: {@code [0..-1]}
- * matches all elements of a JSON array
- * </li>
- * <li>{@code #regex} where {@code regex} is a regular expression; the slash may
- * not be included in this expression. The path matches every member of a JSON
- * object, the name part of which matches the given regular expression.
- * </li>
  * <li>{@code name} where {@code name} is just the literal member name of a JSON
  * object</li>
  * </ul>
@@ -52,19 +43,17 @@ import static java.util.Objects.requireNonNull;
  *
  * // when p matches any element beginning with the third
  * // and then each member starts with 'a'
- * Pointer p = Pointer.parse("[2, -1]/#a.*");
+ * Pointer p = Pointer.parse("2/aa");
  *
  * // then
- * List<JsonValue> result = Greyson.readValue(given).map(p).stream().toList();
- * assert result.size() == 3; // three JSON objects...
+ * List<JsonValue> result = Greyson.readValue(given).flatMap(p).stream().toList();
+ * assert result.size() == 1; // three JSON objects...
  * assert result.getFirst() == JsonBoolean.TRUE; // the "aa" member of the third object
- * assert result.get(1).equals(Basic.of(2)); // the "ab" member of the fourth
- * assert result.getLast().equals(Basic.of(3)); // the "ac" member of the fifth
  *}
  * <p>
  * The second approach to constructing paths is through the fluent API, as in
  * {@snippet :
- * var p = Pointer.self().member("a").index(1).regex(Pattern.compile("b.*c")).range(0, 2);
+ * var p = Pointer.self().index(2).member("a");
  *}
  * <p>
  * The class implements {@link Function} such that it may be used in stream
@@ -180,6 +169,92 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         }
     }
 
+    /**
+     * A pointer segment that matches object members by regular expression
+     * and yields the value associated with the lexicographically smallest
+     * matching key. The name reflects its semantics: of all keys that satisfy
+     * the pattern, the {@code First} one in sorted order wins. Use
+     * {@link Selector#regex(Pattern)} when you need every match instead.
+     */
+    private static final class First extends AbstractPointer {
+        private final Pattern pattern;
+
+        private First(Pattern pattern, Pointer parent) {
+            super(parent);
+            this.pattern = requireNonNull(pattern);
+        }
+
+        @Override
+        Optional<JsonValue> evalSegment(JsonValue elem) {
+            if (!(elem instanceof JsonObject(var members))) {
+                return Optional.empty();
+            }
+            // Sorting by key makes the result deterministic regardless of map
+            // iteration order. For {@code "bal(ance)?"} against
+            // {@code {"bal": ..., "balance": ...}} the shorter key wins.
+            return members.entrySet().stream()
+                    .filter(e -> pattern.matcher(e.getKey()).matches())
+                    .min(Map.Entry.comparingByKey())
+                    .map(Map.Entry::getValue);
+        }
+
+        @Override
+        AbstractPointer withParent(Pointer parent) {
+            return new First(pattern, parent);
+        }
+    }
+
+    /**
+     * A pointer segment that follows the RFC 6901 dispatch rule: the same
+     * token resolves as a member name when applied to a JSON object and as
+     * a non-negative array index when applied to a JSON array. Built only
+     * by {@link #fromJsonPointer(String)}.
+     */
+    private static final class JsonPointerSegment extends AbstractPointer {
+        private final String token;
+
+        private JsonPointerSegment(String token, Pointer parent) {
+            super(parent);
+            this.token = requireNonNull(token);
+        }
+
+        @Override
+        Optional<JsonValue> evalSegment(JsonValue elem) {
+            return switch (elem) {
+                case JsonObject(var members) -> Optional.ofNullable(members.get(token));
+                case JsonArray(var elements) -> {
+                    int idx = parseRfc6901Index(token);
+                    yield (idx >= 0 && idx < elements.size())
+                            ? Optional.of(elements.get(idx))
+                            : Optional.empty();
+                }
+                default -> Optional.empty();
+            };
+        }
+
+        // RFC 6901 array-index ABNF: '0' or [1-9][0-9]* — no signs, no leading
+        // zeros. Returns -1 for any token that does not match (including the
+        // RFC's '-' "after-last" marker, which has no read-side meaning here).
+        private static int parseRfc6901Index(String token) {
+            int len = token.length();
+            if (len == 0) return -1;
+            if (len > 1 && token.charAt(0) == '0') return -1;
+            int idx = 0;
+            for (int i = 0; i < len; i++) {
+                char c = token.charAt(i);
+                if (c < '0' || c > '9') return -1;
+                idx = idx * 10 + (c - '0');
+                if (idx < 0) return -1; // overflow
+            }
+            return idx;
+        }
+
+        @Override
+        AbstractPointer withParent(Pointer parent) {
+            return new JsonPointerSegment(token, parent);
+        }
+    }
+
     private static final Pattern INDEX_PATTERN = Pattern.compile("\\[(-?\\d+)]");
 
     /**
@@ -251,6 +326,96 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
     }
 
     /**
+     * Create a pointer segment that matches object members by regular expression.
+     * If multiple members satisfy the pattern, the value of the lexicographically
+     * smallest matching key is returned — see {@code First} for the rationale.
+     * Use {@link Selector#regex(Pattern)} when you need every match.
+     *
+     * @param pattern the regex pattern, may not be {@code null}
+     * @return a pointer
+     */
+    public Pointer regex(Pattern pattern) {
+        return new First(pattern, this);
+    }
+
+    /**
+     * Same as {@code regex(Pattern.compile(pattern))}.
+     *
+     * @param pattern the regex pattern, may not be {@code null}
+     * @return a pointer
+     */
+    public Pointer regex(String pattern) {
+        return regex(Pattern.compile(pattern));
+    }
+
+    /**
+     * Build a pointer from an
+     * <a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC 6901</a>
+     * JSON Pointer expression.
+     *
+     * <p>The empty string returns {@link #self()}. Otherwise the expression
+     * must start with {@code '/'}. The remaining tokens are split on
+     * {@code '/'}; each token is then unescaped according to the spec
+     * ({@code ~1} → {@code /}, {@code ~0} → {@code ~}, applied in that order)
+     * and resolved dynamically: against a {@link JsonObject} the token is
+     * looked up as a member name; against a {@link JsonArray} the token must
+     * be a non-negative decimal integer (no leading zeros, no sign) and
+     * indexes the array.</p>
+     *
+     * <p>Note that this dispatch differs from {@link #parse(String)}, which
+     * decides member-vs-index statically from the syntax. The two parsers
+     * exist side by side: use {@code parse} for Greyson's native syntax with
+     * its {@code [n]} index marker; use {@code fromJsonPointer} to interoperate
+     * with anything that emits RFC 6901 strings (JSON Patch, OpenAPI
+     * {@code $ref}, JSON Schema, …).</p>
+     *
+     * {@snippet :
+     * import io.github.ralfspoeth.json.Greyson;
+     * var json = """
+     *       {"a/b": [10, 20, 30], "m~n": "tilde"}
+     *       """;
+     * var slash = Pointer.fromJsonPointer("/a~1b/2");
+     * var tilde = Pointer.fromJsonPointer("/m~0n");
+     * assert Greyson.readValue(java.io.Reader.of(json))
+     *     .flatMap(slash).flatMap(JsonValue::decimal).orElseThrow().intValue() == 30;
+     * assert Greyson.readValue(java.io.Reader.of(json))
+     *     .flatMap(tilde).flatMap(JsonValue::string).orElseThrow().equals("tilde");
+     *}
+     *
+     * @param pointer an RFC 6901 JSON Pointer string, may not be {@code null}
+     * @return a pointer
+     * @throws IllegalArgumentException if {@code pointer} is non-empty and does
+     *                                  not start with {@code '/'}
+     */
+    public static Pointer fromJsonPointer(String pointer) {
+        requireNonNull(pointer);
+        if (pointer.isEmpty()) {
+            return self();
+        }
+        if (pointer.charAt(0) != '/') {
+            throw new IllegalArgumentException(
+                    "JSON Pointer must be empty or start with '/': " + pointer);
+        }
+        // {@code limit = -1} preserves trailing empty tokens, so a pointer like
+        // "/foo/" produces {"foo", ""} rather than {"foo"} — the empty string
+        // is a valid member name in RFC 6901.
+        String[] tokens = pointer.substring(1).split("/", -1);
+        Pointer prev = self();
+        for (String token : tokens) {
+            prev = new JsonPointerSegment(unescapeRfc6901(token), prev);
+        }
+        return prev;
+    }
+
+    // RFC 6901 §4: replace {@code ~1} first, then {@code ~0}. Order matters so
+    // that {@code ~01} (the literal {@code ~1} encoded) does not get mangled
+    // into a slash.
+    private static String unescapeRfc6901(String token) {
+        if (token.indexOf('~') < 0) return token;
+        return token.replace("~1", "/").replace("~0", "~");
+    }
+
+    /**
      * Resolve the given pointer {@code p} relative to this pointer.
      * {@snippet :
      * // given
@@ -283,6 +448,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
             return this;
         }
     }
+
+    // Conversion convention: primitive payloads return OptionalInt/OptionalLong/OptionalDouble; reference types return Optional<T>.
 
     /**
      * Search the first {@link JsonNumber} if found by this and return it as

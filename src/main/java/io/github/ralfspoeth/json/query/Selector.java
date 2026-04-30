@@ -12,7 +12,42 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 /**
+ * A function from {@link JsonValue} to {@code Stream<JsonValue>} for
+ * extracting <em>multiple</em> values from a JSON tree. Where
+ * {@link Pointer} navigates to a single value, {@code Selector} fans out:
+ * an array becomes a stream of its elements, an object becomes a stream
+ * of its members satisfying some criterion, a non-matching value becomes
+ * an empty stream.
  *
+ * <p>{@code Selector} implements
+ * {@link Function Function&lt;JsonValue, Stream&lt;JsonValue&gt;&gt;}, so
+ * instances drop straight into {@link Stream#flatMap(Function)}:</p>
+ *
+ * {@snippet :
+ * import io.github.ralfspoeth.json.Greyson;
+ * var _ = Greyson.readValue(src).stream()
+ *     .flatMap(Selector.all())               // fan out an array, or accept a single value
+ *     .flatMap(Selector.objects())           // keep only JSON objects
+ *     .flatMap(Selector.regex("addr(ess)?")) // and only their address-ish members
+ *     .toList();
+ *}
+ *
+ * <p>The factories fall into three groups:</p>
+ * <ul>
+ *   <li><b>Structural</b> &mdash; {@link #all()} flattens arrays;
+ *       {@link #range(int, int)} slices arrays;
+ *       {@link #regex(Pattern)} matches object members by key.</li>
+ *   <li><b>Type filters</b> &mdash; {@link #objects()}, {@link #arrays()},
+ *       {@link #strings()}, {@link #numbers()}, {@link #booleans()},
+ *       {@link #nulls()}, plus the abstract supertypes {@link #basics()}
+ *       and {@link #aggregates()}.</li>
+ *   <li><b>Composition</b> &mdash; {@link #point(Pointer)} narrows each
+ *       value in the stream to a sub-value via a pointer; this is the
+ *       dual of {@link Pointer#select(Selector)}.</li>
+ * </ul>
+ *
+ * <p>Selector instances are immutable and safe to share across threads;
+ * the parameter-free factories return cached singletons.</p>
  */
 public sealed abstract class Selector implements Function<JsonValue, Stream<JsonValue>> {
 

@@ -1,8 +1,6 @@
 package io.github.ralfspoeth.json.query;
 
-import io.github.ralfspoeth.json.data.JsonArray;
-import io.github.ralfspoeth.json.data.JsonObject;
-import io.github.ralfspoeth.json.data.JsonValue;
+import io.github.ralfspoeth.json.data.*;
 
 import java.util.Map;
 import java.util.Optional;
@@ -83,6 +81,92 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
         }
 
     }
+
+    /**
+     * A selector that filters its input by Java type. Each instance yields a
+     * singleton stream containing the input when it is an instance of the
+     * configured type, and an empty stream otherwise — the standard "filter
+     * step" shape that drops cleanly into {@link Stream#flatMap(Function)}.
+     *
+     * <p>Type selectors are stateless and shared as cached singletons via the
+     * factory methods {@link #basics()}, {@link #aggregates()},
+     * {@link #arrays()}, {@link #objects()}, {@link #strings()},
+     * {@link #booleans()}, {@link #numbers()}, and {@link #nulls()}.</p>
+     */
+    private static final class TypeSelector extends Selector {
+        private static final TypeSelector BASIC_SELECTOR = new TypeSelector(Basic.class);
+        private static final TypeSelector NUMBER_SELECTOR = new TypeSelector(JsonNumber.class);
+        private static final TypeSelector STRING_SELECTOR = new TypeSelector(JsonString.class);
+        private static final TypeSelector BOOLEAN_SELECTOR = new TypeSelector(JsonBoolean.class);
+        private static final TypeSelector NULL_SELECTOR = new TypeSelector(JsonNull.class);
+        private static final TypeSelector AGGREGATE_SELECTOR = new TypeSelector(Aggregate.class);
+        private static final TypeSelector ARRAY_SELECTOR = new TypeSelector(JsonArray.class);
+        private static final TypeSelector OBJECT_SELECTOR = new TypeSelector(JsonObject.class);
+
+        private final Class<? extends JsonValue> type;
+        private TypeSelector(Class<? extends JsonValue> type) {
+            this.type = type;
+        }
+
+        @Override
+        public Stream<JsonValue> apply(JsonValue elem) {
+            return type.isInstance(elem) ? Stream.of(elem) : Stream.empty();
+        }
+    }
+
+    // ---- Type-based selectors ---------------------------------------------
+    // Use after {@link #all()} or another fan-out step to narrow the stream
+    // to a single JSON value type. All factories return cached singletons.
+
+    /**
+     * Yields its input if it is a {@link Basic} value
+     * ({@link JsonString}, {@link JsonNumber}, {@link JsonBoolean}, or
+     * {@link JsonNull}); empty stream otherwise.
+     */
+    public static Selector basics() {
+        return TypeSelector.BASIC_SELECTOR;
+    }
+
+    /**
+     * Yields its input if it is an {@link Aggregate} value
+     * ({@link JsonArray} or {@link JsonObject}); empty stream otherwise.
+     */
+    public static Selector aggregates() {
+        return TypeSelector.AGGREGATE_SELECTOR;
+    }
+
+    /** Yields its input if it is a {@link JsonArray}; empty stream otherwise. */
+    public static Selector arrays() {
+        return TypeSelector.ARRAY_SELECTOR;
+    }
+
+    /** Yields its input if it is a {@link JsonObject}; empty stream otherwise. */
+    public static Selector objects() {
+        return TypeSelector.OBJECT_SELECTOR;
+    }
+
+    /** Yields its input if it is a {@link JsonString}; empty stream otherwise. */
+    public static Selector strings() {
+        return TypeSelector.STRING_SELECTOR;
+    }
+
+    /** Yields its input if it is a {@link JsonBoolean}; empty stream otherwise. */
+    public static Selector booleans() {
+        return TypeSelector.BOOLEAN_SELECTOR;
+    }
+
+    /** Yields its input if it is a {@link JsonNumber}; empty stream otherwise. */
+    public static Selector numbers() {
+        return TypeSelector.NUMBER_SELECTOR;
+    }
+
+    /** Yields its input if it is a {@link JsonNull}; empty stream otherwise. */
+    public static Selector nulls() {
+        return TypeSelector.NULL_SELECTOR;
+    }
+
+
+
 
     /**
      * Create a path that, given a JSON array {@code a},

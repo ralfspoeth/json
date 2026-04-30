@@ -143,7 +143,7 @@ class QueriesTest {
                 () -> assertInstanceOf(Boolean.class, ((List<?>)o).get(1)),
                 () -> assertNull(((List<?>)o).get(2)),
                 () -> assertInstanceOf(Map.class, ((List<?>) o).getLast()),
-                () -> assertEquals(2, ((Map<?, ?>)((List<?>) o).getLast()).size()),
+                () -> assertEquals(3, ((Map<?, ?>)((List<?>) o).getLast()).size()),
                 () -> assertNull(((Map<?, ?>)(((List<?>) o).getLast())).get("value")),
                 () -> assertTrue((boolean)((Map<?, ?>)(((List<?>) o).getLast())).get("bool")),
                 () -> assertEquals(4, ((List<?>)o).size())

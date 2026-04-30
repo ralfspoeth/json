@@ -86,6 +86,90 @@ class SelectorTest {
     }
 
     @Test
+    void testTypeSelectorsHappyPath() {
+        // each factory yields a singleton stream of its argument when the
+        // type matches
+        var num = Basic.of(42);
+        var str = Basic.of("hi");
+        var bool = Basic.of(true);
+        var nul = JsonNull.INSTANCE;
+        var arr = arrayBuilder().addBasic(1).build();
+        var obj = objectBuilder().putBasic("a", 1).build();
+        assertAll(
+                () -> assertEquals(List.of(num), Stream.of(num).flatMap(Selector.numbers()).toList()),
+                () -> assertEquals(List.of(str), Stream.of(str).flatMap(Selector.strings()).toList()),
+                () -> assertEquals(List.of(bool), Stream.of(bool).flatMap(Selector.booleans()).toList()),
+                () -> assertEquals(List.of(nul), Stream.of(nul).flatMap(Selector.nulls()).toList()),
+                () -> assertEquals(List.of(arr), Stream.of(arr).flatMap(Selector.arrays()).toList()),
+                () -> assertEquals(List.of(obj), Stream.of(obj).flatMap(Selector.objects()).toList()),
+                // Basic and Aggregate are abstract supertypes — they accept any leaf or branch
+                () -> assertEquals(List.of(num), Stream.of(num).flatMap(Selector.basics()).toList()),
+                () -> assertEquals(List.of(str), Stream.of(str).flatMap(Selector.basics()).toList()),
+                () -> assertEquals(List.of(arr), Stream.of(arr).flatMap(Selector.aggregates()).toList()),
+                () -> assertEquals(List.of(obj), Stream.of(obj).flatMap(Selector.aggregates()).toList())
+        );
+    }
+
+    @Test
+    void testTypeSelectorsRejectMismatchedTypes() {
+        // when the type doesn't match, the stream is empty
+        var num = Basic.of(42);
+        var str = Basic.of("hi");
+        var arr = arrayBuilder().addBasic(1).build();
+        var obj = objectBuilder().putBasic("a", 1).build();
+        assertAll(
+                // a number is not a string, boolean, null, array, or object
+                () -> assertEquals(List.of(), Stream.of(num).flatMap(Selector.strings()).toList()),
+                () -> assertEquals(List.of(), Stream.of(num).flatMap(Selector.booleans()).toList()),
+                () -> assertEquals(List.of(), Stream.of(num).flatMap(Selector.nulls()).toList()),
+                () -> assertEquals(List.of(), Stream.of(num).flatMap(Selector.arrays()).toList()),
+                () -> assertEquals(List.of(), Stream.of(num).flatMap(Selector.objects()).toList()),
+                // a string is a Basic but not an Aggregate
+                () -> assertEquals(List.of(), Stream.of(str).flatMap(Selector.aggregates()).toList()),
+                // an array is an Aggregate but not a Basic
+                () -> assertEquals(List.of(), Stream.of(arr).flatMap(Selector.basics()).toList()),
+                // an object is an Aggregate but not an array
+                () -> assertEquals(List.of(), Stream.of(obj).flatMap(Selector.arrays()).toList())
+        );
+    }
+
+    @Test
+    void testTypeSelectorsCachedSingletons() {
+        // factories return cached singletons — repeated calls return the same instance
+        assertAll(
+                () -> assertSame(Selector.basics(), Selector.basics()),
+                () -> assertSame(Selector.aggregates(), Selector.aggregates()),
+                () -> assertSame(Selector.numbers(), Selector.numbers()),
+                () -> assertSame(Selector.strings(), Selector.strings()),
+                () -> assertSame(Selector.booleans(), Selector.booleans()),
+                () -> assertSame(Selector.nulls(), Selector.nulls()),
+                () -> assertSame(Selector.arrays(), Selector.arrays()),
+                () -> assertSame(Selector.objects(), Selector.objects())
+        );
+    }
+
+    @Test
+    void testTypeSelectorsInChain() {
+        // typical use: fan out an array, then filter to a single JSON type
+        var mixed = arrayBuilder()
+                .addBasic(1)            // JsonNumber
+                .addBasic("two")        // JsonString
+                .addBasic(3)            // JsonNumber
+                .addBasic(true)         // JsonBoolean
+                .add(JsonNull.INSTANCE) // JsonNull
+                .addBasic(4)            // JsonNumber
+                .build();
+        var numbersOnly = Stream.of(mixed)
+                .flatMap(all())
+                .flatMap(Selector.numbers())
+                .toList();
+        assertEquals(
+                List.of(Basic.of(1), Basic.of(3), Basic.of(4)),
+                numbersOnly
+        );
+    }
+
+    @Test
     void testPointDropsUnresolved() {
         // given a heterogeneous array — some elements have a "name", some don't
         var arr = arrayBuilder()

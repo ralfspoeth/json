@@ -141,12 +141,16 @@ The same code accepts all of these without a configuration change:
 Two abstractions, with a clear division of labor.
 
 **`Selector`** is a function from `JsonValue` to `Stream<JsonValue>`.
-Use it inside `Stream::flatMap` to pick out *a set of* values. Three
+Use it inside `Stream::flatMap` to pick out *a set of* values. Four
 flavors ship in the box:
 
 - `Selector.all()` — flattens an array, or yields the value itself
 - `Selector.range(min, max)` — slices an array
 - `Selector.regex(pattern)` — picks object members by key
+- type filters — `objects()`, `arrays()`, `strings()`, `numbers()`,
+  `booleans()`, `nulls()` (plus the abstract supertypes `basics()` and
+  `aggregates()`); each yields its input if it matches the type, empty
+  stream otherwise
 
 Selectors stack:
 
@@ -340,6 +344,9 @@ Version 1.3 incorporates changes with the help of Claude.
   when several keys match, the lexicographically smallest one wins
 - `Pointer.select(Selector)` and `Selector.point(Pointer)` compose the
   two query primitives in either direction
+- `Selector.objects()`, `arrays()`, `strings()`, `numbers()`,
+  `booleans()`, `nulls()`, `basics()`, and `aggregates()` filter a
+  stream to a single JSON value type
 
 ---
 

@@ -64,19 +64,16 @@ public class Queries {
     }
 
     private static Map<String, ?> asMap(Map<String, JsonValue> members, boolean skipNulls) {
-        if (skipNulls) {
-            Map<String, Object> result = new HashMap<>();
-            members.entrySet().stream()
-                    .filter(e -> !skipNulls || !JsonNull.INSTANCE.equals(e.getValue()))
-                    .forEach(e -> {
-                        result.put(e.getKey(), requireNonNull(asObject(e.getValue(), skipNulls)));
-                    });
+        if (!skipNulls) {
+            Map<String, @Nullable Object> result = new HashMap<>();
+            members.forEach((key, value) -> result.put(key, asObject(value, skipNulls)));
             return result;
         } else {
             return members.entrySet().stream()
                     .filter(e -> !JsonNull.INSTANCE.equals(e.getValue()))
                     .collect(toMap(Map.Entry::getKey,
-                            e -> asObject(e.getValue(), false)));
+                            e -> requireNonNull(asObject(e.getValue(), false)))
+                    );
         }
     }
 

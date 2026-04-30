@@ -86,6 +86,41 @@ class SelectorTest {
     }
 
     @Test
+    void testPointDropsUnresolved() {
+        // given a heterogeneous array — some elements have a "name", some don't
+        var arr = arrayBuilder()
+                .add(objectBuilder().putBasic("id", 1).putBasic("name", "Ada"))
+                .add(objectBuilder().putBasic("id", 2))                          // no name
+                .add(objectBuilder().putBasic("id", 3).putBasic("name", "Bea"))
+                .build();
+        // when each element is narrowed to "name"
+        var names = all().point(self().member("name"));
+        // then unresolved elements drop silently — Optional::stream is empty for empty optionals
+        var result = Stream.of(arr).flatMap(names)
+                .flatMap(v -> v.string().stream())
+                .toList();
+        assertEquals(List.of("Ada", "Bea"), result);
+    }
+
+    @Test
+    void testPointWhenSelectorYieldsNothing() {
+        // an out-of-range slice produces no elements regardless of pointer
+        var arr = arrayBuilder().addBasic(1).addBasic(2).build();
+        var fn = Selector.range(5, 10).point(self());
+        assertEquals(0L, Stream.of(arr).flatMap(fn).count());
+    }
+
+    @Test
+    void testPointWithSelfPointerIsIdentity() {
+        // .point(self()) should leave the selector's stream untouched; the
+        // pointer is the one that resolves every value to itself
+        var arr = arrayBuilder().addBasic(1).addBasic(2).addBasic(3).build();
+        var direct = Stream.of(arr).flatMap(all()).toList();
+        var viaPoint = Stream.of(arr).flatMap(all().point(self())).toList();
+        assertEquals(direct, viaPoint);
+    }
+
+    @Test
     void testMeAndPointer() {
         // given [{"a": 1}, {"a":2, "b": 2}, {"d": 4}, {"a":4}]
         var ja = arrayBuilder()

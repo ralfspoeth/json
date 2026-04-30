@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.math.BigDecimal;
+import java.util.List;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
@@ -89,6 +91,26 @@ class PointerTest {
         assertAll(
                 () -> assertEquals(1d, ra.doubleValue(jo).orElseThrow()),
                 () -> assertEquals(2d, bal.doubleValue(jo).orElseThrow())
+        );
+    }
+
+    @Test
+    void testParseRegexSegment() {
+        // given an object with both a "bal" key and a "balance" key inside a
+        // wrapping member "wallet"
+        var jo = objectBuilder()
+                .put("wallet", objectBuilder()
+                        .putBasic("bal", 1d)
+                        .putBasic("balance", 2d))
+                .build();
+        // when parse() encounters '#regex', it produces the same pointer as
+        // chaining .regex(...) by hand
+        var fromParse = parse("wallet/#bal(ance)?");
+        var fluent = self().member("wallet").regex("bal(ance)?");
+        // then both resolve to the lex-smallest matching key
+        assertAll(
+                () -> assertEquals(1d, fromParse.doubleValue(jo).orElseThrow()),
+                () -> assertEquals(1d, fluent.doubleValue(jo).orElseThrow())
         );
     }
 
@@ -177,6 +199,170 @@ class PointerTest {
                 // Negative tokens are not valid RFC 6901 array indices
                 () -> assertTrue(Pointer.fromJsonPointer("/-1").apply(doc).isEmpty())
         );
+    }
+
+    @Test
+    void testIntValue() {
+        var jo = objectBuilder()
+                .putBasic("n", 42)
+                .putBasic("f", 3.7d)
+                .putBasic("s", "not a number")
+                .build();
+        assertAll(
+                () -> assertEquals(42, self().member("n").intValue(jo).orElseThrow()),
+                // BigDecimal.intValue() truncates the fractional part. Use
+                // intValueExact when you want the strict version.
+                () -> assertEquals(3, self().member("f").intValue(jo).orElseThrow()),
+                // wrong type — strings have no decimal()
+                () -> assertTrue(self().member("s").intValue(jo).isEmpty()),
+                // missing key
+                () -> assertTrue(self().member("missing").intValue(jo).isEmpty())
+        );
+    }
+
+    @Test
+    void testLongValue() {
+        var jo = objectBuilder()
+                .putBasic("n", 9_876_543_210L)
+                .putBasic("s", "not a number")
+                .build();
+        assertAll(
+                () -> assertEquals(9_876_543_210L,
+                        self().member("n").longValue(jo).orElseThrow()),
+                () -> assertTrue(self().member("s").longValue(jo).isEmpty()),
+                () -> assertTrue(self().member("missing").longValue(jo).isEmpty())
+        );
+    }
+
+    @Test
+    void testDoubleValue() {
+        var jo = objectBuilder()
+                .putBasic("n", 3.14d)
+                .putBasic("i", 7)
+                .putBasic("s", "not a number")
+                .build();
+        assertAll(
+                () -> assertEquals(3.14d, self().member("n").doubleValue(jo).orElseThrow()),
+                // ints widen cleanly through BigDecimal::doubleValue
+                () -> assertEquals(7d, self().member("i").doubleValue(jo).orElseThrow()),
+                () -> assertTrue(self().member("s").doubleValue(jo).isEmpty()),
+                () -> assertTrue(self().member("missing").doubleValue(jo).isEmpty())
+        );
+    }
+
+    @Test
+    void testIntValueExact() {
+        var jo = objectBuilder()
+                .putBasic("ok", 1000)
+                .putBasic("frac", 1.5d)
+                .putBasic("big", 10_000_000_000L) // outside int range
+                .putBasic("s", "x")
+                .build();
+        assertAll(
+                () -> assertEquals(1000,
+                        self().member("ok").intValueExact(jo).orElseThrow()),
+                // BigDecimal.intValueExact rejects fractional values
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("frac").intValueExact(jo)),
+                // and rejects values outside the int range
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("big").intValueExact(jo)),
+                // wrong-type and missing keys still return empty without throwing
+                () -> assertTrue(self().member("s").intValueExact(jo).isEmpty()),
+                () -> assertTrue(self().member("missing").intValueExact(jo).isEmpty())
+        );
+    }
+
+    @Test
+    void testLongValueExact() throws IOException {
+        // Build the document via JSON to guarantee a real BigDecimal payload
+        // for the out-of-range case (Builder treats numeric primitives via
+        // BigDecimal.valueOf which can't accept values larger than Long).
+        var doc = Greyson.readValue(Reader.of("""
+                {"ok": 1000000000, "frac": 1.5, "huge": 99999999999999999999, "s": "x"}
+                """)).orElseThrow();
+        assertAll(
+                () -> assertEquals(1_000_000_000L,
+                        self().member("ok").longValueExact(doc).orElseThrow()),
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("frac").longValueExact(doc)),
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("huge").longValueExact(doc)),
+                () -> assertTrue(self().member("s").longValueExact(doc).isEmpty()),
+                () -> assertTrue(self().member("missing").longValueExact(doc).isEmpty())
+        );
+    }
+
+    @Test
+    void testBooleanValue() {
+        var jo = objectBuilder()
+                .putBasic("t", true)
+                .putBasic("f", false)
+                .putBasic("s", "true") // literal string, not a JSON boolean
+                .putBasic("n", 1)
+                .build();
+        assertAll(
+                () -> assertTrue(self().member("t").booleanValue(jo).orElseThrow()),
+                () -> assertFalse(self().member("f").booleanValue(jo).orElseThrow()),
+                // strings and numbers are not coerced; the conversion is type-strict
+                () -> assertTrue(self().member("s").booleanValue(jo).isEmpty()),
+                () -> assertTrue(self().member("n").booleanValue(jo).isEmpty()),
+                () -> assertTrue(self().member("missing").booleanValue(jo).isEmpty())
+        );
+    }
+
+    @Test
+    void testStringValue() {
+        var jo = objectBuilder()
+                .putBasic("s", "hello")
+                .putBasic("n", 42)
+                .putBasic("b", true)
+                .build();
+        assertAll(
+                () -> assertEquals("hello",
+                        self().member("s").stringValue(jo).orElseThrow()),
+                // numbers and booleans are not stringified by the conversion
+                () -> assertTrue(self().member("n").stringValue(jo).isEmpty()),
+                () -> assertTrue(self().member("b").stringValue(jo).isEmpty()),
+                () -> assertTrue(self().member("missing").stringValue(jo).isEmpty())
+        );
+    }
+
+    @Test
+    void testSelectNavigatesThenExpands() {
+        // {"data": {"users": [{"id": 1}, {"id": 2}, {"id": 3}]}}
+        var doc = objectBuilder()
+                .put("data", objectBuilder()
+                        .put("users", arrayBuilder()
+                                .add(objectBuilder().putBasic("id", 1))
+                                .add(objectBuilder().putBasic("id", 2))
+                                .add(objectBuilder().putBasic("id", 3))))
+                .build();
+        // Navigate to the users array, then stream every element of it.
+        var users = parse("data/users").select(Selector.all());
+        var ids = users.apply(doc)
+                .flatMap(v -> v.get("id").stream())
+                .flatMap(v -> v.decimal().stream())
+                .map(BigDecimal::intValue)
+                .toList();
+        assertEquals(List.of(1, 2, 3), ids);
+    }
+
+    @Test
+    void testSelectEmptyWhenPointerDoesNotResolve() {
+        // The pointer fails to resolve "missing", so the selector never runs.
+        var doc = objectBuilder().putBasic("a", 1).build();
+        var fn = self().member("missing").select(Selector.all());
+        assertEquals(0L, fn.apply(doc).count());
+    }
+
+    @Test
+    void testSelectWithSelfPointerEqualsSelectorApply() {
+        // self() navigates nowhere, so self().select(s) ≡ s.apply.
+        var arr = arrayBuilder().addBasic(1).addBasic(2).addBasic(3).build();
+        var direct = Selector.all().apply(arr).toList();
+        var viaPointer = self().select(Selector.all()).apply(arr).toList();
+        assertEquals(direct, viaPointer);
     }
 
     @Test

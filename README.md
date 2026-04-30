@@ -163,17 +163,71 @@ Use it inside `Optional::flatMap` to navigate to *one* value. Build by
 hand, or parse a slash-separated path:
 
 ```java
-var p = Pointer.self().member("a").member("b").member("c");
-var q = Pointer.parse("a/b/c");          // equivalent
+var p = Pointer.self().member("a").index(2).regex("b.*");
+var q = Pointer.parse("a/[2]/#b.*");     // equivalent
 ```
 
-Path syntax: `name` matches an object member, `0`, `1`, … index into an
-array, `#regex` filters object keys.
+Path syntax in `parse`:
+
+- `name` — matches an object member by literal key
+- `[n]` — indexes into an array (with optional leading `-` for
+  from-the-end)
+- `#regex` — matches an object member by regular expression; when
+  several keys satisfy the pattern, the lexicographically smallest wins
+
+The two forms are interchangeable; pick whichever reads more clearly at
+the call site. Either way you get a `Pointer` you can plug straight
+into a value extractor:
 
 ```java
 JsonValue v = Greyson.readValue(src).orElseThrow();
 boolean b = Pointer.parse("a/b/c").booleanValue(v).orElseThrow();
 ```
+
+### JSON Pointer (RFC 6901)
+
+Greyson reads
+[RFC 6901](https://datatracker.ietf.org/doc/html/rfc6901) JSON Pointer
+expressions via `Pointer.fromJsonPointer(String)`, so strings emitted
+by JSON Patch, OpenAPI `$ref`, JSON Schema, or anything else that
+speaks the standard drop straight in:
+
+```java
+var p = Pointer.fromJsonPointer("/users/0/email");
+String email = p.stringValue(doc).orElseThrow();
+```
+
+Two nuances worth knowing:
+
+- **Dispatch is dynamic.** The same token resolves as a member name
+  against a `JsonObject` and as a non-negative integer index against a
+  `JsonArray`. This differs from `parse`, which decides member-vs-index
+  statically from the syntax. It's the price of RFC 6901 compatibility.
+- **Escapes follow the spec.** `~1` decodes to `/` and `~0` to `~`, in
+  that order, so a key like `a/b` is reachable via `/a~1b` and a key
+  like `m~n` via `/m~0n`. The empty string addresses the document root.
+
+### Composing pointers and selectors
+
+`Pointer` and `Selector` compose in either direction. Pick the entry
+point by which side you're coming from.
+
+```java
+// "navigate to one place, then fan out from there"
+//   Pointer → Selector
+var users = Pointer.parse("data/users").select(Selector.all());
+Stream.of(doc).flatMap(users).forEach(...);
+
+// "fan out from many places, then narrow each one"
+//   Selector → Pointer
+var emails = Selector.all().point(Pointer.self().member("email"));
+Stream.of(usersArray).flatMap(emails).forEach(...);
+```
+
+`Pointer.select(Selector)` returns an empty stream when the pointer
+doesn't resolve. `Selector.point(Pointer)` silently drops elements for
+which the pointer doesn't resolve. In both cases, missing data is
+absent from the output rather than a thrown exception.
 
 ---
 
@@ -279,6 +333,13 @@ Version 1.3 incorporates changes with the help of Claude.
 
 - `README.md` has been rewritten
 - `Lexer` and therefore the `JsonReader` have gained some speed-up
+- `Pointer.fromJsonPointer(String)` reads RFC 6901 JSON Pointer
+  expressions, for interop with JSON Patch, OpenAPI `$ref`, JSON Schema,
+  and other tooling that emits the standard syntax
+- `Pointer.regex(...)` resolves multi-match patterns deterministically:
+  when several keys match, the lexicographically smallest one wins
+- `Pointer.select(Selector)` and `Selector.point(Pointer)` compose the
+  two query primitives in either direction
 
 ---
 

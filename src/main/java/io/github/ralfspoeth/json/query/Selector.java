@@ -143,6 +143,26 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
                 flatMap(x -> extractor.apply(x).map(mapper).stream());
     }
 
+    /**
+     * Compose this selector with a {@link Pointer}: apply this selector to
+     * fan out into a stream, then narrow each element via the pointer. Values
+     * for which the pointer does not resolve are dropped from the stream.
+     *
+     * <p>Dual of {@link Pointer#select(Selector)}: where {@code select} starts
+     * from a single value and fans out, {@code point} starts from a stream and
+     * narrows each element to a single sub-value.</p>
+     *
+     * {@snippet :
+     * import java.util.stream.Stream;
+     * JsonValue users = null; // @replace regex="null;" replacement="..."
+     * // From an array of user objects, pull out every "email" that is present.
+     * var emails = Selector.all().point(Pointer.self().member("email"));
+     * Stream.of(users).flatMap(emails).forEach(System.out::println);
+     *}
+     *
+     * @param p a pointer applied to each value this selector produces
+     * @return a stream-shaped function suitable for {@link Stream#flatMap(Function)}
+     */
     public Function<? super JsonValue, Stream<JsonValue>> point(Pointer p) {
         return v -> apply(v).flatMap(x -> p.apply(x).stream());
     }

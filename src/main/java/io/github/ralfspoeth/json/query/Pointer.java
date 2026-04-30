@@ -259,20 +259,27 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
 
     /**
      * Instantiate a {@link Pointer} from a text.
-     * The text is first split into parts
-     * using {@code '/'}. Integers are passed into
-     * {@link #index(int)}, and the rest
-     * is passed to {@link #member(String)}.
+     * The text is split into parts on {@code '/'}; each part is then dispatched
+     * by syntax:
+     * <ul>
+     *   <li>{@code [n]} (with an optional leading {@code -} for indices counted
+     *       from the end of the array) is passed to {@link #index(int)};</li>
+     *   <li>parts beginning with {@code '#'} pass the remainder to
+     *       {@link #regex(String)}, matching object members whose key satisfies
+     *       the regular expression — when several keys match, the
+     *       lexicographically smallest wins;</li>
+     *   <li>everything else is treated as a literal member name and passed to
+     *       {@link #member(String)}.</li>
+     * </ul>
      * Example:
      * {@snippet :
-     * var p = parse("a/2/b/3");
-     * var q = self().member("a").index(2).member("b").index(3);
+     * var p = parse("a/[2]/#b.*");
+     * var q = self().member("a").index(2).regex("b.*");
      * // p and q are equivalent
      *}
-     * There is no support to disambiguate {@code index(n)} from
-     * {@code member(n)} when {@code n} is an integer.
-     * If you identify members with an integer name, use {@link #member(String)}
-     * and {@link #resolve(Pointer)} cascades instead.
+     * Bare digit segments are member names, not array indices. Use {@code [n]}
+     * for indices; if you need an integer-named member, just write the integer
+     * (e.g. {@code "1"}) or call {@link #member(String)} directly.
      *
      * @param text a pointer text
      * @return a pointer
@@ -285,6 +292,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
             if (im.matches()) {
                 var index = Integer.parseInt(im.group(1));
                 prev = new IndexPointer(index, prev);
+            } else if (part.startsWith("#")) {
+                prev = new First(Pattern.compile(part.substring(1)), prev);
             } else {
                 prev = new MemberPointer(part, prev);
             }
@@ -566,7 +575,27 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         return v -> apply(v).flatMap(extractor).map(mapper);
     }
 
-    public static Function<JsonValue, Stream<? extends JsonValue>> select(Selector selector) {
-        return v -> Stream.of(v).flatMap(selector);
+    /**
+     * Compose this pointer with a {@link Selector}: navigate via this pointer
+     * first, then apply the selector to whatever the pointer resolves to. The
+     * returned function is empty when the pointer does not resolve.
+     *
+     * <p>Dual of {@link Selector#point(Pointer)}: where {@code point} starts
+     * from a stream and narrows each element to a single sub-value,
+     * {@code select} starts from a single value and fans out.</p>
+     *
+     * {@snippet :
+     * import java.util.stream.Stream;
+     * JsonValue doc = null; // @replace regex="null;" replacement="..."
+     * // Navigate to "data/users" and stream every element of the array there.
+     * var users = Pointer.parse("data/users").select(Selector.all());
+     * Stream.of(doc).flatMap(users).forEach(System.out::println);
+     *}
+     *
+     * @param selector a selector applied to whatever this pointer resolves to
+     * @return a stream-shaped function suitable for {@link Stream#flatMap(Function)}
+     */
+    public Function<JsonValue, Stream<JsonValue>> select(Selector selector) {
+        return v -> apply(v).stream().flatMap(selector);
     }
 }

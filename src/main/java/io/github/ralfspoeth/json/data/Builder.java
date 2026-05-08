@@ -4,9 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 
-import static io.github.ralfspoeth.basix.fn.Predicates.in;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -240,7 +238,7 @@ public sealed interface Builder<T extends JsonValue> {
          */
         public ObjectBuilder update(Map<String, ? extends JsonValue> map) {
             map.entrySet().stream()
-                    .filter(in(data.keySet(), Map.Entry::getKey))
+                    .filter(e -> data.containsKey(e.getKey()))
                     .forEach(e -> put(e.getKey(), e.getValue()));
             return this;
         }
@@ -284,7 +282,7 @@ public sealed interface Builder<T extends JsonValue> {
         public ObjectBuilder insert(Map<String, ? extends JsonValue> map) {
             map.entrySet()
                     .stream()
-                    .filter(not(in(data.keySet(), Map.Entry::getKey)))
+                    .filter(e -> !data.containsKey(e.getKey()))
                     .forEach(e -> put(e.getKey(), e.getValue()));
             return this;
         }

@@ -116,9 +116,8 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
      *     </li>
      *     <li>for objects that they contain the same set of keys
      *     {@snippet :
-     *         import io.github.ralfspoeth.basix.fn.Functions;
      *         JsonValue a=null, b=null; // @replace replacement="..." regex="=null"
-     *         Functions.contentsEquals(a.members().keySet(), b.members().keySet())
+     *         a.members().keySet().equals(b.members().keySet())
      *      }
      *        and the equality of the associated values, such that
      *      {@snippet :

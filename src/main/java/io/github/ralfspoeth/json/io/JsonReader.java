@@ -1,6 +1,5 @@
 package io.github.ralfspoeth.json.io;
 
-import io.github.ralfspoeth.basix.coll.Stack;
 import io.github.ralfspoeth.json.data.*;
 import io.github.ralfspoeth.json.data.Builder.ArrayBuilder;
 import io.github.ralfspoeth.json.data.Builder.ObjectBuilder;
@@ -9,6 +8,8 @@ import org.jspecify.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Optional;
 
 import static io.github.ralfspoeth.json.io.JsonReader.Elem.ArrBuilderElem.arrBuilderElem;
@@ -66,8 +67,8 @@ public class JsonReader implements Closeable {
         }
     }
 
-    // return to the stack from basix
-    private final Stack<Elem> stack = new Stack<>();
+    // parser state: stack of partially-built elements
+    private final Deque<Elem> stack = new ArrayDeque<>();
 
     /**
      * Reads the source and returns a {@link Builder} for
@@ -92,14 +93,14 @@ public class JsonReader implements Closeable {
         // and either the stack is empty or,
         // in case we expect to read more than one JSON element from the potentially unbounded source,
         // the top element is not a root element.
-        while (lexer.hasNext() && !(stack.top() instanceof Elem.Root)) {
+        while (lexer.hasNext() && !(stack.peek() instanceof Elem.Root)) {
             var tkn = lexer.next();
             // we switch over the type of the token as the primary level compound state
             switch (tkn) {
                 // a colon is acceptable if and only if the current element at the
                 // top of the stack is a name-value-pair
                 case COLON -> {
-                    if (stack.top() instanceof Elem.NameElem) {
+                    if (stack.peek() instanceof Elem.NameElem) {
                         stack.push(Elem.Char.colon);
                     } else {
                         parseEx("unexpected token: " + tkn);
@@ -109,7 +110,7 @@ public class JsonReader implements Closeable {
                 // that is, the top of the stack must be a non-empty
                 // aggregate element
                 case COMMA -> {
-                    switch (stack.top()) {
+                    switch (stack.peek()) {
                         case Elem.ArrBuilderElem abe when !abe.builder.isEmpty() -> stack.push(Elem.Char.comma);
                         case Elem.ObjBuilderElem obe when !obe.builder.isEmpty() -> stack.push(Elem.Char.comma);
                         case null, default -> parseEx("unexpected token: " + tkn);
@@ -118,7 +119,7 @@ public class JsonReader implements Closeable {
                 // opening braces (as well as opening brackets, see below)
                 // that is, at the start, in an empty array, and after a colon or a comma.
                 case OPENING_BRACE -> {
-                    switch (stack.top()) {
+                    switch (stack.peek()) {
                         case null -> stack.push(objBuilderElem());
                         case Elem.ArrBuilderElem(var builder)
                                 when builder.isEmpty() -> stack.push(objBuilderElem());
@@ -128,7 +129,7 @@ public class JsonReader implements Closeable {
                 }
                 // opens an array, otherwise like a brace
                 case OPENING_BRACKET -> {
-                    switch (stack.top()) {
+                    switch (stack.peek()) {
                         case null -> stack.push(arrBuilderElem());
                         case Elem.Char ignored -> stack.push(arrBuilderElem());
                         case Elem.ArrBuilderElem(var builder) when builder.isEmpty() -> stack.push(arrBuilderElem());
@@ -138,7 +139,7 @@ public class JsonReader implements Closeable {
                 // closes a JSON object
                 // there should be an object builder on top of the stack
                 case CLOSING_BRACE -> {
-                    var obj = switch (stack.top()) {
+                    var obj = switch (stack.peek()) {
                         case Elem.ObjBuilderElem(var builder) -> {
                             stack.pop();
                             yield builder;
@@ -153,7 +154,7 @@ public class JsonReader implements Closeable {
                 // closing a JSON array
                 // the array builder should be on top of the stack
                 case CLOSING_BRACKET -> {
-                    if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
+                    if (stack.peek() instanceof Elem.ArrBuilderElem(var builder)) {
                         stack.pop();
                         handle(tkn.value(), builder);
                     } else {
@@ -164,12 +165,12 @@ public class JsonReader implements Closeable {
                 // string is a special case because it can be the name part of a name-value-pair
                 case Lexer.LiteralToken(var type, var val) -> {
                     if (type == STRING &&
-                            stack.top() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
+                            stack.peek() instanceof Elem.ObjBuilderElem(var builder) && builder.isEmpty()
                     ) {
                         stack.push(new Elem.NameElem(val));
-                    } else if (type == STRING && Elem.Char.comma.equals(stack.top())) {
+                    } else if (type == STRING && Elem.Char.comma.equals(stack.peek())) {
                         stack.pop();
-                        switch (stack.top()) {
+                        switch (stack.peek()) {
                             case Elem.ObjBuilderElem ignored -> stack.push(new Elem.NameElem(val));
                             case Elem.ArrBuilderElem abe -> abe.builder.add(new JsonString(val));
                             case null, default -> parseEx("Unexpected value: " + val);
@@ -201,7 +202,7 @@ public class JsonReader implements Closeable {
     // handle tokens UNLESS these are element names
     // in a JSON object
     private void handle(String token, Builder<?> v) {
-        switch (stack.top()) {
+        switch (stack.peek()) {
             // stack is empty
             case null -> stack.push(new Elem.Root(v));
             // colon or comma at the top
@@ -215,7 +216,7 @@ public class JsonReader implements Closeable {
                         // and the next stack element must be an object builder
                         if (!stack.isEmpty()
                                 && stack.pop() instanceof Elem.NameElem(String name)
-                                && stack.top() instanceof Elem.ObjBuilderElem(var builder)) {
+                                && stack.peek() instanceof Elem.ObjBuilderElem(var builder)) {
                             // add name-value-pair to the object builder
                             builder.put(name, v);
                         } else {
@@ -225,7 +226,7 @@ public class JsonReader implements Closeable {
                     // comma on top
                     case comma -> {
                         stack.pop(); // pop comma
-                        if (stack.top() instanceof Elem.ArrBuilderElem(var builder)) {
+                        if (stack.peek() instanceof Elem.ArrBuilderElem(var builder)) {
                             builder.add(v);
                         } else {
                             parseEx("unexpected token: " + token);

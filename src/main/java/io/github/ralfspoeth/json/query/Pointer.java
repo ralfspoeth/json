@@ -1,13 +1,10 @@
 package io.github.ralfspoeth.json.query;
 
 import io.github.ralfspoeth.json.data.*;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -68,6 +65,35 @@ import static java.util.Objects.requireNonNull;
  * JsonArray a = new JsonArray(List.of()); // @replace regex='new JsonArray(List.of())' replacement='...'
  * List<JsonValue> result = a.elements().stream().flatMap(p).toList(); // @highlight substring="flatMap(p)"
  *}
+ * <p>
+ * Beyond navigation, a {@code Pointer} supports the following:
+ * <ul>
+ * <li><b>Constructing</b> &mdash; {@link #parse(String)} (Greyson's native
+ * syntax with the {@code [n]} index marker), the fluent
+ * {@link #self()}/{@link #member(String)}/{@link #index(int)}/{@link #regex(Pattern)}
+ * builders, and {@link #fromJsonPointer(String)} for
+ * <a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC 6901</a>
+ * expressions (JSON Patch, OpenAPI {@code $ref}, JSON Schema, &hellip;).</li>
+ * <li><b>Reading</b> &mdash; {@link #apply(JsonValue)} for the raw optional, the
+ * typed convenience getters ({@link #stringValue(JsonValue)},
+ * {@link #intValue(JsonValue)}, &hellip;), and {@link #require(JsonValue)} /
+ * {@link #requireString(JsonValue)}, which throw a {@link java.util.NoSuchElementException}
+ * naming this pointer when a required value is absent or of the wrong type.</li>
+ * <li><b>Writing</b> &mdash; {@link #with(JsonValue, JsonValue)} and
+ * {@link #without(JsonValue)} return a modified immutable copy of a document,
+ * sharing every subtree not on the path. Missing object members are created;
+ * an {@code [n]} step requires an existing array; a {@code #regex} segment is
+ * not writable.</li>
+ * <li><b>Composing</b> &mdash; {@link #resolve(Pointer)} concatenates two
+ * pointers, {@link #select(Selector)} fans out from where this pointer
+ * resolves, and {@link #as(Function, Function)} maps the resolved value.</li>
+ * </ul>
+ * <p>
+ * Pointers are immutable. {@link #toString()} renders a pointer in
+ * {@link #parse(String)} syntax, and {@link #equals(Object)}/{@link #hashCode()}
+ * compare the whole segment chain by both type and data &mdash; so a literal
+ * {@code member("x")} differs from the RFC 6901 {@code fromJsonPointer("/x")},
+ * which dispatch differently &mdash; making pointers usable as map keys.
  */
 public sealed abstract class Pointer implements Function<JsonValue, Optional<JsonValue>> {
 
@@ -78,6 +104,21 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         @Override
         public Optional<JsonValue> apply(JsonValue jsonValue) {
             return Optional.of(jsonValue);
+        }
+
+        @Override
+        public String toString() {
+            return "";
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Self; // singleton, but stay robust
+        }
+
+        @Override
+        public int hashCode() {
+            return Self.class.hashCode();
         }
     }
 
@@ -90,7 +131,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
     }
 
     private static abstract sealed class AbstractPointer extends Pointer {
-        private final Pointer parent;
+        protected final Pointer parent;
 
         protected AbstractPointer(Pointer parent) {
             this.parent = requireNonNull(parent);
@@ -119,6 +160,43 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
                 return p.withParent(this);
             }
         }
+
+        // ---- write side ----------------------------------------------------
+        // Read and write share the same parent chain: where evalSegment reads
+        // this segment's slot, rebuildContainer produces a copy of the parent
+        // container with that slot set (or removed when replacement is empty),
+        // and setIn walks the new container back up to the root.
+
+        /**
+         * Return a copy of {@code container} (the value at this segment's parent,
+         * or {@code null} when that did not resolve) with this segment's slot set
+         * to {@code replacement}, or the slot removed when {@code replacement} is
+         * {@code null}. Implementations decide whether a missing/wrong-typed
+         * container is auto-created or rejected.
+         */
+        abstract JsonValue rebuildContainer(@Nullable JsonValue container, @Nullable JsonValue replacement);
+
+        /**
+         * Produce a new root in which the value this pointer addresses is
+         * replaced by {@code replacement} ({@code null} = remove). Each level
+         * rebuilds exactly one container; all untouched subtrees are shared.
+         */
+        JsonValue setIn(JsonValue root, @Nullable JsonValue replacement) {
+            var container = parent.apply(root).orElse(null);
+            var rebuilt = rebuildContainer(container, replacement);
+            return parent instanceof AbstractPointer ap
+                    ? ap.setIn(root, rebuilt)
+                    : rebuilt;
+        }
+
+        /** This segment rendered in {@link Pointer#parse(String)} syntax. */
+        abstract String segment();
+
+        @Override
+        public final String toString() {
+            var head = parent.toString();
+            return head.isEmpty() ? segment() : head + "/" + segment();
+        }
     }
 
     private static final class MemberPointer extends AbstractPointer {
@@ -140,6 +218,34 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         @Override
         AbstractPointer withParent(Pointer parent) {
             return new MemberPointer(memberName, parent);
+        }
+
+        @Override
+        JsonValue rebuildContainer(@Nullable JsonValue container, @Nullable JsonValue replacement) {
+            // A missing or non-object container auto-vivifies to an empty
+            // object, so chains of members materialise on write.
+            var obj = container instanceof JsonObject jo ? jo : new JsonObject(Map.of());
+            var b = Builder.objectBuilder(obj);
+            if (replacement == null) b.remove(memberName);
+            else b.put(memberName, replacement);
+            return b.build();
+        }
+
+        @Override
+        String segment() {
+            return memberName;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof MemberPointer mp
+                    && memberName.equals(mp.memberName)
+                    && parent.equals(mp.parent);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(MemberPointer.class, memberName, parent);
         }
     }
 
@@ -166,6 +272,43 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         @Override
         AbstractPointer withParent(Pointer parent) {
             return new IndexPointer(index, parent);
+        }
+
+        @Override
+        JsonValue rebuildContainer(@Nullable JsonValue container, @Nullable JsonValue replacement) {
+            // Arrays cannot be conjured from nothing (no defined length), so a
+            // missing or non-array container is an error rather than a create.
+            if (container instanceof JsonArray(var elements)) {
+                var list = new ArrayList<>(elements);
+                int n = list.size();
+                int i = index < 0 ? n + index : index; // negative counts from the end
+                if (i < 0 || i >= n) {
+                    throw new IndexOutOfBoundsException("index " + index + " out of bounds for " + this);
+                }
+                if (replacement == null) list.remove(i);
+                else list.set(i, replacement);
+                return new JsonArray(list);
+            } else {
+                throw new IllegalStateException(
+                        "index step " + this + " requires an existing array");
+            }
+        }
+
+        @Override
+        String segment() {
+            return "[" + index + "]";
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof IndexPointer ip
+                    && index == ip.index
+                    && parent.equals(ip.parent);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(IndexPointer.class, index, parent);
         }
     }
 
@@ -201,6 +344,35 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         @Override
         AbstractPointer withParent(Pointer parent) {
             return new First(pattern, parent);
+        }
+
+        @Override
+        JsonValue rebuildContainer(@Nullable JsonValue container, @Nullable JsonValue replacement) {
+            // On a hit the target is deterministic, but on a miss there is no
+            // defined key to create, and mutating "the lexicographically
+            // smallest match" is a surprising thing to do silently.
+            throw new UnsupportedOperationException(
+                    "regex segment " + this + " is not addressable for writes; "
+                            + "resolve it to a concrete member first");
+        }
+
+        @Override
+        String segment() {
+            return "#" + pattern.pattern();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            // Pattern uses identity equality, so compare its source and flags.
+            return o instanceof First f
+                    && pattern.pattern().equals(f.pattern.pattern())
+                    && pattern.flags() == f.pattern.flags()
+                    && parent.equals(f.parent);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(First.class, pattern.pattern(), pattern.flags(), parent);
         }
     }
 
@@ -252,6 +424,56 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         @Override
         AbstractPointer withParent(Pointer parent) {
             return new JsonPointerSegment(token, parent);
+        }
+
+        @Override
+        JsonValue rebuildContainer(@Nullable JsonValue container, @Nullable JsonValue replacement) {
+            // Dispatch on the runtime container type, mirroring evalSegment, so
+            // RFC 6901 strings round-trip through writes (JSON Patch interop).
+            return switch (container) {
+                case JsonArray arr -> {
+                    int idx = parseRfc6901Index(token);
+                    var list = new ArrayList<JsonValue>(arr.elements());
+                    if (idx < 0 || idx > list.size()) {
+                        throw new IndexOutOfBoundsException("RFC 6901 index " + token + " at " + this);
+                    }
+                    if (replacement == null) {
+                        if (idx < list.size()) list.remove(idx);
+                    } else if (idx == list.size()) {
+                        list.add(replacement); // append at end
+                    } else {
+                        list.set(idx, replacement);
+                    }
+                    yield new JsonArray(list);
+                }
+                case JsonObject obj -> rebuildObject(obj, replacement);
+                case null -> rebuildObject(new JsonObject(Map.of()), replacement); // auto-vivify
+                default -> throw new IllegalStateException("cannot write through " + this);
+            };
+        }
+
+        private JsonValue rebuildObject(JsonObject obj, @Nullable JsonValue replacement) {
+            var b = Builder.objectBuilder(obj);
+            if (replacement == null) b.remove(token);
+            else b.put(token, replacement);
+            return b.build();
+        }
+
+        @Override
+        String segment() {
+            return token;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof JsonPointerSegment jps
+                    && token.equals(jps.token)
+                    && parent.equals(jps.parent);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(JsonPointerSegment.class, token, parent);
         }
     }
 
@@ -597,5 +819,84 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      */
     public Function<JsonValue, Stream<JsonValue>> select(Selector selector) {
         return v -> apply(v).stream().flatMap(selector);
+    }
+
+    /**
+     * Return a copy of {@code root} in which the value addressed by this pointer
+     * is set to {@code newValue}. The original {@code root} is left untouched;
+     * all subtrees not on the path are shared with it.
+     *
+     * <p>Missing intermediate <em>object</em> members are created on the way
+     * down; a missing or non-array container under an {@code [n]} index step is
+     * an {@link IllegalStateException}, and a {@code #regex} segment is not
+     * writable ({@link UnsupportedOperationException}). Applying {@code with}
+     * to {@link #self()} replaces the whole document.</p>
+     *
+     * {@snippet :
+     * var p = Pointer.parse("data/users/[0]/name");
+     * JsonValue updated = p.with(doc, Basic.of("Ada")); // doc unchanged
+     *}
+     *
+     * @param root     the document to copy from, may not be {@code null}
+     * @param newValue the value to place at this pointer, may not be {@code null}
+     * @return a new document reflecting the change
+     */
+    public JsonValue with(JsonValue root, JsonValue newValue) {
+        requireNonNull(root);
+        requireNonNull(newValue);
+        return this instanceof AbstractPointer ap
+                ? ap.setIn(root, newValue)
+                : newValue; // self() replaces the entire document
+    }
+
+    /**
+     * Return a copy of {@code root} with the value addressed by this pointer
+     * removed. Removing an absent slot yields an equal tree. Cannot be applied
+     * to {@link #self()}.
+     *
+     * @param root the document to copy from, may not be {@code null}
+     * @return a new document without the addressed value
+     * @throws IllegalStateException if this is the {@link #self()} pointer
+     */
+    public JsonValue without(JsonValue root) {
+        requireNonNull(root);
+        if (this instanceof AbstractPointer ap) {
+            return ap.setIn(root, null); // null replacement = remove
+        }
+        throw new IllegalStateException("cannot remove the root (self) pointer");
+    }
+
+    /**
+     * The value addressed by this pointer, or throw a {@link NoSuchElementException}
+     * naming the pointer. Use this instead of {@code apply(root).orElseThrow()}
+     * when a miss should report <em>where</em> it missed.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve
+     */
+    public JsonValue require(JsonValue root) {
+        return apply(root).orElseThrow(() -> new NoSuchElementException("no value at " + this));
+    }
+
+    /**
+     * The string addressed by this pointer, or throw a {@link NoSuchElementException}
+     * that distinguishes the two failure modes: the pointer not resolving at all
+     * ({@code "no value at <pointer>"}), versus resolving to a non-string value
+     * ({@code "value at <pointer> is a JsonNumber, not a string"}). The message
+     * thus tells you whether your <em>path</em> is wrong or your <em>type
+     * assumption</em> is.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the string value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve, or resolves
+     *                                to something other than a {@link JsonString}
+     */
+    public String requireString(JsonValue root) {
+        var value = apply(root).orElseThrow(() ->
+                new NoSuchElementException("no value at " + this));
+        return value.string().orElseThrow(() -> new NoSuchElementException(
+                "value at " + this + " is a " + value.getClass().getSimpleName()
+                        + ", not a string"));
     }
 }

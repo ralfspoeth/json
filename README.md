@@ -211,6 +211,65 @@ Two nuances worth knowing:
   that order, so a key like `a/b` is reachable via `/a~1b` and a key
   like `m~n` via `/m~0n`. The empty string addresses the document root.
 
+### Updating a document
+
+`Pointer` writes as well as reads. `with` returns a copy of the document
+with the addressed value replaced; `without` returns a copy with it
+removed. The original is never mutated — every off-path subtree is shared
+with it, so the copies are cheap.
+
+```java
+var doc = Greyson.readValue(src).orElseThrow();
+JsonValue renamed = Pointer.parse("data/users/[0]/name").with(doc, Basic.of("Ada"));
+JsonValue pruned  = Pointer.parse("data/users/[0]/name").without(doc);
+// doc is unchanged
+```
+
+Writes drive the same engine through both path dialects, so an RFC 6901
+string works too — enough to implement JSON Patch `add`/`remove`/`replace`
+on top:
+
+```java
+JsonValue patched = Pointer.fromJsonPointer("/data/users/0/active").with(doc, JsonBoolean.TRUE);
+```
+
+A few rules keep the semantics honest:
+
+- **Missing object members are created.** Writing `a/b/c` into `{}`
+  materialises the intermediate objects.
+- **Arrays are not conjured.** An `[n]` step over a missing or non-array
+  value throws `IllegalStateException`; an out-of-range index throws
+  `IndexOutOfBoundsException`. An RFC 6901 index equal to the array length
+  appends.
+- **`#regex` segments don't write.** The target is ambiguous on a miss,
+  so `with`/`without` throw `UnsupportedOperationException`; resolve to a
+  concrete member first.
+- **Removing and nulling are distinct.** `without` drops the slot;
+  `with(doc, JsonNull.INSTANCE)` sets it to JSON `null`.
+
+### Required extraction
+
+Navigation returns `Optional`, which is right when a miss is a normal
+outcome. When a value *must* be there, `require` throws instead — and
+names the pointer, so the failure tells you where it missed:
+
+```java
+String name = Pointer.parse("data/users/[0]/name").requireString(doc);
+// NoSuchElementException: no value at data/users/[0]/name
+//   (or)  value at data/users/[0]/name is a JsonNumber, not a string
+```
+
+`require(doc)` returns the raw `JsonValue`; `requireString(doc)` adds the
+type check and separates "absent" from "wrong type" in its message.
+
+### Pointers as values
+
+A `Pointer` renders to its `parse` syntax via `toString()`, and `equals`
+/ `hashCode` compare the whole segment chain — by type *and* data. So
+`self().member("x")` and `fromJsonPointer("/x")` are distinct (they
+dispatch differently), and a member literally named `[0]` is not the
+index `[0]`. Pointers are immutable and safe to use as map keys.
+
 ### Composing pointers and selectors
 
 `Pointer` and `Selector` compose in either direction. Pick the entry
@@ -340,6 +399,16 @@ Version 1.3 incorporates changes with the help of Claude.
 - `Pointer.fromJsonPointer(String)` reads RFC 6901 JSON Pointer
   expressions, for interop with JSON Patch, OpenAPI `$ref`, JSON Schema,
   and other tooling that emits the standard syntax
+- `Pointer.with(root, value)` and `Pointer.without(root)` update a
+  document by returning a modified immutable copy, sharing every off-path
+  subtree; missing object members are created, and RFC 6901 pointers
+  drive the same engine
+- `Pointer.require(root)` and `Pointer.requireString(root)` extract a
+  required value, throwing a `NoSuchElementException` that names the
+  pointer and distinguishes an unresolved path from a wrong-typed value
+- `Pointer` now implements `toString()` (its `parse` syntax) plus
+  `equals`/`hashCode` over the segment chain, so pointers print legibly
+  and work as map keys
 - `Pointer.regex(...)` resolves multi-match patterns deterministically:
   when several keys match, the lexicographically smallest one wins
 - `Pointer.select(Selector)` and `Selector.point(Pointer)` compose the

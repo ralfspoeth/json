@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
@@ -431,5 +432,234 @@ class PointerTest {
         // then
         System.out.println(jo);
         System.out.println(ptr.apply(jo).orElseThrow());
+    }
+
+    // ---- write side: with / without --------------------------------------
+
+    @Test
+    void testWithIsCopyOnWriteAndPreservesSiblings() {
+        // given {"data": {"users": [{"name": "old", "id": 1}, {"name": "two"}]}}
+        var doc = objectBuilder()
+                .put("data", objectBuilder()
+                        .put("users", arrayBuilder()
+                                .add(objectBuilder().putBasic("name", "old").putBasic("id", 1))
+                                .add(objectBuilder().putBasic("name", "two"))))
+                .build();
+        var p = parse("data/users/[0]/name");
+        // when
+        var updated = p.with(doc, Basic.of("Ada"));
+        // then
+        assertAll(
+                () -> assertEquals("Ada", p.requireString(updated)),
+                // the original document is untouched (copy-on-write)
+                () -> assertEquals("old", p.requireString(doc)),
+                () -> assertNotSame(doc, updated),
+                // a sibling member in the same object survives
+                () -> assertEquals(1, parse("data/users/[0]/id").intValue(updated).orElseThrow()),
+                // an untouched array element survives
+                () -> assertEquals("two", parse("data/users/[1]/name").requireString(updated))
+        );
+    }
+
+    @Test
+    void testWithAutoVivifiesObjectChain() {
+        // given an empty object
+        var empty = objectBuilder().build();
+        var p = self().member("a").member("b").member("c");
+        // when writing deep into a path that does not exist yet
+        var built = p.with(empty, Basic.of(42));
+        // then the intermediate objects are created
+        assertAll(
+                () -> assertEquals(42, p.intValue(built).orElseThrow()),
+                // the original is still empty
+                () -> assertTrue(empty.members().isEmpty())
+        );
+    }
+
+    @Test
+    void testWithNegativeIndexReplacesFromEnd() {
+        var doc = objectBuilder()
+                .put("xs", arrayBuilder().addBasic(1).addBasic(2).addBasic(3))
+                .build();
+        var last = self().member("xs").index(-1);
+        var updated = last.with(doc, Basic.of(99));
+        assertAll(
+                () -> assertEquals(99, last.intValue(updated).orElseThrow()),
+                // earlier elements untouched
+                () -> assertEquals(1, self().member("xs").index(0).intValue(updated).orElseThrow()),
+                // original untouched
+                () -> assertEquals(3, last.intValue(doc).orElseThrow())
+        );
+    }
+
+    @Test
+    void testWithSelfReplacesWholeDocument() {
+        var doc = objectBuilder().putBasic("a", 1).build();
+        var replacement = Basic.of("new");
+        assertSame(replacement, self().with(doc, replacement));
+    }
+
+    @Test
+    void testWithIndexRequiresExistingArray() {
+        var doc = objectBuilder().putBasic("a", 1).build();
+        assertAll(
+                // "a" is a number, not an array
+                () -> assertThrows(IllegalStateException.class,
+                        () -> self().member("a").index(0).with(doc, Basic.of(9))),
+                // missing container
+                () -> assertThrows(IllegalStateException.class,
+                        () -> self().member("missing").index(0).with(doc, Basic.of(9)))
+        );
+    }
+
+    @Test
+    void testWithIndexOutOfBoundsThrows() {
+        var doc = objectBuilder().put("xs", arrayBuilder().addBasic(1)).build();
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> self().member("xs").index(5).with(doc, Basic.of(9)));
+    }
+
+    @Test
+    void testWithRegexSegmentIsUnsupported() {
+        var doc = objectBuilder().putBasic("bal", 1).build();
+        assertThrows(UnsupportedOperationException.class,
+                () -> self().regex("bal.*").with(doc, Basic.of(2)));
+    }
+
+    @Test
+    void testWithoutRemovesMemberAndKeepsSiblings() {
+        var doc = objectBuilder().putBasic("a", 1).putBasic("b", 2).build();
+        var a = self().member("a");
+        var pruned = a.without(doc);
+        assertAll(
+                () -> assertTrue(a.apply(pruned).isEmpty()),
+                () -> assertEquals(2, self().member("b").intValue(pruned).orElseThrow()),
+                // original untouched
+                () -> assertEquals(1, a.intValue(doc).orElseThrow())
+        );
+    }
+
+    @Test
+    void testWithoutRemovesArrayElement() {
+        var doc = objectBuilder()
+                .put("xs", arrayBuilder().addBasic(10).addBasic(20).addBasic(30))
+                .build();
+        var pruned = self().member("xs").index(1).without(doc);
+        var xs = self().member("xs").apply(pruned).orElseThrow();
+        assertAll(
+                () -> assertEquals(2, xs.elements().size()),
+                () -> assertEquals(10, self().member("xs").index(0).intValue(pruned).orElseThrow()),
+                () -> assertEquals(30, self().member("xs").index(1).intValue(pruned).orElseThrow()),
+                // original length untouched
+                () -> assertEquals(3, self().member("xs").apply(doc).orElseThrow().elements().size())
+        );
+    }
+
+    @Test
+    void testWithoutAbsentSlotIsNoOp() {
+        var doc = objectBuilder().putBasic("a", 1).build();
+        var same = self().member("missing").without(doc);
+        assertEquals(doc, same);
+    }
+
+    @Test
+    void testWithoutSelfThrows() {
+        var doc = objectBuilder().putBasic("a", 1).build();
+        assertThrows(IllegalStateException.class, () -> self().without(doc));
+    }
+
+    @Test
+    void testRfc6901WriteReplaceAndAppend() throws IOException {
+        var doc = Greyson.readValue(Reader.of("[10, 20]")).orElseThrow();
+        // replace at /0
+        var replaced = Pointer.fromJsonPointer("/0").with(doc, Basic.of(99));
+        // append when the index equals the current length
+        var appended = Pointer.fromJsonPointer("/2").with(doc, Basic.of(30));
+        assertAll(
+                () -> assertEquals(99, Pointer.fromJsonPointer("/0").intValue(replaced).orElseThrow()),
+                () -> assertEquals(2, replaced.elements().size()),
+                () -> assertEquals(30, Pointer.fromJsonPointer("/2").intValue(appended).orElseThrow()),
+                () -> assertEquals(3, appended.elements().size())
+        );
+    }
+
+    @Test
+    void testRfc6901WriteNestedObject() throws IOException {
+        var doc = Greyson.readValue(Reader.of("""
+                {"a": {"b": 1}}
+                """)).orElseThrow();
+        var updated = Pointer.fromJsonPointer("/a/b").with(doc, Basic.of(2));
+        assertAll(
+                () -> assertEquals(2, Pointer.fromJsonPointer("/a/b").intValue(updated).orElseThrow()),
+                () -> assertEquals(1, Pointer.fromJsonPointer("/a/b").intValue(doc).orElseThrow())
+        );
+    }
+
+    // ---- toString and require --------------------------------------------
+
+    @Test
+    void testToStringRendersParseSyntax() {
+        assertAll(
+                () -> assertEquals("data/users/[0]/name", parse("data/users/[0]/name").toString()),
+                () -> assertEquals("", self().toString())
+        );
+    }
+
+    @Test
+    void testRequireNamesThePointerOnMiss() {
+        var doc = objectBuilder().putBasic("a", 1).build();
+        var p = parse("data/users/[0]/name");
+        var ex = assertThrows(NoSuchElementException.class, () -> p.require(doc));
+        assertAll(
+                () -> assertTrue(ex.getMessage().contains("data/users/[0]/name"), ex.getMessage()),
+                () -> assertEquals(Basic.of(1), self().member("a").require(doc))
+        );
+    }
+
+    @Test
+    void testRequireStringDistinguishesMissingFromWrongType() {
+        var doc = objectBuilder()
+                .putBasic("s", "hi")
+                .putBasic("n", 42)
+                .build();
+        var missing = assertThrows(NoSuchElementException.class,
+                () -> self().member("missing").requireString(doc));
+        var wrongType = assertThrows(NoSuchElementException.class,
+                () -> self().member("n").requireString(doc));
+        assertAll(
+                () -> assertEquals("hi", self().member("s").requireString(doc)),
+                // an unresolved path reports "no value at <pointer>"
+                () -> assertTrue(missing.getMessage().contains("no value at missing"),
+                        missing.getMessage()),
+                // a resolved-but-wrong-type value names the actual type instead
+                () -> assertTrue(wrongType.getMessage().contains("not a string"),
+                        wrongType.getMessage()),
+                () -> assertTrue(wrongType.getMessage().contains("JsonNumber"),
+                        wrongType.getMessage())
+        );
+    }
+
+    @Test
+    void testEqualsHashCodeAndMapKey() {
+        assertAll(
+                // structurally identical pointers are equal regardless of how built
+                () -> assertEquals(parse("a/b/[0]"), self().member("a").member("b").index(0)),
+                () -> assertEquals(parse("a/b/[0]").hashCode(),
+                        self().member("a").member("b").index(0).hashCode()),
+                () -> assertEquals(self(), self()),
+                // differing segment data breaks equality
+                () -> assertNotEquals(parse("a/b"), parse("a/c")),
+                () -> assertNotEquals(self().index(0), self().index(1)),
+                // same token, different dispatch semantics -> not equal
+                () -> assertNotEquals(self().member("x"), Pointer.fromJsonPointer("/x")),
+                // a member literally named "[0]" is not the index [0]
+                () -> assertNotEquals(self().member("[0]"), self().index(0)),
+                // usable as a hash-map key
+                () -> {
+                    var m = new java.util.HashMap<Pointer, String>();
+                    m.put(parse("a/b"), "v");
+                    assertEquals("v", m.get(self().member("a").member("b")));
+                }
+        );
     }
 }

@@ -74,7 +74,7 @@ import static java.util.Objects.requireNonNull;
  * builders, and {@link #fromJsonPointer(String)} for
  * <a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC 6901</a>
  * expressions (JSON Patch, OpenAPI {@code $ref}, JSON Schema, &hellip;).</li>
- * <li><b>Reading</b> &mdash; {@link #apply(JsonValue)} for the raw optional, the
+ * <li><b>Reading</b> &mdash; {@link #apply(Object)} for the raw optional, the
  * typed convenience getters ({@link #stringValue(JsonValue)},
  * {@link #intValue(JsonValue)}, &hellip;), and {@link #require(JsonValue)} /
  * {@link #requireString(JsonValue)}, which throw a {@link java.util.NoSuchElementException}
@@ -433,7 +433,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
             return switch (container) {
                 case JsonArray arr -> {
                     int idx = parseRfc6901Index(token);
-                    var list = new ArrayList<JsonValue>(arr.elements());
+                    var list = new ArrayList<>(arr.elements());
                     if (idx < 0 || idx > list.size()) {
                         throw new IndexOutOfBoundsException("RFC 6901 index " + token + " at " + this);
                     }

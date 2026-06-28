@@ -54,7 +54,7 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     @Override
     public int depth() {
         return members.values()
-                .parallelStream()
+                .stream()
                 .mapToInt(JsonValue::depth)
                 .max()
                 .orElse(0) + 1;
@@ -63,7 +63,7 @@ public record JsonObject(Map<String, JsonValue> members) implements Aggregate, F
     @Override
     public int nodes() {
         return 1 + members.values()
-                .parallelStream()
+                .stream()
                 .mapToInt(JsonValue::nodes)
                 .sum();
     }

@@ -231,7 +231,12 @@ public sealed abstract class Selector implements Function<JsonValue, Stream<Json
      * assert l.equals(c);
      *}
      *
+     * <p>This streams <em>every</em> matching member. When you instead want a
+     * single value, use {@link Pointer#regex(Pattern)}, which resolves to the
+     * lexicographically smallest matching key.</p>
+     *
      * @param regex a regular expression matched against the keys of
+     * @see Pointer#regex(Pattern)
      */
     public static Selector regex(Pattern regex) {
         return new RegexSelector(regex);

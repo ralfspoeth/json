@@ -558,19 +558,31 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
 
     /**
      * Create a pointer segment that matches object members by regular expression.
-     * If multiple members satisfy the pattern, the value of the lexicographically
-     * smallest matching key is returned — see {@code First} for the rationale.
-     * Use {@link Selector#regex(Pattern)} when you need every match.
+     *
+     * <p><strong>This resolves to a single value, not to every match.</strong> A
+     * {@link Pointer} is single-valued by definition, so when several keys satisfy
+     * the pattern it picks exactly one — the value of the <em>lexicographically
+     * smallest</em> matching key (see {@code First} for the rationale) — and
+     * silently discards the rest. For {@code "bal(ance)?"} against
+     * {@code {"bal": 1, "balance": 2}} you get {@code 1}.</p>
+     *
+     * <p>If you expect more than one key to match, this is almost certainly the
+     * wrong tool: use {@link Selector#regex(Pattern)}, which streams <em>every</em>
+     * matching member. Reach for {@code Pointer.regex} only when at most one key
+     * can match, or when "smallest key wins" is genuinely the behaviour you want.</p>
      *
      * @param pattern the regex pattern, may not be {@code null}
-     * @return a pointer
+     * @return a pointer resolving to the lexicographically smallest matching member
+     * @see Selector#regex(Pattern)
      */
     public Pointer regex(Pattern pattern) {
         return new First(pattern, this);
     }
 
     /**
-     * Same as {@code regex(Pattern.compile(pattern))}.
+     * Same as {@code regex(Pattern.compile(pattern))}. See {@link #regex(Pattern)}
+     * for the single-match (lexicographically smallest) semantics and when to
+     * prefer {@link Selector#regex(Pattern)} instead.
      *
      * @param pattern the regex pattern, may not be {@code null}
      * @return a pointer

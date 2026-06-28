@@ -893,10 +893,84 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      *                                to something other than a {@link JsonString}
      */
     public String requireString(JsonValue root) {
-        var value = apply(root).orElseThrow(() ->
-                new NoSuchElementException("no value at " + this));
-        return value.string().orElseThrow(() -> new NoSuchElementException(
+        var value = require(root);
+        return value.string().orElseThrow(() -> wrongType(value, "a string"));
+    }
+
+    /**
+     * The number addressed by this pointer as a {@link BigDecimal}, or throw a
+     * {@link NoSuchElementException} naming the pointer (see {@link #requireString}
+     * for the two-failure-mode contract).
+     *
+     * @param root the document, may not be {@code null}
+     * @return the decimal value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve, or resolves
+     *                                to something other than a {@link JsonNumber}
+     */
+    public BigDecimal requireDecimal(JsonValue root) {
+        var value = require(root);
+        return value.decimal().orElseThrow(() -> wrongType(value, "a number"));
+    }
+
+    /**
+     * The number at this pointer as an {@code int} (truncating, like
+     * {@link #intValue(JsonValue)}), or throw a {@link NoSuchElementException}
+     * naming the pointer.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the int value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
+     */
+    public int requireInt(JsonValue root) {
+        return requireDecimal(root).intValue();
+    }
+
+    /**
+     * The number at this pointer as a {@code long} (truncating, like
+     * {@link #longValue(JsonValue)}), or throw a {@link NoSuchElementException}
+     * naming the pointer.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the long value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
+     */
+    public long requireLong(JsonValue root) {
+        return requireDecimal(root).longValue();
+    }
+
+    /**
+     * The number at this pointer as a {@code double} (like
+     * {@link #doubleValue(JsonValue)}), or throw a {@link NoSuchElementException}
+     * naming the pointer.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the double value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
+     */
+    public double requireDouble(JsonValue root) {
+        return requireDecimal(root).doubleValue();
+    }
+
+    /**
+     * The boolean addressed by this pointer, or throw a {@link NoSuchElementException}
+     * naming the pointer.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the boolean value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve, or resolves
+     *                                to something other than a {@link JsonBoolean}
+     */
+    public boolean requireBoolean(JsonValue root) {
+        var value = require(root);
+        return value.bool().orElseThrow(() -> wrongType(value, "a boolean"));
+    }
+
+    // Shared diagnostic for the require* family: a value resolved but had the
+    // wrong type. Names the pointer and the actual type so the message says
+    // whether the path or the type assumption is at fault.
+    private NoSuchElementException wrongType(JsonValue value, String expected) {
+        return new NoSuchElementException(
                 "value at " + this + " is a " + value.getClass().getSimpleName()
-                        + ", not a string"));
+                        + ", not " + expected);
     }
 }

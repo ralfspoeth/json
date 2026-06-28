@@ -41,7 +41,7 @@ class PointerTest {
         var singleElem = objectBuilder().put("one", five).build();
         // then
         assertAll(
-                () -> assertEquals(five, parse("one").apply(singleElem).orElseThrow())
+                () -> assertEquals(five, parse("one").require(singleElem))
         );
     }
 
@@ -57,7 +57,7 @@ class PointerTest {
         assertAll(
                 () -> assertFalse(a.apply(ja).isPresent()),
                 () -> assertFalse(a.apply(b).isPresent()),
-                () -> assertEquals(1, a.intValue(jo).orElseThrow())
+                () -> assertEquals(1, a.requireInt(jo))
         );
     }
 
@@ -72,7 +72,7 @@ class PointerTest {
         // then
         assertAll(
                 () -> assertTrue(i1.apply(ja).isPresent()),
-                () -> assertEquals(2, i1.intValue(ja).orElseThrow()),
+                () -> assertEquals(2, i1.requireInt(ja)),
                 () -> assertFalse(i1.apply(jo).isPresent()),
                 () -> assertFalse(i1.apply(b).isPresent())
         );
@@ -90,8 +90,8 @@ class PointerTest {
         var bal = self().regex("bal(ance)?");
         // then single matches behave like a member lookup
         assertAll(
-                () -> assertEquals(1d, ra.doubleValue(jo).orElseThrow()),
-                () -> assertEquals(2d, bal.doubleValue(jo).orElseThrow())
+                () -> assertEquals(1d, ra.requireDouble(jo)),
+                () -> assertEquals(2d, bal.requireDouble(jo))
         );
     }
 
@@ -110,8 +110,8 @@ class PointerTest {
         var fluent = self().member("wallet").regex("bal(ance)?");
         // then both resolve to the lex-smallest matching key
         assertAll(
-                () -> assertEquals(1d, fromParse.doubleValue(jo).orElseThrow()),
-                () -> assertEquals(1d, fluent.doubleValue(jo).orElseThrow())
+                () -> assertEquals(1d, fromParse.requireDouble(jo)),
+                () -> assertEquals(1d, fluent.requireDouble(jo))
         );
     }
 
@@ -125,7 +125,7 @@ class PointerTest {
         // when the regex matches both keys
         var bal = self().regex("bal(ance)?");
         // then the value of the lexicographically smallest matching key wins
-        assertEquals(1d, bal.doubleValue(jo).orElseThrow());
+        assertEquals(1d, bal.requireDouble(jo));
     }
 
     @Test
@@ -135,7 +135,7 @@ class PointerTest {
                 """;
         var doc = Greyson.readValue(Reader.of(json)).orElseThrow();
         // empty string addresses the document root
-        assertSame(doc, Pointer.fromJsonPointer("").apply(doc).orElseThrow());
+        assertSame(doc, Pointer.fromJsonPointer("").require(doc));
     }
 
     @Test
@@ -156,14 +156,10 @@ class PointerTest {
         assertAll(
                 () -> assertEquals("obj-zero",
                         Pointer.fromJsonPointer("/0")
-                                .apply(Greyson.readValue(Reader.of(asObject)).orElseThrow())
-                                .flatMap(JsonValue::string)
-                                .orElseThrow()),
+                                .requireString(Greyson.readValue(Reader.of(asObject)).orElseThrow())),
                 () -> assertEquals("arr-zero",
                         Pointer.fromJsonPointer("/0")
-                                .apply(Greyson.readValue(Reader.of(asArray)).orElseThrow())
-                                .flatMap(JsonValue::string)
-                                .orElseThrow())
+                                .requireString(Greyson.readValue(Reader.of(asArray)).orElseThrow()))
         );
     }
 
@@ -176,12 +172,12 @@ class PointerTest {
         var doc = Greyson.readValue(Reader.of(json)).orElseThrow();
         assertAll(
                 () -> assertEquals("slash",
-                        Pointer.fromJsonPointer("/a~1b").apply(doc).flatMap(JsonValue::string).orElseThrow()),
+                        Pointer.fromJsonPointer("/a~1b").requireString(doc)),
                 () -> assertEquals("tilde",
-                        Pointer.fromJsonPointer("/m~0n").apply(doc).flatMap(JsonValue::string).orElseThrow()),
+                        Pointer.fromJsonPointer("/m~0n").requireString(doc)),
                 // "~01" should decode as the literal "~1", not "/"
                 () -> assertEquals("literal-tilde-one",
-                        Pointer.fromJsonPointer("/~01").apply(doc).flatMap(JsonValue::string).orElseThrow())
+                        Pointer.fromJsonPointer("/~01").requireString(doc))
         );
     }
 
@@ -192,7 +188,7 @@ class PointerTest {
                 """;
         var doc = Greyson.readValue(Reader.of(arr)).orElseThrow();
         assertAll(
-                () -> assertEquals(20, Pointer.fromJsonPointer("/1").intValue(doc).orElseThrow()),
+                () -> assertEquals(20, Pointer.fromJsonPointer("/1").requireInt(doc)),
                 // RFC 6901 forbids leading zeros — "01" is not a valid index
                 () -> assertTrue(Pointer.fromJsonPointer("/01").apply(doc).isEmpty()),
                 // Out-of-bounds is also empty, not an exception
@@ -386,10 +382,10 @@ class PointerTest {
         var opt = Greyson.readValue(Reader.of(json));
         var val = opt.orElseThrow();
         assertAll(
-                () -> assertInstanceOf(JsonObject.class, opt.flatMap(i0).orElseThrow()),
-                () -> assertInstanceOf(JsonArray.class, opt.flatMap(i1).orElseThrow()),
-                () -> assertInstanceOf(JsonArray.class, opt.flatMap(i0ma).orElseThrow()),
-                () -> assertEquals(2, i0mai1.intValue(val).orElseThrow())
+                () -> assertInstanceOf(JsonObject.class, i0.require(val)),
+                () -> assertInstanceOf(JsonArray.class, i1.require(val)),
+                () -> assertInstanceOf(JsonArray.class, i0ma.require(val)),
+                () -> assertEquals(2, i0mai1.requireInt(val))
         );
     }
 
@@ -412,7 +408,7 @@ class PointerTest {
         System.out.println(ja);
         System.out.println(ja.depth());
         System.out.println(ja.nodes());
-        System.out.println(ptr.apply(ja).orElseThrow());
+        System.out.println(ptr.require(ja));
     }
 
     @Test
@@ -431,7 +427,7 @@ class PointerTest {
         var jo = b.build();
         // then
         System.out.println(jo);
-        System.out.println(ptr.apply(jo).orElseThrow());
+        System.out.println(ptr.require(jo));
     }
 
     // ---- write side: with / without --------------------------------------
@@ -455,7 +451,7 @@ class PointerTest {
                 () -> assertEquals("old", p.requireString(doc)),
                 () -> assertNotSame(doc, updated),
                 // a sibling member in the same object survives
-                () -> assertEquals(1, parse("data/users/[0]/id").intValue(updated).orElseThrow()),
+                () -> assertEquals(1, parse("data/users/[0]/id").requireInt(updated)),
                 // an untouched array element survives
                 () -> assertEquals("two", parse("data/users/[1]/name").requireString(updated))
         );
@@ -470,7 +466,7 @@ class PointerTest {
         var built = p.with(empty, Basic.of(42));
         // then the intermediate objects are created
         assertAll(
-                () -> assertEquals(42, p.intValue(built).orElseThrow()),
+                () -> assertEquals(42, p.requireInt(built)),
                 // the original is still empty
                 () -> assertTrue(empty.members().isEmpty())
         );
@@ -484,11 +480,11 @@ class PointerTest {
         var last = self().member("xs").index(-1);
         var updated = last.with(doc, Basic.of(99));
         assertAll(
-                () -> assertEquals(99, last.intValue(updated).orElseThrow()),
+                () -> assertEquals(99, last.requireInt(updated)),
                 // earlier elements untouched
-                () -> assertEquals(1, self().member("xs").index(0).intValue(updated).orElseThrow()),
+                () -> assertEquals(1, self().member("xs").index(0).requireInt(updated)),
                 // original untouched
-                () -> assertEquals(3, last.intValue(doc).orElseThrow())
+                () -> assertEquals(3, last.requireInt(doc))
         );
     }
 
@@ -533,9 +529,9 @@ class PointerTest {
         var pruned = a.without(doc);
         assertAll(
                 () -> assertTrue(a.apply(pruned).isEmpty()),
-                () -> assertEquals(2, self().member("b").intValue(pruned).orElseThrow()),
+                () -> assertEquals(2, self().member("b").requireInt(pruned)),
                 // original untouched
-                () -> assertEquals(1, a.intValue(doc).orElseThrow())
+                () -> assertEquals(1, a.requireInt(doc))
         );
     }
 
@@ -545,13 +541,13 @@ class PointerTest {
                 .put("xs", arrayBuilder().addBasic(10).addBasic(20).addBasic(30))
                 .build();
         var pruned = self().member("xs").index(1).without(doc);
-        var xs = self().member("xs").apply(pruned).orElseThrow();
+        var xs = self().member("xs").require(pruned);
         assertAll(
                 () -> assertEquals(2, xs.elements().size()),
-                () -> assertEquals(10, self().member("xs").index(0).intValue(pruned).orElseThrow()),
-                () -> assertEquals(30, self().member("xs").index(1).intValue(pruned).orElseThrow()),
+                () -> assertEquals(10, self().member("xs").index(0).requireInt(pruned)),
+                () -> assertEquals(30, self().member("xs").index(1).requireInt(pruned)),
                 // original length untouched
-                () -> assertEquals(3, self().member("xs").apply(doc).orElseThrow().elements().size())
+                () -> assertEquals(3, self().member("xs").require(doc).elements().size())
         );
     }
 
@@ -576,9 +572,9 @@ class PointerTest {
         // append when the index equals the current length
         var appended = Pointer.fromJsonPointer("/2").with(doc, Basic.of(30));
         assertAll(
-                () -> assertEquals(99, Pointer.fromJsonPointer("/0").intValue(replaced).orElseThrow()),
+                () -> assertEquals(99, Pointer.fromJsonPointer("/0").requireInt(replaced)),
                 () -> assertEquals(2, replaced.elements().size()),
-                () -> assertEquals(30, Pointer.fromJsonPointer("/2").intValue(appended).orElseThrow()),
+                () -> assertEquals(30, Pointer.fromJsonPointer("/2").requireInt(appended)),
                 () -> assertEquals(3, appended.elements().size())
         );
     }
@@ -590,8 +586,8 @@ class PointerTest {
                 """)).orElseThrow();
         var updated = Pointer.fromJsonPointer("/a/b").with(doc, Basic.of(2));
         assertAll(
-                () -> assertEquals(2, Pointer.fromJsonPointer("/a/b").intValue(updated).orElseThrow()),
-                () -> assertEquals(1, Pointer.fromJsonPointer("/a/b").intValue(doc).orElseThrow())
+                () -> assertEquals(2, Pointer.fromJsonPointer("/a/b").requireInt(updated)),
+                () -> assertEquals(1, Pointer.fromJsonPointer("/a/b").requireInt(doc))
         );
     }
 
@@ -636,6 +632,38 @@ class PointerTest {
                         wrongType.getMessage()),
                 () -> assertTrue(wrongType.getMessage().contains("JsonNumber"),
                         wrongType.getMessage())
+        );
+    }
+
+    @Test
+    void testRequireNumericAndBoolean() {
+        var doc = objectBuilder()
+                .putBasic("n", 42)
+                .putBasic("big", 9_876_543_210L)
+                .putBasic("f", 3.7d)
+                .putBasic("flag", true)
+                .putBasic("s", "x")
+                .build();
+        var wrongType = assertThrows(NoSuchElementException.class,
+                () -> self().member("s").requireDecimal(doc));
+        var missing = assertThrows(NoSuchElementException.class,
+                () -> self().member("missing").requireInt(doc));
+        assertAll(
+                () -> assertEquals(new BigDecimal("42"), self().member("n").requireDecimal(doc)),
+                () -> assertEquals(42, self().member("n").requireInt(doc)),
+                () -> assertEquals(9_876_543_210L, self().member("big").requireLong(doc)),
+                () -> assertEquals(3.7d, self().member("f").requireDouble(doc)),
+                // requireInt truncates, like intValue
+                () -> assertEquals(3, self().member("f").requireInt(doc)),
+                () -> assertTrue(self().member("flag").requireBoolean(doc)),
+                // a present-but-wrong-type value names the actual type
+                () -> assertTrue(wrongType.getMessage().contains("not a number"), wrongType.getMessage()),
+                () -> assertTrue(wrongType.getMessage().contains("JsonString"), wrongType.getMessage()),
+                // an unresolved path reports "no value at <pointer>"
+                () -> assertTrue(missing.getMessage().contains("no value at missing"), missing.getMessage()),
+                // requireBoolean is type-strict
+                () -> assertThrows(NoSuchElementException.class,
+                        () -> self().member("n").requireBoolean(doc))
         );
     }
 

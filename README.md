@@ -6,7 +6,7 @@ A small, opinionated JSON library for Java.
 <dependency>
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.3.3</version>
+    <version>1.4.0</version>
 </dependency>
 ```
 
@@ -390,6 +390,26 @@ isn't, the simplicity is worth the trade.
 
 ---
 
+## What's new in 1.4.0
+
+Version 1.4.0 grows `Pointer` from a read-only navigator into a full
+read/write query primitive, developed with the help of Claude. Everything
+below is new since 1.3.2.
+
+- `Pointer.with(root, value)` and `Pointer.without(root)` update a document
+  by returning a modified immutable copy, sharing every off-path subtree.
+  Missing object members are auto-created; an `[n]` index step requires an
+  existing array; `#regex` segments are not writable. RFC 6901 pointers
+  drive the same engine, enough to implement JSON Patch on top.
+- A `require*` family extracts a required value, throwing a
+  `NoSuchElementException` that names the pointer and distinguishes an
+  unresolved path from a wrong-typed value: `require`, `requireString`,
+  `requireDecimal`, `requireInt`, `requireLong`, `requireDouble`, and
+  `requireBoolean`.
+- `Pointer` now implements `toString()` (rendering its `parse` syntax) plus
+  `equals`/`hashCode` over the segment chain, compared by type and data — so
+  pointers print legibly and work as map keys.
+
 ## What's new in 1.3
 
 Version 1.3 incorporates changes with the help of Claude.
@@ -399,16 +419,6 @@ Version 1.3 incorporates changes with the help of Claude.
 - `Pointer.fromJsonPointer(String)` reads RFC 6901 JSON Pointer
   expressions, for interop with JSON Patch, OpenAPI `$ref`, JSON Schema,
   and other tooling that emits the standard syntax
-- `Pointer.with(root, value)` and `Pointer.without(root)` update a
-  document by returning a modified immutable copy, sharing every off-path
-  subtree; missing object members are created, and RFC 6901 pointers
-  drive the same engine
-- `Pointer.require(root)` and `Pointer.requireString(root)` extract a
-  required value, throwing a `NoSuchElementException` that names the
-  pointer and distinguishes an unresolved path from a wrong-typed value
-- `Pointer` now implements `toString()` (its `parse` syntax) plus
-  `equals`/`hashCode` over the segment chain, so pointers print legibly
-  and work as map keys
 - `Pointer.regex(...)` resolves multi-match patterns deterministically:
   when several keys match, the lexicographically smallest one wins
 - `Pointer.select(Selector)` and `Selector.point(Pointer)` compose the

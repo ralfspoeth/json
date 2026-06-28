@@ -82,7 +82,7 @@ class GreysonTest {
     }
 
     @Test
-    void testWriteValue_jsonArray() throws IOException {
+    void testWriteValue_jsonArray() {
         // given
         JsonArray jsonArray = Builder.arrayBuilder()
                 .add(JsonBoolean.TRUE)
@@ -97,7 +97,7 @@ class GreysonTest {
     }
 
     @Test
-    void testWriteValue_jsonNull() throws IOException {
+    void testWriteValue_jsonNull() {
         StringWriter writer = new StringWriter();
         Greyson.writeValue(writer, JsonNull.INSTANCE);
         assertEquals("null", writer.toString().trim());
@@ -152,7 +152,7 @@ class GreysonTest {
         var result = Greyson.readValue(Reader.of(target.getBuffer())).orElseThrow();
         Pointer make = Pointer.self().member("make"), year = Pointer.self().member("year");
         assertAll(
-                () -> assertEquals(make.stringValue(expected).orElseThrow(), make.stringValue(result).orElseThrow()),
+                () -> assertEquals(make.requireString(expected), make.requireString(result)),
                 () -> assertEquals(year.intValue(expected).orElseThrow(), year.intValue(result).orElseThrow()),
                 () -> assertTrue(result.get("ts").isPresent())
         );

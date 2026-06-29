@@ -222,13 +222,12 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
 
         @Override
         JsonValue rebuildContainer(@Nullable JsonValue container, @Nullable JsonValue replacement) {
-            // A missing or non-object container auto-vivifies to an empty
-            // object, so chains of members materialise on write.
+            // A missing or non-object container auto-vivifies to an empty object,
+            // so chains of members materialise on write. Untouched members keep
+            // their original instances (see withMember) — off-path subtrees are
+            // shared, not deep-copied.
             var obj = container instanceof JsonObject jo ? jo : new JsonObject(Map.of());
-            var b = Builder.objectBuilder(obj);
-            if (replacement == null) b.remove(memberName);
-            else b.put(memberName, replacement);
-            return b.build();
+            return withMember(obj, memberName, replacement);
         }
 
         @Override
@@ -453,10 +452,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
         }
 
         private JsonValue rebuildObject(JsonObject obj, @Nullable JsonValue replacement) {
-            var b = Builder.objectBuilder(obj);
-            if (replacement == null) b.remove(token);
-            else b.put(token, replacement);
-            return b.build();
+            return withMember(obj, token, replacement);
         }
 
         @Override
@@ -853,6 +849,18 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @param newValue the value to place at this pointer, may not be {@code null}
      * @return a new document reflecting the change
      */
+    // Build a new object from a shallow copy of {@code obj}'s members with one
+    // entry set (or removed when {@code replacement} is null). Every other
+    // member keeps its original instance, so the rebuild touches only the
+    // objects along the pointer's path — off-path subtrees are shared with the
+    // source document, making with()/without() O(path length), not O(document).
+    private static JsonObject withMember(JsonObject obj, String name, @Nullable JsonValue replacement) {
+        var map = new HashMap<>(obj.members());
+        if (replacement == null) map.remove(name);
+        else map.put(name, replacement);
+        return new JsonObject(map);
+    }
+
     public JsonValue with(JsonValue root, JsonValue newValue) {
         requireNonNull(root);
         requireNonNull(newValue);

@@ -552,6 +552,23 @@ class PointerTest {
     }
 
     @Test
+    void testWithSharesOffPathSubtrees() {
+        // {"a": {"keep": 1}, "b": {"change": 2}}
+        var doc = objectBuilder()
+                .put("a", objectBuilder().putBasic("keep", 1))
+                .put("b", objectBuilder().putBasic("change", 2))
+                .build();
+        var aBefore = self().member("a").require(doc); // the "a" instance inside doc
+        var updated = parse("b/change").with(doc, Basic.of(99));
+        assertAll(
+                () -> assertEquals(99, parse("b/change").requireInt(updated)),
+                () -> assertEquals(2, parse("b/change").requireInt(doc)), // original intact
+                // the off-path subtree "a" is shared by identity, not deep-copied
+                () -> assertSame(aBefore, self().member("a").require(updated))
+        );
+    }
+
+    @Test
     void testWithoutAbsentSlotIsNoOp() {
         var doc = objectBuilder().putBasic("a", 1).build();
         var same = self().member("missing").without(doc);

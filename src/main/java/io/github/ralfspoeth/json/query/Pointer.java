@@ -938,6 +938,21 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
     }
 
     /**
+     * The number at this pointer as an {@code int} using
+     * {@link BigDecimal#intValueExact()} (like {@link #intValueExact(JsonValue)}),
+     * or throw a {@link NoSuchElementException} naming the pointer.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the exact int value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
+     * @throws ArithmeticException    if the number has a nonzero fractional part
+     *                                or does not fit in an {@code int}
+     */
+    public int requireIntExact(JsonValue root) {
+        return requireDecimal(root).intValueExact();
+    }
+
+    /**
      * The number at this pointer as a {@code long} (truncating, like
      * {@link #longValue(JsonValue)}), or throw a {@link NoSuchElementException}
      * naming the pointer.
@@ -948,6 +963,21 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      */
     public long requireLong(JsonValue root) {
         return requireDecimal(root).longValue();
+    }
+
+    /**
+     * The number at this pointer as a {@code long} using
+     * {@link BigDecimal#longValueExact()} (like {@link #longValueExact(JsonValue)}),
+     * or throw a {@link NoSuchElementException} naming the pointer.
+     *
+     * @param root the document, may not be {@code null}
+     * @return the exact long value at this pointer
+     * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
+     * @throws ArithmeticException    if the number has a nonzero fractional part
+     *                                or does not fit in a {@code long}
+     */
+    public long requireLongExact(JsonValue root) {
+        return requireDecimal(root).longValueExact();
     }
 
     /**

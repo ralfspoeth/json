@@ -668,6 +668,35 @@ class PointerTest {
     }
 
     @Test
+    void testRequireExact() throws IOException {
+        // huge is outside long range; build via JSON for a real BigDecimal payload
+        var doc = Greyson.readValue(Reader.of("""
+                {"ok": 1000, "frac": 1.5, "big": 10000000000, "huge": 99999999999999999999, "s": "x"}
+                """)).orElseThrow();
+        assertAll(
+                () -> assertEquals(1000, self().member("ok").requireIntExact(doc)),
+                () -> assertEquals(1000L, self().member("ok").requireLongExact(doc)),
+                // a nonzero fractional part is rejected
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("frac").requireIntExact(doc)),
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("frac").requireLongExact(doc)),
+                // out of int range (but valid long)
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("big").requireIntExact(doc)),
+                () -> assertEquals(10_000_000_000L, self().member("big").requireLongExact(doc)),
+                // out of long range
+                () -> assertThrows(ArithmeticException.class,
+                        () -> self().member("huge").requireLongExact(doc)),
+                // wrong type and missing still surface as NoSuchElementException
+                () -> assertThrows(NoSuchElementException.class,
+                        () -> self().member("s").requireIntExact(doc)),
+                () -> assertThrows(NoSuchElementException.class,
+                        () -> self().member("missing").requireLongExact(doc))
+        );
+    }
+
+    @Test
     void testEqualsHashCodeAndMapKey() {
         assertAll(
                 // structurally identical pointers are equal regardless of how built

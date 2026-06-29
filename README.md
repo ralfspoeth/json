@@ -404,8 +404,8 @@ below is new since 1.3.2.
 - A `require*` family extracts a required value, throwing a
   `NoSuchElementException` that names the pointer and distinguishes an
   unresolved path from a wrong-typed value: `require`, `requireString`,
-  `requireDecimal`, `requireInt`, `requireLong`, `requireDouble`, and
-  `requireBoolean`.
+  `requireDecimal`, `requireInt`, `requireIntExact`, `requireLong`,
+  `requireLongExact`, `requireDouble`, and `requireBoolean`.
 - `Pointer` now implements `toString()` (rendering its `parse` syntax) plus
   `equals`/`hashCode` over the segment chain, compared by type and data — so
   pointers print legibly and work as map keys.

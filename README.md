@@ -310,9 +310,13 @@ JsonValue                       sealed
 
 A few design choices worth calling out:
 
-- **`BigDecimal`, not `double`.** Numeric precision is preserved on
-  round trips. `JsonValue::intValue`, `::longValue`, `::doubleValue`
-  give you the conversions when you want them.
+- **`BigDecimal`, not `double`.** Numbers are held as `BigDecimal`, so
+  digits are never lost to binary floating point. Values are *normalized* —
+  trailing zeros are stripped — so `18250.00` and `18250` compare equal and
+  both serialize as `18250` (via `BigDecimal::toPlainString`, never
+  scientific notation). Magnitude and significant digits are preserved;
+  trailing-zero scale is not. `JsonValue::intValue`, `::longValue`,
+  `::doubleValue` give you the conversions when you want them.
 - **Defensive copies in canonical constructors.** `JsonArray` and
   `JsonObject` copy their inputs unless they're already immutable
   (`List.of`, `Map.of`). Once constructed, the whole tree is

@@ -22,10 +22,10 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
         value = requireNonNull(value).stripTrailingZeros();
     }
 
-    ///  @return {@code value().toString()}
+    ///  @return {@code value().toPlainString()} (never scientific notation)
     @Override
     public String json() {
-        return value.toString();
+        return value.toPlainString();
     }
 
     ///  @return {@code Optional.of(value())}

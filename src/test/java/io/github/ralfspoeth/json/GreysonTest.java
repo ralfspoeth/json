@@ -152,7 +152,7 @@ class GreysonTest {
         var result = Greyson.readValue(Reader.of(target.getBuffer())).orElseThrow();
         Pointer make = Pointer.self().member("make"), year = Pointer.self().member("year");
         assertAll(
-                () -> assertEquals(make.requireString(expected), make.requireString(result)),
+                () -> assertEquals(make.stringOrThrow(expected), make.stringOrThrow(result)),
                 () -> assertEquals(year.intValue(expected).orElseThrow(), year.intValue(result).orElseThrow()),
                 () -> assertTrue(result.get("ts").isPresent())
         );

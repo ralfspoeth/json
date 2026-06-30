@@ -77,7 +77,7 @@ import static java.util.Objects.requireNonNull;
  * <li><b>Reading</b> &mdash; {@link #apply(Object)} for the raw optional, the
  * typed convenience getters ({@link #stringValue(JsonValue)},
  * {@link #intValue(JsonValue)}, &hellip;), and {@link #require(JsonValue)} /
- * {@link #requireString(JsonValue)}, which throw a {@link java.util.NoSuchElementException}
+ * {@link #stringOrThrow(JsonValue)}, which throw a {@link java.util.NoSuchElementException}
  * naming this pointer when a required value is absent or of the wrong type.</li>
  * <li><b>Writing</b> &mdash; {@link #with(JsonValue, JsonValue)} and
  * {@link #without(JsonValue)} return a modified immutable copy of a document,
@@ -724,7 +724,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @param v the value, may not be {@code null}
      * @return the int value if found wrapped in {@link OptionalInt}, empty otherwise
      */
-    public OptionalInt intValueExact(JsonValue v) {
+    public OptionalInt intExact(JsonValue v) {
         return apply(v).flatMap(JsonValue::decimal)
                 .map(d -> OptionalInt.of(d.intValueExact()))
                 .orElse(OptionalInt.empty());
@@ -738,7 +738,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @param v the value, may not be {@code null}
      * @return the long value if found wrapped in {@link OptionalLong}, empty otherwise
      */
-    public OptionalLong longValueExact(JsonValue v) {
+    public OptionalLong longExact(JsonValue v) {
         return apply(v).flatMap(JsonValue::decimal)
                 .map(d -> OptionalLong.of(d.longValueExact()))
                 .orElse(OptionalLong.empty());
@@ -845,8 +845,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * JsonValue updated = p.with(doc, Basic.of("Ada")); // doc unchanged
      *}
      *
-     * @param root     the document to copy from, may not be {@code null}
-     * @param newValue the value to place at this pointer, may not be {@code null}
+     * @param obj the document to copy from, may not be {@code null}
+     * @param replacement the value to place at this pointer, may not be {@code null}
      * @return a new document reflecting the change
      */
     // Build a new object from a shallow copy of {@code obj}'s members with one
@@ -912,14 +912,14 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @throws NoSuchElementException if this pointer does not resolve, or resolves
      *                                to something other than a {@link JsonString}
      */
-    public String requireString(JsonValue root) {
+    public String stringOrThrow(JsonValue root) {
         var value = require(root);
         return value.string().orElseThrow(() -> wrongType(value, "a string"));
     }
 
     /**
      * The number addressed by this pointer as a {@link BigDecimal}, or throw a
-     * {@link NoSuchElementException} naming the pointer (see {@link #requireString}
+     * {@link NoSuchElementException} naming the pointer (see {@link #stringOrThrow}
      * for the two-failure-mode contract).
      *
      * @param root the document, may not be {@code null}
@@ -927,7 +927,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @throws NoSuchElementException if this pointer does not resolve, or resolves
      *                                to something other than a {@link JsonNumber}
      */
-    public BigDecimal requireDecimal(JsonValue root) {
+    public BigDecimal decimalOrThrow(JsonValue root) {
         var value = require(root);
         return value.decimal().orElseThrow(() -> wrongType(value, "a number"));
     }
@@ -941,13 +941,13 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @return the int value at this pointer
      * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
      */
-    public int requireInt(JsonValue root) {
-        return requireDecimal(root).intValue();
+    public int intOrThrow(JsonValue root) {
+        return decimalOrThrow(root).intValue();
     }
 
     /**
      * The number at this pointer as an {@code int} using
-     * {@link BigDecimal#intValueExact()} (like {@link #intValueExact(JsonValue)}),
+     * {@link BigDecimal#intValueExact()} (like {@link #intExact(JsonValue)}),
      * or throw a {@link NoSuchElementException} naming the pointer.
      *
      * @param root the document, may not be {@code null}
@@ -956,8 +956,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @throws ArithmeticException    if the number has a nonzero fractional part
      *                                or does not fit in an {@code int}
      */
-    public int requireIntExact(JsonValue root) {
-        return requireDecimal(root).intValueExact();
+    public int intExactOrThrow(JsonValue root) {
+        return decimalOrThrow(root).intValueExact();
     }
 
     /**
@@ -969,13 +969,13 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @return the long value at this pointer
      * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
      */
-    public long requireLong(JsonValue root) {
-        return requireDecimal(root).longValue();
+    public long longOrThrow(JsonValue root) {
+        return decimalOrThrow(root).longValue();
     }
 
     /**
      * The number at this pointer as a {@code long} using
-     * {@link BigDecimal#longValueExact()} (like {@link #longValueExact(JsonValue)}),
+     * {@link BigDecimal#longValueExact()} (like {@link #longExact(JsonValue)}),
      * or throw a {@link NoSuchElementException} naming the pointer.
      *
      * @param root the document, may not be {@code null}
@@ -984,8 +984,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @throws ArithmeticException    if the number has a nonzero fractional part
      *                                or does not fit in a {@code long}
      */
-    public long requireLongExact(JsonValue root) {
-        return requireDecimal(root).longValueExact();
+    public long longExactOrThrow(JsonValue root) {
+        return decimalOrThrow(root).longValueExact();
     }
 
     /**
@@ -997,8 +997,8 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @return the double value at this pointer
      * @throws NoSuchElementException if this pointer does not resolve to a {@link JsonNumber}
      */
-    public double requireDouble(JsonValue root) {
-        return requireDecimal(root).doubleValue();
+    public double doubleOrThrow(JsonValue root) {
+        return decimalOrThrow(root).doubleValue();
     }
 
     /**
@@ -1010,12 +1010,12 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @throws NoSuchElementException if this pointer does not resolve, or resolves
      *                                to something other than a {@link JsonBoolean}
      */
-    public boolean requireBoolean(JsonValue root) {
+    public boolean booleanOrThrow(JsonValue root) {
         var value = require(root);
         return value.bool().orElseThrow(() -> wrongType(value, "a boolean"));
     }
 
-    // Shared diagnostic for the require* family: a value resolved but had the
+    // Shared diagnostic for the *OrThrow family: a value resolved but had the
     // wrong type. Names the pointer and the actual type so the message says
     // whether the path or the type assumption is at fault.
     private NoSuchElementException wrongType(JsonValue value, String expected) {

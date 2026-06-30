@@ -6,7 +6,7 @@ A small, opinionated JSON library for Java.
 <dependency>
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.4.4</version>
+    <version>1.5.0</version>
 </dependency>
 ```
 
@@ -19,6 +19,10 @@ you've ever wanted a JSON library that you can read end-to-end in an
 afternoon, that doesn't ask you to decorate your records, and that
 treats `Optional` and `Stream` as first-class citizens rather than
 afterthoughts — this is that library.
+
+> **Greyson vs Jackson, side by side:** for runnable examples that map the
+> same messy JSON both ways, see
+> [ralfspoeth/greyson-vs-jackson](https://github.com/ralfspoeth/greyson-vs-jackson).
 
 ---
 
@@ -254,13 +258,18 @@ outcome. When a value *must* be there, `require` throws instead — and
 names the pointer, so the failure tells you where it missed:
 
 ```java
-String name = Pointer.parse("data/users/[0]/name").requireString(doc);
+String name = Pointer.parse("data/users/[0]/name").stringOrThrow(doc);
 // NoSuchElementException: no value at data/users/[0]/name
 //   (or)  value at data/users/[0]/name is a JsonNumber, not a string
 ```
 
-`require(doc)` returns the raw `JsonValue`; `requireString(doc)` adds the
-type check and separates "absent" from "wrong type" in its message.
+`require(doc)` returns the raw `JsonValue`; the typed `…OrThrow` accessors
+(`stringOrThrow`, `intOrThrow`, `longOrThrow`, `doubleOrThrow`,
+`booleanOrThrow`, `decimalOrThrow`, plus `intExactOrThrow` /
+`longExactOrThrow`) add the type check and separate "absent" from "wrong
+type" in the message. They pair with the `Optional`-returning accessors —
+`stringValue`/`stringOrThrow`, `intValue`/`intOrThrow`, `intExact`/
+`intExactOrThrow`, and so on.
 
 ### Pointers as values
 
@@ -393,6 +402,30 @@ If your bottleneck is JSON parsing throughput, use Jackson. If it
 isn't, the simplicity is worth the trade.
 
 ---
+
+## What's new in 1.5.0
+
+**Breaking change.** The `Pointer` throwing accessors are renamed from the
+`requireXxx` family to a type-prefixed `xxxOrThrow` family, so they pair with
+the `Optional`-returning `xxxValue` accessors and sort beside them. The raw
+`require(JsonValue)` (returns `JsonValue`) keeps its name. Migration:
+
+| 1.4.x | 1.5.0 |
+| --- | --- |
+| `requireString` | `stringOrThrow` |
+| `requireDecimal` | `decimalOrThrow` |
+| `requireInt` | `intOrThrow` |
+| `requireLong` | `longOrThrow` |
+| `requireDouble` | `doubleOrThrow` |
+| `requireBoolean` | `booleanOrThrow` |
+| `requireIntExact` | `intExactOrThrow` |
+| `requireLongExact` | `longExactOrThrow` |
+| `require` | `require` *(unchanged)* |
+
+The two `Optional`-returning exact accessors are also renamed for symmetry,
+dropping the redundant `Value`: `intValueExact` → `intExact` and
+`longValueExact` → `longExact` (so each pairs cleanly with `intExactOrThrow` /
+`longExactOrThrow`). The other `xxxValue` accessors are unchanged.
 
 ## What's new in 1.4.4
 

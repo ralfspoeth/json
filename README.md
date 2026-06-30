@@ -6,7 +6,7 @@ A small, opinionated JSON library for Java.
 <dependency>
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.4</version>
 </dependency>
 ```
 
@@ -393,6 +393,14 @@ If your bottleneck is JSON parsing throughput, use Jackson. If it
 isn't, the simplicity is worth the trade.
 
 ---
+
+## What's new in 1.4.4
+
+- `JsonNumber` now serializes through `BigDecimal::toPlainString`, so numbers
+  never appear in scientific notation: a value read as `18250.00` is written
+  back as `18250` rather than `1.825E+4`. Numbers remain normalized (trailing
+  zeros stripped), so the value compares equal either way — magnitude and
+  significant digits are preserved, trailing-zero scale is not.
 
 ## What's new in 1.4.0
 

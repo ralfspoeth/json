@@ -248,6 +248,21 @@ class PointerTest {
     }
 
     @Test
+    void testDecimalValue() {
+        var jo = objectBuilder()
+                .putBasic("n", new java.math.BigDecimal("3.50"))
+                .putBasic("s", "not a number")
+                .build();
+        assertAll(
+                // value-equal regardless of the stripped scale
+                () -> assertEquals(0, new java.math.BigDecimal("3.5")
+                        .compareTo(self().member("n").decimalValue(jo).orElseThrow())),
+                () -> assertTrue(self().member("s").decimalValue(jo).isEmpty()),
+                () -> assertTrue(self().member("missing").decimalValue(jo).isEmpty())
+        );
+    }
+
+    @Test
     void testIntValueExact() {
         var jo = objectBuilder()
                 .putBasic("ok", 1000)

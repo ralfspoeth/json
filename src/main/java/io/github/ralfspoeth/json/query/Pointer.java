@@ -758,6 +758,18 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
     }
 
     /**
+     * Search the first {@link JsonNumber} if found by this and return its value
+     * as a {@link BigDecimal}; otherwise {@link Optional#empty()}. The
+     * {@code Optional}-returning twin of {@link #decimalOrThrow(JsonValue)}.
+     *
+     * @param v the value, may not be {@code null}
+     * @return the decimal value if found, empty otherwise
+     */
+    public Optional<BigDecimal> decimalValue(JsonValue v) {
+        return apply(v).flatMap(JsonValue::decimal);
+    }
+
+    /**
      * Search the first {@link JsonBoolean} if found by this and return its value.
      *
      * @param v the value, may not be {@code null}

@@ -403,6 +403,12 @@ isn't, the simplicity is worth the trade.
 
 ---
 
+## What's new in 1.6.0
+
+- `Pointer.decimalValue(JsonValue)` returns `Optional<BigDecimal>` — the
+  `Optional`-returning twin of `decimalOrThrow`, completing the
+  `xxxValue`/`xxxOrThrow` pairing for every JSON scalar type.
+
 ## What's new in 1.5.0
 
 **Breaking change.** The `Pointer` throwing accessors are renamed from the

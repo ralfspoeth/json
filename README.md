@@ -6,7 +6,7 @@ A small, opinionated JSON library for Java.
 <dependency>
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>json</artifactId>
-    <version>1.5.0</version>
+    <version>1.6.1</version>
 </dependency>
 ```
 
@@ -20,9 +20,9 @@ afternoon, that doesn't ask you to decorate your records, and that
 treats `Optional` and `Stream` as first-class citizens rather than
 afterthoughts — this is that library.
 
-> **Greyson vs Jackson, side by side:** for runnable examples that map the
-> same messy JSON both ways, see
-> [ralfspoeth/greyson-vs-jackson](https://github.com/ralfspoeth/greyson-vs-jackson).
+> **Greyson vs the field, side by side:** for runnable examples that map the
+> same messy JSON with Greyson, Jackson, and Gson, see
+> [ralfspoeth/greyson-competition](https://github.com/ralfspoeth/greyson-competition).
 
 ---
 

@@ -6,9 +6,12 @@ import org.jspecify.annotations.Nullable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collector;
+import java.util.stream.Gatherer;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
@@ -21,6 +24,12 @@ import static java.util.stream.Collectors.toMap;
  * out of a JSON instance, and the {@code {int|long|double}Array(JsonValue)} functions
  * which turn a {@link JsonArray} or {@link JsonNumber}s into an array of primitives
  * {@code int}, {@code long}, or {@code double}.
+ * <p>
+ * In addition, the class integrates JSON with the stream API:
+ * the {@link java.util.stream.Collector}s {@link #toJsonArray()} and
+ * {@link #toJsonObject()} aggregate streams into JSON aggregates, and the
+ * {@link Gatherer}s {@link #distinctBy(Function)} and {@link #merging()}
+ * provide stateful intermediate operations over streams of JSON values.
  */
 public class Queries {
 
@@ -169,6 +178,119 @@ public class Queries {
                     return l1;
                 },
                 JsonArray::new
+        );
+    }
+
+    /**
+     * Collect a stream of name-value pairs into a {@link JsonObject};
+     * the mirror image of {@link #toJsonArray()}. When the same name
+     * occurs more than once, the value encountered last wins.
+     * {@snippet :
+     * import java.util.*;
+     * // given
+     * var entries = List.of(
+     *     Map.entry("a", Basic.of(1)),
+     *     Map.entry("b", Basic.of(2))
+     * );
+     * // when
+     * var result = entries.stream().collect(toJsonObject());
+     * // then
+     * assert JsonObject.ofMap(Map.of("a", 1, "b", 2)).equals(result);
+     *}
+     */
+    public static Collector<Map.Entry<String, ? extends JsonValue>, ?, JsonObject> toJsonObject() {
+        return toJsonObject(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    /**
+     * Collect a stream of arbitrary elements into a {@link JsonObject}
+     * by extracting a member name and a member value from each element.
+     * When the same name occurs more than once, the value encountered
+     * last wins.
+     *
+     * @param keyFn   extracts the member name from a stream element
+     * @param valueFn extracts the member value from a stream element
+     * @param <T>     the type of the stream elements
+     */
+    public static <T> Collector<T, ?, JsonObject> toJsonObject(
+            Function<? super T, String> keyFn,
+            Function<? super T, ? extends JsonValue> valueFn
+    ) {
+        requireNonNull(keyFn);
+        requireNonNull(valueFn);
+        return Collector.of(
+                Builder::objectBuilder,
+                (b, t) -> b.put(keyFn.apply(t), valueFn.apply(t)),
+                (b1, b2) -> {
+                    b2.data().forEach(b1::put);
+                    return b1;
+                },
+                Builder.ObjectBuilder::build
+        );
+    }
+
+    /**
+     * A {@link Gatherer} which drops every {@link JsonValue} whose key
+     * &mdash; as extracted by the given function &mdash; has been seen
+     * before, retaining the <em>first</em> occurrence. Since {@link Pointer}
+     * implements {@code Function<JsonValue, Optional<JsonValue>>}, pointers
+     * can serve as key extractors directly:
+     * {@snippet :
+     * import java.util.stream.Stream;
+     * // given
+     * Stream<JsonValue> records = Stream.of(); // @replace substring="Stream.of();" replacement="..."
+     * // when: one record per unique "id" member
+     * var unique = records
+     *     .gather(distinctBy(Pointer.parse("id")))
+     *     .toList();
+     *}
+     * Note that all values lacking the key collapse onto the first such
+     * value: a pointer extracts {@link java.util.Optional#empty()} from
+     * each of them, and equal keys count as duplicates.
+     *
+     * <p>Unlike {@link java.util.stream.Stream#distinct()}, the operation is
+     * guaranteed to preserve the first occurrence in encounter order.</p>
+     *
+     * @param key the key extractor, may not be {@code null}
+     */
+    public static Gatherer<JsonValue, ?, JsonValue> distinctBy(Function<? super JsonValue, ?> key) {
+        requireNonNull(key);
+        return Gatherer.ofSequential(
+                HashSet::new,
+                Gatherer.Integrator.ofGreedy(
+                        (seen, value, downstream) -> !seen.add(key.apply(value)) || downstream.push(value)
+                )
+        );
+    }
+
+    /**
+     * A {@link Gatherer} which merges a stream of {@link JsonObject}s
+     * into their running combination, emitting the merged state after
+     * each element &mdash; a scan in the terminology of functional
+     * programming, based on {@link Builder.ObjectBuilder#merge(JsonObject)}:
+     * members of later objects overwrite same-named members of earlier ones.
+     *
+     * <p>Typical uses are event-sourcing or patch streams; the final state
+     * is simply the last element:</p>
+     * {@snippet :
+     * import java.util.stream.Stream;
+     * // given
+     * Stream<JsonObject> patches = Stream.of(); // @replace substring="Stream.of();" replacement="..."
+     * // when
+     * state = patches
+     *     .gather(merging())
+     *     .reduce((first, second) -> second); // Optional of the last merged state
+     *}
+     * <p>...while keeping all intermediate states &mdash;
+     * {@code patches.gather(merging()).toList()} &mdash; yields the history
+     * of the accumulation.</p>
+     */
+    public static Gatherer<JsonObject, ?, JsonObject> merging() {
+        return Gatherer.ofSequential(
+                Builder::objectBuilder,
+                Gatherer.Integrator.ofGreedy(
+                        (builder, object, downstream) -> downstream.push(builder.merge(object).build())
+                )
         );
     }
 }

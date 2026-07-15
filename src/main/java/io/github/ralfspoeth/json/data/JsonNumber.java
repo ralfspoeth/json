@@ -19,7 +19,7 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
 
     public JsonNumber {
-        value = requireNonNull(value).stripTrailingZeros();
+        requireNonNull(value);
     }
 
     ///  @return {@code value().toPlainString()} (never scientific notation)
@@ -36,11 +36,11 @@ public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
 
     @Override
     public boolean equals(@Nullable Object o) {
-        return o instanceof JsonNumber(var bd) && value.equals(bd);
+        return o instanceof JsonNumber(var bd) && value.compareTo(bd)==0;
     }
 
     @Override
     public int hashCode() {
-        return value.hashCode();
+        return value.stripTrailingZeros().hashCode();
     }
 }

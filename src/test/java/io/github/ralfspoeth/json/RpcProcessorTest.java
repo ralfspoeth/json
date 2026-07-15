@@ -218,24 +218,32 @@ class RpcProcessorTest {
     @Test
     void rpcCallWithPositionalParameters() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"result\": 19, \"id\": 1}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"subtract\", \"params\": [42, 23], \"id\": 1}")
+                """
+                {"jsonrpc": "2.0", "result": 19, "id": 1}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}""")
         );
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"result\": -19, \"id\": 2}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"subtract\", \"params\": [23, 42], \"id\": 2}")
+                """
+                {"jsonrpc": "2.0", "result": -19, "id": 2}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "subtract", "params": [23, 42], "id": 2}""")
         );
     }
 
     @Test
     void rpcCallWithNamedParameters() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"result\": 19, \"id\": 3}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"subtract\", \"params\": {\"subtrahend\": 23, \"minuend\": 42}, \"id\": 3}")
+                """
+                {"jsonrpc": "2.0", "result": 19, "id": 3}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}""")
         );
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"result\": 19, \"id\": 4}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"subtract\", \"params\": {\"minuend\": 42, \"subtrahend\": 23}, \"id\": 4}")
+                """
+                {"jsonrpc": "2.0", "result": 19, "id": 4}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 4}""")
         );
     }
 
@@ -246,39 +254,48 @@ class RpcProcessorTest {
             invocations.add(m);
             return CALCULATOR.apply(m, p);
         };
-        assertEquals("", process("{\"jsonrpc\": \"2.0\", \"method\": \"update\", \"params\": [1,2,3,4,5]}", recording));
-        assertEquals("", process("{\"jsonrpc\": \"2.0\", \"method\": \"foobar\"}", recording)); // even when the method fails
+        assertEquals("", process("""
+                {"jsonrpc": "2.0", "method": "update", "params": [1,2,3,4,5]}""", recording));
+        assertEquals("", process("""
+                {"jsonrpc": "2.0", "method": "foobar"}""", recording)); // even when the method fails
         assertEquals(List.of("update", "foobar"), invocations);
     }
 
     @Test
     void rpcCallOfNonExistentMethod() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32601, \"message\": \"Method not found\"}, \"id\": \"1\"}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"foobar\", \"id\": \"1\"}")
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": "1"}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "foobar", "id": "1"}""")
         );
     }
 
     @Test
     void rpcCallWithInvalidJson() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32700, \"message\": \"Parse error\"}, \"id\": null}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"foobar, \"params\": \"bar\", \"baz]")
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz]""")
         );
     }
 
     @Test
     void rpcCallWithInvalidRequestObject() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32600, \"message\": \"Invalid Request\"}, \"id\": null}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": 1, \"params\": \"bar\"}")
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": null}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": 1, "params": "bar"}""")
         );
     }
 
     @Test
     void rpcCallBatchInvalidJson() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32700, \"message\": \"Parse error\"}, \"id\": null}",
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}""",
                 process("""
                         [
                           {"jsonrpc": "2.0", "method": "sum", "params": [1,2,4], "id": "1"},
@@ -290,7 +307,8 @@ class RpcProcessorTest {
     @Test
     void rpcCallWithEmptyArray() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32600, \"message\": \"Invalid Request\"}, \"id\": null}",
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": null}""",
                 process("[]")
         );
     }
@@ -298,7 +316,8 @@ class RpcProcessorTest {
     @Test
     void rpcCallWithInvalidBatchOfOne() throws IOException {
         assertJsonEquals(
-                "[{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32600, \"message\": \"Invalid Request\"}, \"id\": null}]",
+                """
+                [{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": null}]""",
                 process("[1]")
         );
     }
@@ -351,16 +370,20 @@ class RpcProcessorTest {
     @Test
     void rpcCallWithInvalidParams() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32602, \"message\": \"Invalid params\"}, \"id\": 1}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"subtract\", \"params\": [\"a\", \"b\"], \"id\": 1}")
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32602, "message": "Invalid params"}, "id": 1}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "subtract", "params": ["a", "b"], "id": 1}""")
         );
     }
 
     @Test
     void rpcCallWithInternalError() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32603, \"message\": \"Internal error\"}, \"id\": 1}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"fail\", \"params\": [], \"id\": 1}")
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32603, "message": "Internal error"}, "id": 1}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "fail", "params": [], "id": 1}""")
         );
     }
 
@@ -368,16 +391,20 @@ class RpcProcessorTest {
     void rpcCallWithNullId() throws IOException {
         // id: null is discouraged but not a notification; the id is echoed back
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"result\": 19, \"id\": null}",
-                process("{\"jsonrpc\": \"2.0\", \"method\": \"subtract\", \"params\": [42, 23], \"id\": null}")
+                """
+                {"jsonrpc": "2.0", "result": 19, "id": null}""",
+                process("""
+                        {"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": null}""")
         );
     }
 
     @Test
     void rpcCallWithoutJsonRpcVersionIsInvalid() throws IOException {
         assertJsonEquals(
-                "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32600, \"message\": \"Invalid Request\"}, \"id\": 1}",
-                process("{\"method\": \"subtract\", \"params\": [42, 23], \"id\": 1}")
+                """
+                {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": 1}""",
+                process("""
+                        {"method": "subtract", "params": [42, 23], "id": 1}""")
         );
     }
 }

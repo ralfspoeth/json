@@ -8,11 +8,15 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Representation of a JSON number
- * by virtue of a {@link BigDecimal}.
- * The {@link #value} must not be {@code null}.
- * Trailing zeros are stripped such that the equality
- * test for two numerically identical numbers is always {@code true}.
+ * Representation of a JSON number by virtue of a {@link BigDecimal}.
+ * The {@link #value} must not be {@code null} and is stored exactly as given, so
+ * its scale — including any trailing zeros — is preserved and re-emitted by
+ * {@link #json()} ({@code 18250.00} round-trips as {@code 18250.00}).
+ * <p>
+ * Equality is <em>numeric</em>: two {@code JsonNumber}s are equal when their
+ * values {@linkplain BigDecimal#compareTo(BigDecimal) compare} equal, so
+ * {@code 18250.00} equals {@code 18250}. {@link #hashCode()} is kept consistent
+ * with that by stripping trailing zeros before hashing.
  * @param value the number, may not be {@code null}
  */
 public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {

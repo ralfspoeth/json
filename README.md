@@ -319,13 +319,14 @@ JsonValue                       sealed
 
 A few design choices worth calling out:
 
-- **`BigDecimal`, not `double`.** Numbers are held as `BigDecimal`, so
-  digits are never lost to binary floating point. Values are *normalized* —
-  trailing zeros are stripped — so `18250.00` and `18250` compare equal and
-  both serialize as `18250` (via `BigDecimal::toPlainString`, never
-  scientific notation). Magnitude and significant digits are preserved;
-  trailing-zero scale is not. `JsonValue::intValue`, `::longValue`,
-  `::doubleValue` give you the conversions when you want them.
+- **`BigDecimal`, not `double`.** Numbers are held as `BigDecimal`, so digits
+  are never lost to binary floating point, and the value is kept exactly as
+  written — scale and trailing zeros included — so `18250.00` serializes back as
+  `18250.00` (via `BigDecimal::toPlainString`, never scientific notation).
+  Equality is *numeric*: `18250.00` and `18250` are equal (compared with
+  `BigDecimal::compareTo`), with `hashCode` kept consistent by stripping trailing
+  zeros. `JsonValue::intValue`, `::longValue`, `::doubleValue` give you the
+  conversions when you want them.
 - **Defensive copies in canonical constructors.** `JsonArray` and
   `JsonObject` copy their inputs unless they're already immutable
   (`List.of`, `Map.of`). Once constructed, the whole tree is
@@ -402,6 +403,14 @@ If your bottleneck is JSON parsing throughput, use Jackson. If it
 isn't, the simplicity is worth the trade.
 
 ---
+
+## What's new in 1.6.1
+
+- `JsonNumber` now preserves a number's scale exactly as written rather than
+  stripping trailing zeros, so `18250.00` round-trips as `18250.00` (not
+  `18250`). Equality stays *numeric* — `18250.00` equals `18250` via
+  `BigDecimal::compareTo` — with `hashCode` kept consistent by stripping trailing
+  zeros before hashing. This reverses the normalization introduced in 1.4.4.
 
 ## What's new in 1.6.0
 

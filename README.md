@@ -14,6 +14,8 @@ No annotations. No reflection. No code generation. Greyson parses JSON
 into immutable algebraic data types and gets out of your way. The whole
 library, with dependencies, fits in under 100 kB.
 
+![Greyson](greyson.png)
+
 If your project already pulls in Jackson, you don't need Greyson. But if
 you've ever wanted a JSON library that you can read end-to-end in an
 afternoon, that doesn't ask you to decorate your records, and that

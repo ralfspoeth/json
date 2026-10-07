@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Representation of the JSON {@code null} type.
  */
-public record JsonNull() implements Basic<Object> {
+public value record JsonNull() implements Basic<Object> {
     public static final JsonNull INSTANCE = new JsonNull();
 
     /// @return "null"

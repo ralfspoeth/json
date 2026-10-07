@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
  * with that by stripping trailing zeros before hashing.
  * @param value the number, may not be {@code null}
  */
-public record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
+public value record JsonNumber(BigDecimal value) implements Basic<BigDecimal> {
     public static final JsonNumber ZERO = new JsonNumber(BigDecimal.ZERO);
 
     public JsonNumber {

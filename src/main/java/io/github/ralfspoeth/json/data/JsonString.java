@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param value the string contents, must not be {@code null}.
  */
-public record JsonString(String value) implements Basic<String> {
+public value record JsonString(String value) implements Basic<String> {
     public JsonString {
         value = requireNonNull(value);
     }

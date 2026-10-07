@@ -20,7 +20,7 @@ class Lexer implements Closeable {
         STRING, NULL, TRUE, FALSE
     }
 
-    record LiteralToken(Type type, String value) implements Token {}
+    value record LiteralToken(Type type, String value) implements Token {}
 
     /**
      * Number tokens carry a parsed {@link BigDecimal} payload so that the
@@ -29,7 +29,7 @@ class Lexer implements Closeable {
      * buffer's {@code char[]}, taking a {@code long} fast path for small
      * integers.
      */
-    record NumberToken(BigDecimal number) implements Token {
+    value record NumberToken(BigDecimal number) implements Token {
         @Override
         public String value() {
             return number.toString();

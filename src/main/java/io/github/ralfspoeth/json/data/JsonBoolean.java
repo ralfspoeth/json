@@ -10,7 +10,7 @@ import java.util.Optional;
  *
  * @param boolValue the wrapped boolean
  */
-public record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
+public value record JsonBoolean(boolean boolValue) implements Basic<Boolean> {
     /// The {@code true} representation
     public static final JsonBoolean TRUE = new JsonBoolean(true);
     ///  The {@code false} representation

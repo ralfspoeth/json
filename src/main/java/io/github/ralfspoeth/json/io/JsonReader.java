@@ -47,24 +47,23 @@ public class JsonReader implements Closeable {
 
 
     sealed interface Elem {
-        record ObjBuilderElem(ObjectBuilder builder) implements Elem {
+        value record ObjBuilderElem(ObjectBuilder builder) implements Elem {
             static ObjBuilderElem objBuilderElem() {
                 return new ObjBuilderElem(Builder.objectBuilder());
             }
         }
 
-        record ArrBuilderElem(ArrayBuilder builder) implements Elem {
+        value record ArrBuilderElem(ArrayBuilder builder) implements Elem {
             static ArrBuilderElem arrBuilderElem() {
                 return new ArrBuilderElem(Builder.arrayBuilder());
             }
         }
 
-        record NameElem(String name) implements Elem {}
+        value record NameElem(String name) implements Elem {}
 
         enum Char implements Elem {colon, comma}
 
-        record Root(Builder<?> elem) implements Elem {
-        }
+        value record Root(Builder<?> elem) implements Elem {}
     }
 
     // parser state: stack of partially-built elements

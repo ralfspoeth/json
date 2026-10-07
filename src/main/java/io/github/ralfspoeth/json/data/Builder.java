@@ -93,7 +93,7 @@ public sealed interface Builder<T extends JsonValue> {
     /**
      * Builder implementation for {@code JsonArray}s.
      */
-    final class ArrayBuilder implements Builder<JsonArray> {
+    final value class ArrayBuilder implements Builder<JsonArray> {
         private ArrayBuilder() {}
 
         @Override
@@ -178,7 +178,7 @@ public sealed interface Builder<T extends JsonValue> {
     /**
      * Builder implementation for {@code JsonObject}s.
      */
-    final class ObjectBuilder implements Builder<JsonObject> {
+    final value class ObjectBuilder implements Builder<JsonObject> {
 
         // prevent instantiation for user code
         private ObjectBuilder() {}

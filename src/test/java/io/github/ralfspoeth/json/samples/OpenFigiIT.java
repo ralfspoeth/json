@@ -18,6 +18,9 @@ import java.util.stream.Stream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * These tests only run on demand
+ */
 class OpenFigiIT implements AutoCloseable {
 
     static final URI OPENFIGI_BASE = URI.create("https://api.openfigi.com/v3/");

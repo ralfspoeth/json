@@ -307,7 +307,12 @@ record TypeShape(Class<? extends JsonValue> expected) implements Shape {
         else if(expected.equals(JsonObject.class)) return "object";
         else if(expected.equals(JsonArray.class)) return "array";
         else if(expected.equals(Aggregate.class)) return "array|object";
-        else throw new AssertionError();
+        // JsonValue itself is a legal argument to type(Class) — the union of
+        // everything, and a shape that nothing can fail
+        else if(expected.equals(JsonValue.class)) return "null|true|false|string|number|array|object";
+        // the hierarchy is sealed, so the nine cases above are exhaustive for
+        // well-typed callers; only an unchecked cast can land here
+        else throw new AssertionError("not a JSON type: " + expected.getName());
     }
 }
 

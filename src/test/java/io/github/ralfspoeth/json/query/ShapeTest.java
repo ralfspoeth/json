@@ -1,6 +1,8 @@
 package io.github.ralfspoeth.json.query;
 
+import io.github.ralfspoeth.json.data.Aggregate;
 import io.github.ralfspoeth.json.data.Basic;
+import io.github.ralfspoeth.json.data.JsonBoolean;
 import io.github.ralfspoeth.json.data.JsonNull;
 import io.github.ralfspoeth.json.data.JsonObject;
 import io.github.ralfspoeth.json.data.JsonValue;
@@ -289,7 +291,9 @@ class ShapeTest {
         var violations = shape.violations(JsonNull.INSTANCE).toList();
         assertAll(
                 () -> assertEquals(1, violations.size()),
-                () -> assertEquals("<root>: expected (string or number or boolean), got null",
+                // type names are the spec's literal names, so JsonBoolean reads
+                // "true|false" rather than "boolean"
+                () -> assertEquals("<root>: expected (string or number or true|false), got null",
                         violations.getFirst().toString()),
                 // flattened, like and()
                 () -> assertEquals(3, assertInstanceOf(OrShape.class, shape).parts().size())
@@ -362,6 +366,27 @@ class ShapeTest {
                         messages(each(string()), Basic.of(1))),
                 () -> assertEquals(messages(array().or(object()), Basic.of(1)),
                         messages(size(2), Basic.of(1)))
+        );
+    }
+
+    /**
+     * {@code type(Class)} is public and the hierarchy is sealed, so every class
+     * assignable to {@link JsonValue} must have a name — including the two
+     * abstract supertypes and {@code JsonValue} itself, which is the union of
+     * everything and a shape nothing can fail.
+     */
+    @Test
+    void everyJsonTypeHasAName() {
+        assertAll(
+                () -> assertEquals("null|true|false|string|number|array|object",
+                        type(JsonValue.class).explain()),
+                () -> assertEquals("null|true|false|string|number", type(Basic.class).explain()),
+                () -> assertEquals("array|object", type(Aggregate.class).explain()),
+                () -> assertEquals("true|false", type(JsonBoolean.class).explain()),
+                // nothing is not a JsonValue, so this shape never reports a defect
+                () -> assertTrue(type(JsonValue.class).predicate().test(JsonNull.INSTANCE)),
+                () -> assertTrue(type(JsonValue.class).predicate().test(Basic.of("x"))),
+                () -> assertTrue(type(JsonValue.class).predicate().test(objectBuilder().build()))
         );
     }
 

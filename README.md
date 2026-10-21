@@ -617,6 +617,12 @@ literal names `true` and `false` ([RFC 8259 §3](https://datatracker.ietf.org/do
 lists those three as literal names rather than naming a boolean type). Violation
 messages are built from it, so the vocabulary is the same one you get.
 
+`Shape`'s type names follow suit, which is visible in messages and in
+`explain()`: `bool()` describes itself as `true|false`, and the abstract
+supertypes as the union of their members — `type(Basic.class)` is
+`null|true|false|string|number`, `type(Aggregate.class)` is `array|object`, and
+`type(JsonValue.class)` is all seven.
+
 **New: `Shape.Violation.expected(at, wanted, found)`.** The `"expected …, got …"`
 wording now lives in exactly one place instead of being concatenated at five
 call sites. `found` is a `String` rather than a `JsonValue` because not every

@@ -8,6 +8,7 @@ import io.github.ralfspoeth.json.data.JsonObject;
 import io.github.ralfspoeth.json.data.JsonValue;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -387,6 +388,110 @@ class ShapeTest {
                 () -> assertTrue(type(JsonValue.class).predicate().test(JsonNull.INSTANCE)),
                 () -> assertTrue(type(JsonValue.class).predicate().test(Basic.of("x"))),
                 () -> assertTrue(type(JsonValue.class).predicate().test(objectBuilder().build()))
+        );
+    }
+
+    @Test
+    void optionalAcceptsAbsenceButNotAWrongValue() {
+        var shape = optional("ccy", string());
+        assertAll(
+                () -> assertEquals(List.of(), messages(shape, instrument("US1", "USD"))),
+                // absent is fine — the distinction member() cannot draw
+                () -> assertEquals(List.of(), messages(shape, instrument("US1", null))),
+                () -> assertTrue(shape.predicate().test(instrument("US1", null))),
+                // present but wrong is still a defect, pointed at the key
+                () -> assertEquals(List.of("ccy: expected string, got number"),
+                        messages(shape, instrument("US1", 42))),
+                // "optional member" says nothing about the container being an object
+                () -> assertEquals(messages(object(), Basic.of(1)), messages(shape, Basic.of(1)))
+        );
+    }
+
+    /**
+     * The case that brought {@code optional} back: in JSON-RPC an absent
+     * {@code id} means notification, so a malformed {@code id} must not be
+     * mistaken for an absent one.
+     */
+    @Test
+    void optionalExpressesAJsonRpcRequest() {
+        var request = member("jsonrpc", exact(Basic.of("2.0")))
+                .and(member("method", string()))
+                .and(optional("id", string().or(number()).or(nul())))
+                .and(optional("params", array().or(object())));
+
+        var notification = objectBuilder()
+                .putBasic("jsonrpc", "2.0").putBasic("method", "ping").build();
+        var withId = objectBuilder()
+                .putBasic("jsonrpc", "2.0").putBasic("method", "ping").putBasic("id", 7).build();
+        var badId = objectBuilder()
+                .putBasic("jsonrpc", "2.0").putBasic("method", "ping").putBasic("id", true).build();
+
+        assertAll(
+                // a notification omits id entirely
+                () -> assertEquals(List.of(), messages(request, notification)),
+                () -> assertEquals(List.of(), messages(request, withId)),
+                // a boolean id is rejected rather than silently read as absent
+                () -> assertEquals(
+                        List.of("id: expected (string or number or null), got true"),
+                        messages(request, badId)),
+                () -> assertEquals(
+                        "\"jsonrpc\": \"2.0\" and \"method\": string "
+                                + "and \"id\"?: (string or number or null) "
+                                + "and \"params\"?: (array or object)",
+                        request.explain())
+        );
+    }
+
+    @Test
+    void exactMatchesOneValueAndNamesItInTheMessage() {
+        var version = member("jsonrpc", exact(Basic.of("2.0")));
+        assertAll(
+                () -> assertEquals(List.of(),
+                        messages(version, objectBuilder().putBasic("jsonrpc", "2.0").build())),
+                // the complaint is about the value, so the value is what is reported
+                () -> assertEquals(List.of("jsonrpc: expected \"2.0\", got \"1.0\""),
+                        messages(version, objectBuilder().putBasic("jsonrpc", "1.0").build())),
+                // a wrong type is still just an unequal value
+                () -> assertEquals(List.of("jsonrpc: expected \"2.0\", got 2"),
+                        messages(version, objectBuilder().putBasic("jsonrpc", 2).build())),
+                () -> assertEquals("\"2.0\"", exact(Basic.of("2.0")).explain())
+        );
+    }
+
+    @Test
+    void exactComparesNumbersNumerically() {
+        // JsonNumber equality is compareTo-based, so scale does not matter
+        var one = exact(Basic.of(1));
+        assertAll(
+                () -> assertTrue(one.predicate().test(Basic.of(1))),
+                () -> assertTrue(one.predicate().test(Basic.of(new BigDecimal("1.00")))),
+                () -> assertFalse(one.predicate().test(Basic.of(2))),
+                // booleans and null are exact-matchable too
+                () -> assertTrue(exact(Basic.of(true)).predicate().test(Basic.of(true))),
+                () -> assertFalse(exact(Basic.of(true)).predicate().test(Basic.of(false))),
+                () -> assertTrue(exact(JsonNull.INSTANCE).predicate().test(JsonNull.INSTANCE))
+        );
+    }
+
+    @Test
+    void exactMatchesAggregatesToo() {
+        var expected = objectBuilder().putBasic("a", 1).putBasic("b", 2).build();
+        var reordered = objectBuilder().putBasic("b", 2).putBasic("a", 1).build();
+        var different = objectBuilder().putBasic("a", 1).putBasic("b", 3).build();
+        assertAll(
+                () -> assertTrue(exact(expected).predicate()
+                        .test(objectBuilder().putBasic("a", 1).putBasic("b", 2).build())),
+                // objects match regardless of member order — map equality, which
+                // matters because Greyson does not preserve the input's order
+                () -> assertTrue(exact(expected).predicate().test(reordered)),
+                () -> assertFalse(exact(expected).predicate().test(different)),
+                // arrays are lists, so they are order-sensitive
+                () -> assertTrue(exact(arrayBuilder().addBasic(1).addBasic(2).build())
+                        .predicate().test(arrayBuilder().addBasic(1).addBasic(2).build())),
+                () -> assertFalse(exact(arrayBuilder().addBasic(1).addBasic(2).build())
+                        .predicate().test(arrayBuilder().addBasic(2).addBasic(1).build())),
+                // a container is not equal to a scalar
+                () -> assertFalse(exact(expected).predicate().test(Basic.of("a")))
         );
     }
 

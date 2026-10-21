@@ -67,7 +67,8 @@ import static java.util.stream.Collectors.joining;
  * its structure.
  */
 public sealed interface Shape extends Function<JsonValue, Stream<Shape.Violation>>
-        permits TypeShape, MemberShape, EachShape, SizeShape, AtShape, AndShape, OrShape {
+        permits TypeShape, ExactShape, MemberShape, OptionalShape, EachShape, SizeShape,
+                AtShape, AndShape, OrShape {
 
     /**
      * A single structural defect: what is wrong, and where.
@@ -244,6 +245,30 @@ public sealed interface Shape extends Function<JsonValue, Stream<Shape.Violation
     }
 
     /**
+     * The value equals {@code expected} — for the discriminators protocols are
+     * built from, such as a version tag:
+     * {@snippet :
+     * Shape.member("jsonrpc", Shape.exact(Basic.of("2.0")));
+     * // jsonrpc: expected "2.0", got "1.0"
+     *}
+     *
+     * <p>Equality is {@link JsonValue}'s, so numbers compare <em>numerically</em>:
+     * {@code exact(Basic.of(1))} is satisfied by {@code 1}, {@code 1.0} and
+     * {@code 1.00} alike, matching how {@link JsonNumber} defines equality.
+     *
+     * <p>Any {@link JsonValue} can be required, containers included: an object
+     * matches regardless of member order, since {@link JsonObject} equality is
+     * map equality, while an array is order-sensitive. Note that a failed match
+     * renders both values as JSON, so requiring a large container exactly
+     * produces a correspondingly large message.
+     *
+     * @param expected the value the input must equal, may not be {@code null}
+     */
+    static Shape exact(JsonValue expected) {
+        return new ExactShape(expected);
+    }
+
+    /**
      * The object carries {@code key}, and its value satisfies {@code shape}.
      * Naming a member <em>is</em> requiring it: if a member is of no interest,
      * do not mention it; if only its presence matters, use {@link #member(String)}.
@@ -255,6 +280,34 @@ public sealed interface Shape extends Function<JsonValue, Stream<Shape.Violation
     /** The object carries {@code key}, whatever is stored there. */
     static Shape member(String key) {
         return new MemberShape(key, anything());
+    }
+
+    /**
+     * If the object carries {@code key}, its value satisfies {@code shape}; an
+     * absent key is not a defect.
+     *
+     * <p>For fields that are genuinely optional <em>and</em> constrained — the
+     * shape a protocol reaches for when absence carries its own meaning. A
+     * JSON-RPC request has no {@code id} when it is a notification, and an
+     * {@code id} of the wrong type must not be mistaken for one:
+     * {@snippet :
+     * var request = Shape.member("jsonrpc", Shape.string())
+     *         .and(Shape.member("method", Shape.string()))
+     *         .and(Shape.optional("id", Shape.string().or(Shape.number()).or(Shape.nul())))
+     *         .and(Shape.optional("params", Shape.array().or(Shape.object())));
+     *}
+     *
+     * <p>Contrast {@link #member(String, Shape)}, where naming a member requires
+     * it. Reach for {@code optional} only when absence is acceptable <em>and</em>
+     * a present value still has to fit: if the member is of no interest at all,
+     * do not mention it, since {@code optional(key, anything())} constrains
+     * nothing.
+     *
+     * @param key   the member name, may not be {@code null}
+     * @param shape what the value must satisfy when the member is present
+     */
+    static Shape optional(String key, Shape shape) {
+        return new OptionalShape(key, shape);
     }
 
     /** An array whose every element satisfies {@code shape}. */
@@ -343,6 +396,57 @@ record MemberShape(String key, Shape shape) implements Shape {
     @Override
     public String explain() {
         return "\"" + key + "\": " + shape.explain();
+    }
+}
+
+/** The value must equal {@code expected}. */
+record ExactShape(JsonValue expected) implements Shape {
+    ExactShape {
+        requireNonNull(expected);
+    }
+
+    @Override
+    public Stream<Violation> apply(JsonValue value) {
+        // what is "found" here is the value, not its type: being a string is no
+        // defect when the complaint is that the string is the wrong one
+        return expected.equals(value)
+                ? Stream.empty()
+                : Stream.of(Violation.expected(self(), explain(), value.json()));
+    }
+
+    @Override
+    public String explain() {
+        return expected.json();
+    }
+}
+
+/**
+ * If the object carries {@code key}, its value must satisfy {@code shape}. An
+ * absent key is not a defect — the distinction {@link MemberShape} does not draw.
+ */
+record OptionalShape(String key, Shape shape) implements Shape {
+    OptionalShape {
+        requireNonNull(key);
+        requireNonNull(shape);
+    }
+
+    @Override
+    public Stream<Violation> apply(JsonValue value) {
+        // being an object is still required: "optional member" says nothing
+        // about whether the container is one
+        if (!(value instanceof JsonObject(var members))) {
+            return Shape.object().apply(value);
+        }
+        var member = members.get(key);
+        return member == null
+                ? Stream.empty()
+                : shape.apply(member).map(v -> v.rebase(self().member(key)));
+    }
+
+    @Override
+    public String explain() {
+        // the ? marks optionality where a reader expects it
+        return "\"" + key + "\"?: " + shape.explain();
     }
 }
 

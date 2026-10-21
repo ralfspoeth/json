@@ -6,7 +6,7 @@ A small, opinionated JSON library for Java.
 <dependency>
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>greyson</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
 </dependency>
 ```
 
@@ -402,12 +402,16 @@ Where a `Selector` filters by **type** (`objects()`, `numbers()`, …), a
 `Shape` filters by **shape**.
 
 **Naming a member is requiring it.** Either you are interested in a member —
-and then in its value — or you are not, in which case you don't mention it:
+and then in its value — or you are not, in which case you don't mention it.
+`optional` is for the third case, where absence is acceptable but a value that
+*is* there still has to fit:
 
 | |                                          |
 | --- |------------------------------------------|
 | `member("ccy", string())` | `ccy` is there, and it is a string       |
 | `member("ccy")` | `ccy` is there, whatever it holds        |
+| `optional("ccy", string())` | *if* `ccy` is there, it is a string      |
+| `exact(Basic.of("2.0"))` | the value equals `"2.0"` — for discriminators |
 | `each(number())` | an array who's every element is a number |
 | `size(2)` / `size(1, 5)` / `atLeast(1)` | cardinality of an array or object        |
 | `parse("a/b").must(string())` | `a/b` resolves, and holds a string       |
@@ -588,6 +592,55 @@ If your bottleneck is JSON parsing throughput, use Jackson. If it
 isn't, the simplicity is worth the trade.
 
 ---
+
+## What's new in 2.2.0
+
+**New: `Shape.optional(key, shape)`.** If the object carries `key` its value must
+satisfy `shape`; an absent key is not a defect. For fields that are genuinely
+optional *and* constrained:
+
+```java
+var request = member("jsonrpc", exact(Basic.of("2.0")))
+        .and(member("method", string()))
+        .and(optional("id", string().or(number()).or(nul())))
+        .and(optional("params", array().or(object())));
+```
+
+That is a JSON-RPC request, and it is the case that brought `optional` back. 2.1.0
+could not express it: `member` requires the key, and there was no way to say
+"absent is acceptable".
+
+**New: `Shape.exact(Basic)`.** The value must equal a given one — the other half
+of the example above, for the discriminators protocols are built from. A mismatch
+reports the value rather than the type, since being a string is no defect when
+the complaint is that the string is the wrong one:
+
+```
+jsonrpc: expected "2.0", got "1.0"
+```
+
+Equality is `JsonValue`'s, so numbers compare *numerically*: `exact(Basic.of(1))`
+is satisfied by `1`, `1.0` and `1.00` alike. Containers work too — an object
+matches regardless of member order, since object equality is map equality, which
+matters given Greyson does not preserve the input's order; arrays, being lists,
+are order-sensitive. A failed match renders both values as JSON, so requiring a
+large container exactly produces a correspondingly large message.
+
+When 1.8.0 folded `Required` into `Member`, the argument for dropping
+optional-but-typed members was that an optional field is read with an
+`Optional`-returning accessor like `stringValue()`, which yields empty for both
+*absent* and *wrong type* — so the consumer is already total and a shape check
+adds nothing. JSON-RPC is where that breaks: a request with no `id` is a
+*notification*, so reading a malformed `id` as an absent one silently turns a
+request into a notification. Absence carries meaning, and conflating it with
+malformedness is a protocol bug rather than lenient parsing.
+
+`member` still means required, so a required-and-typed member is named once as
+before. `explain()` marks optionality where a reader expects it:
+
+```
+"jsonrpc": string and "method": string and "id"?: (string or number or null)
+```
 
 ## What's new in 2.1.0
 

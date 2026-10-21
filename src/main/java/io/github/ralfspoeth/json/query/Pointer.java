@@ -996,7 +996,7 @@ public sealed abstract class Pointer implements Function<JsonValue, Optional<Jso
      * @return a shape asserting {@code shape} at this location
      */
     public Shape must(Shape shape) {
-        return new Shape.At(this, shape);
+        return new AtShape(this, shape);
     }
 
     // ---- writing: pointers address a location in a mutable Builder tree -----

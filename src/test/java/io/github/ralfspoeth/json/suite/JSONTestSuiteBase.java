@@ -26,6 +26,5 @@ class JSONTestSuiteBase {
         }
     }
 
-    record Result(Path p, JsonValue element, Throwable exception) {
-    }
+    record Result(Path p, JsonValue element, Throwable exception) {}
 }

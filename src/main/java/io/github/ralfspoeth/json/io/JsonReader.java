@@ -63,8 +63,7 @@ public class JsonReader implements Closeable {
 
         enum Char implements Elem {colon, comma}
 
-        record Root(Builder<?> elem) implements Elem {
-        }
+        record Root(Builder<?> elem) implements Elem {}
     }
 
     // parser state: stack of partially-built elements

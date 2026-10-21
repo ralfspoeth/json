@@ -54,7 +54,7 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
 
     /**
      * The depth of the tree of nested values: {@code 1} for a leaf, and
-     * {@code 1 +} the maximum {@link #depth()} of its {@link #children()} for a
+     * {@code 1 +} the maximum {@code #depth()} of its {@link #children()} for a
      * container. Defined generically via {@code children()}, so the one
      * implementation holds for every {@link JsonValue}.
      * @return the depth
@@ -65,7 +65,7 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
 
     /**
      * The number of nodes in this subtree, counting {@code this}: {@code 1} for
-     * a leaf (any {@link Basic}), and {@code 1 +} the sum of the {@link #nodes()}
+     * a leaf (any {@link Basic}), and {@code 1 +} the sum of the {@code #nodes()}
      * of its {@link #children()} for a container. Defined generically via
      * {@code children()}.
      * @return the number of nodes contained in this subtree
@@ -226,8 +226,31 @@ public sealed interface JsonValue extends Predicate<@Nullable JsonValue> permits
         return Builder.of(this);
     }
 
+    /**
+     * The type name according to the JSON spec.
+     *
+     * <p>Note that
+     * <a href="https://datatracker.ietf.org/doc/html/rfc8259#section-3">RFC 8259
+     * §3</a> names {@code false}, {@code null} and {@code true} as <em>literal
+     * names</em> rather than defining a boolean type, so a {@link JsonBoolean}
+     * answers {@code "true"} or {@code "false"} rather than {@code "boolean"} —
+     * the only case where the result depends on the value and not just its type.
+     *
+     * @return the JSON type name
+     */
+    default String typeName() {
+        return switch(this) {
+            case JsonString _ -> "string";
+            case JsonNull _ -> "null";
+            case JsonNumber _ -> "number";
+            case JsonBoolean(boolean b) -> Boolean.toString(b);
+            case JsonArray _ -> "array";
+            case JsonObject _ -> "object";
+        };
+    }
+
     @Override
     default boolean test(@Nullable JsonValue jsonValue) {
-        return jsonValue != null && jsonValue.equals(this);
+        return jsonValue instanceof JsonValue v && v.equals(this);
     }
 }

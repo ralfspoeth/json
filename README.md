@@ -6,7 +6,7 @@ A small, opinionated JSON library for Java.
 <dependency>
     <groupId>io.github.ralfspoeth</groupId>
     <artifactId>greyson</artifactId>
-    <version>2.0.3</version>
+    <version>2.1.0</version>
 </dependency>
 ```
 
@@ -411,23 +411,53 @@ and then in its value — or you are not, in which case you don't mention it:
 | `each(number())` | an array who's every element is a number |
 | `size(2)` / `size(1, 5)` / `atLeast(1)` | cardinality of an array or object        |
 | `parse("a/b").must(string())` | `a/b` resolves, and holds a string       |
-| `anything()` | accepts everything; identity of `and`    |
+| `a.or(b)` | either holds — for union-typed fields |
+| `anything()` / `nothing()` | accept everything / nothing; identities of `and` / `or` |
 
-Shapes are records, so a description is inspectable data — comparable,
-usable as a map key, and printable via `explain()`:
+A shape is an immutable value object — comparable, usable as a map key, and
+printable via `explain()`. The implementing types are package-private, so
+`explain()` is how you read a description rather than matching on its
+structure:
 
 ```java
 member("isin", string()).and(member("ccy", string())).explain();
 // "isin": string and "ccy": string
 ```
 
+**Alternation reports coarsely, on purpose.** Real feeds produce union-typed
+fields — a member that is an array in most documents and a bare object in some —
+so `or` exists for them:
+
+```java
+member("positions", array().or(object()));
+```
+
+When no branch holds you get **one** violation at the location of the choice,
+naming the alternatives:
+
+```
+positions: expected (array or object), got string
+```
+
+The branch violations are dropped deliberately. A value that only had to satisfy
+one alternative would otherwise accumulate a defect per branch, reading as
+several problems when there is a single unsatisfied choice — and blaming the
+"closest" branch would need a heuristic no message could explain. So unlike
+`and`, which reports each defect with a full path, `or` tells you where the
+choice failed rather than pointing into a sub-value. There is no `not`:
+negation has nothing useful to say about what it wanted.
+
 **This is deliberately not JSON Schema.** When a document has a schema that
 is authoritative for the operation at hand, use a schema validator.
 `Shape` is for data in the wild, where no such document exists or none
-is being honoured — so there is no schema I/O in either direction, no
-`$ref`, and no `anyOf`-style alternation (which would make "why did this
-fail?" ambiguous). Messages are local and self-describing, because there is
-no spec to point at.
+is being honoured — so there is no schema I/O in either direction and no
+`$ref` resolution, both of which need a schema *document* to make sense.
+Messages are local and self-describing, because there is no spec to point at.
+
+That test is about whether a schema governs the operation, not about which
+keywords a schema language happens to have: `and` and `or` overlap with
+`allOf` and `anyOf` and belong here anyway, because conjunction and
+alternation are properties of messy data rather than of specs.
 
 ---
 
@@ -559,6 +589,81 @@ isn't, the simplicity is worth the trade.
 
 ---
 
+## What's new in 2.1.0
+
+**New: `Shape.or`.** Union-typed fields are what sloppy feeds actually produce —
+`"positions"` an array in three documents and a bare object in the fourth — and
+until now `Shape` could not describe them at all:
+
+```java
+member("positions", array().or(object()));
+```
+
+When no branch holds, the result is a *single* violation at the choice point
+(`positions: expected (array or object), got string`) rather than one defect per
+branch, which would read as several problems where there is one unsatisfied
+choice. `or` flattens like `and`, parenthesises itself in `explain()` so mixing
+the two stays unambiguous, and comes with `nothing()` as its identity for
+folding a list of alternatives. There is deliberately no `not`.
+
+This was previously ruled out as `anyOf`-style alternation drifting toward JSON
+Schema. That reasoning was weak — `allOf` is equally a Schema keyword and `and`
+exists — and the real test is whether a schema is authoritative for the
+operation. Union-typed members are definitionally data in the wild.
+
+**New: `JsonValue.typeName()`.** The JSON type name of a value, as the spec
+names them — `object`, `array`, `number`, `string`, `null`, and for booleans the
+literal names `true` and `false` ([RFC 8259 §3](https://datatracker.ietf.org/doc/html/rfc8259#section-3)
+lists those three as literal names rather than naming a boolean type). Violation
+messages are built from it, so the vocabulary is the same one you get.
+
+**New: `Shape.Violation.expected(at, wanted, found)`.** The `"expected …, got …"`
+wording now lives in exactly one place instead of being concatenated at five
+call sites. `found` is a `String` rather than a `JsonValue` because not every
+mismatch is about a type: a `size` constraint reports the count it found, having
+been given the right type.
+
+Alongside it, `member`, `each` and `size` now delegate their container
+precondition to the type shapes — `object()`, `array()` and
+`array().or(object())` — rather than carrying their own copies of those nouns.
+One visible consequence: a `size` constraint applied to a non-aggregate now
+reports `expected (array or object), got null`, with parentheses, because `or`
+parenthesises itself.
+
+`explain()`'s contract is also written down properly: it renders a *whole shape*
+for a human and is **not** specified to read correctly after the word
+"expected". It happens to for simple shapes, which is why those pass it to
+`Violation.expected`, but `expected "ccy": string` and `expected a and b` both
+read badly — which is why `and` reports its parts individually rather than
+describing itself.
+
+**Breaking change.** `Shape`'s implementing types are no longer public. The six
+records — `Shape.Type`, `Shape.Member`, `Shape.Each`, `Shape.Size`, `Shape.At`
+and `Shape.And` — are now package-private top-level records (`TypeShape`,
+`MemberShape`, and so on). `Shape.Violation` is unaffected: it is real API and
+stays public and nested.
+
+Nothing else moves. Every factory (`string()`, `member(…)`, `each(…)`,
+`size(…)`, `atLeast(…)`, `anything()`, `type(…)`), `Pointer.must`,
+`Selector.where`, `violations`, `predicate`, `explain` and `and` are unchanged,
+so code that builds shapes through the API needs no edit at all. Only code
+naming an implementing type directly is affected, and there is no supported way
+it could have needed to.
+
+They were only public by accident: members of an interface are implicitly
+public, so sealing `Shape` as an interface in order to use records exposed all
+six whether or not that was wanted. Two things follow from fixing it:
+
+- Their signatures are no longer frozen by semver, so `size`, `member` and the
+  rest stay free to change.
+- `and()` flattens nested conjunctions, and the docs promise it. Previously
+  `new Shape.And(List.of(nested, …))` could construct a non-flat conjunction
+  that no factory would ever produce — an invariant anyone could step around.
+
+They remain records rather than hand-written classes, so `equals`, `hashCode`
+and `toString` still come for free and shapes stay comparable, hashable value
+objects. Reading a description is what `explain()` is for.
+
 ## What's new in 2.0.3
 
 No behaviour changes — the compiled classes are identical to 2.0.2. This release
@@ -650,8 +755,8 @@ so it isn't redundant with anything.
   `Pointer.select` and `Selector.point`, `Pointer.must(shape)` asserts a shape at
   a location and `Selector.where(shape)` narrows a selection by shape — keeping
   shape-filtering inside the algebra rather than dropping out to `Stream.filter`.
-- Shapes are records: a description is inspectable data, comparable, usable
-  as a map key, and printable via `explain()`.
+- Shapes are immutable value objects: comparable, usable as a map key, and
+  printable via `explain()`.
 - Explicitly **not** a JSON Schema implementation, and won't grow into one: no
   schema I/O in either direction, no `$ref`, no `anyOf`. When a schema is
   authoritative for the operation, use a schema validator; `Shape` is for

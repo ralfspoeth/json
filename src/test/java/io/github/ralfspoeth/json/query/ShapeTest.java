@@ -7,6 +7,7 @@ import io.github.ralfspoeth.json.data.JsonValue;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.github.ralfspoeth.json.data.Builder.arrayBuilder;
 import static io.github.ralfspoeth.json.data.Builder.objectBuilder;
@@ -131,7 +132,9 @@ class ShapeTest {
                         messages(atLeast(4), three)),
                 // objects count members
                 () -> assertEquals(List.of(), messages(size(2), instrument("US1", "USD"))),
-                () -> assertEquals(List.of("<root>: expected array or object, got null"),
+                // the aggregate precondition is delegated to array().or(object()),
+                // which parenthesises itself
+                () -> assertEquals(List.of("<root>: expected (array or object), got null"),
                         messages(size(1), JsonNull.INSTANCE))
         );
     }
@@ -148,10 +151,10 @@ class ShapeTest {
     void andConcatenatesViolationsAndFlattens() {
         var shape = member("isin").and(member("ccy", string())).and(size(2));
         // the AST is inspectable data — three parts, not a nested tree
-        var parts = assertInstanceOf(Shape.And.class, shape).parts();
+        var parts = assertInstanceOf(AndShape.class, shape).parts();
         assertAll(
                 () -> assertEquals(3, parts.size()),
-                () -> assertInstanceOf(Shape.Member.class, parts.getFirst()),
+                () -> assertInstanceOf(MemberShape.class, parts.getFirst()),
                 // one value, two independent problems, both reported
                 () -> assertEquals(
                         List.of("isin: missing required member", "ccy: expected string, got number"),
@@ -260,6 +263,106 @@ class ShapeTest {
                 List.of("records/[1]/amount: expected number, got string",
                         "records/[2]/id: missing required member"),
                 messages(parse("records").must(each(record)), doc));
+    }
+
+    @Test
+    void orIsSatisfiedByEitherBranch() {
+        // the union-typed field real feeds produce: an array here, a bare object there
+        var positions = member("positions", array().or(object()));
+        var asArray = objectBuilder().put("positions", arrayBuilder().addBasic(1)).build();
+        var asObject = objectBuilder().put("positions", objectBuilder().putBasic("isin", "US1")).build();
+        var asString = objectBuilder().putBasic("positions", "oops").build();
+        assertAll(
+                () -> assertEquals(List.of(), messages(positions, asArray)),
+                () -> assertEquals(List.of(), messages(positions, asObject)),
+                // no branch held: one violation at the choice point, naming the alternatives
+                () -> assertEquals(List.of("positions: expected (array or object), got string"),
+                        messages(positions, asString))
+        );
+    }
+
+    @Test
+    void orReportsOneViolationNotOnePerBranch() {
+        // three branches, all failing, still a single message — the branch
+        // violations are deliberately dropped
+        var shape = string().or(number()).or(bool());
+        var violations = shape.violations(JsonNull.INSTANCE).toList();
+        assertAll(
+                () -> assertEquals(1, violations.size()),
+                () -> assertEquals("<root>: expected (string or number or boolean), got null",
+                        violations.getFirst().toString()),
+                // flattened, like and()
+                () -> assertEquals(3, assertInstanceOf(OrShape.class, shape).parts().size())
+        );
+    }
+
+    @Test
+    void orMixesWithAndUnambiguously() {
+        // parentheses keep precedence readable in explain()
+        var shape = member("id", string()).and(member("positions", array().or(object())));
+        assertAll(
+                () -> assertEquals("\"id\": string and \"positions\": (array or object)",
+                        shape.explain()),
+                () -> assertEquals(List.of(), messages(shape, objectBuilder()
+                        .putBasic("id", "p1")
+                        .put("positions", objectBuilder().putBasic("isin", "US1"))
+                        .build())),
+                // the and-branch still reports with a full path
+                () -> assertEquals(List.of("id: expected string, got number"),
+                        messages(shape, objectBuilder()
+                                .putBasic("id", 1)
+                                .put("positions", arrayBuilder())
+                                .build()))
+        );
+    }
+
+    @Test
+    void nothingIsTheIdentityOfOr() {
+        assertAll(
+                // accepts nothing at all
+                () -> assertFalse(nothing().predicate().test(Basic.of(1))),
+                () -> assertFalse(nothing().predicate().test(JsonNull.INSTANCE)),
+                () -> assertEquals("nothing", nothing().explain()),
+                // and so is the seed for folding alternatives
+                () -> assertTrue(Stream.of(string(), number())
+                        .reduce(nothing(), Shape::or)
+                        .predicate().test(Basic.of(1))),
+                // a single alternative does not get spurious parentheses
+                () -> assertEquals("string", nothing().or(string()).explain())
+        );
+    }
+
+    /**
+     * {@code explain()} renders a whole shape for a human; it is deliberately
+     * not specified to read correctly after the word "expected", which is why
+     * composites report their parts rather than describing themselves.
+     */
+    @Test
+    void explainRendersCompositesThatWouldNotFitAMessage() {
+        var shape = member("ccy", string()).and(each(number()));
+        assertAll(
+                // the standalone rendering is the documented, useful one …
+                () -> assertEquals("\"ccy\": string and each element number", shape.explain()),
+                // … and it never reaches a message: and() reports its parts,
+                // each with its own path, and neither says "expected a and b"
+                () -> assertEquals(
+                        List.of("ccy: expected string, got number", "<root>: expected array, got object"),
+                        messages(shape, objectBuilder().putBasic("ccy", 1).build()))
+        );
+    }
+
+    @Test
+    void preconditionMessagesComeFromTheTypeShapes() {
+        // member/each/size share "be an object|array|aggregate" with the type
+        // shapes, so the wording is produced in one place, not three
+        assertAll(
+                () -> assertEquals(messages(object(), Basic.of(1)),
+                        messages(member("k", string()), Basic.of(1))),
+                () -> assertEquals(messages(array(), Basic.of(1)),
+                        messages(each(string()), Basic.of(1))),
+                () -> assertEquals(messages(array().or(object()), Basic.of(1)),
+                        messages(size(2), Basic.of(1)))
+        );
     }
 
     @Test

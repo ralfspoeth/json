@@ -73,8 +73,7 @@ class GreysonTest {
             }
 
             @Override
-            public void close() {
-            }
+            public void close() {}
         }) {
             // Json.read(Reader) declares IOException
             assertThrows(IOException.class, () -> Greyson.readValue(faultyReader));
